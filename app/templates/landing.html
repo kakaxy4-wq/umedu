@@ -16,10 +16,11 @@
       собирает вариант в формате экзамена и проверяет ответ сам. Родитель видит прогноз балла, преподаватель — кому нужна помощь.</p>
     <div class="row">
       {% if open_signup %}<a class="btn btn-big" href="/join">Начать бесплатно →</a>{% endif %}
-      {% if contact %}<a class="btn btn-big{{ ' btn-ghost' if open_signup }}" href="{{ contact }}" target="_blank" rel="noopener">Попасть в пилот →</a>{% endif %}
+      {% if contact and not open_signup %}<a class="btn btn-big" href="{{ contact }}" target="_blank" rel="noopener">Попасть в пилот →</a>{% endif %}
       <a class="btn btn-big btn-ghost" href="#how">Как это устроено</a>
     </div>
-    <p class="small muted">Сейчас идёт бесплатный пилот с репетиторами. Код приглашения выдаёт ваш преподаватель.</p>
+    <p class="small muted">{% if open_signup %}Бесплатно, без рекламы и без карты. Учись сам или вместе с родителем —
+      а преподаватель может поднять свой сайт на открытом коде.{% else %}Сейчас идёт бесплатный пилот с репетиторами. Код приглашения выдаёт ваш преподаватель.{% endif %}</p>
   </div>
   <div class="ld-hero-art" aria-hidden="true">
     {% for n in (1, 3, 5) %}{% if brawler_img(n) %}<img src="{{ brawler_img(n) }}" alt="" class="ld-hero-img i{{ loop.index }}">{% endif %}{% endfor %}

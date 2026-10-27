@@ -1401,6 +1401,11 @@ def test_landing_only_on_public_site(client, monkeypatch):
     assert "Подготовка к ОГЭ" in page and "Прогноз балла" in page and "/login" in page
     text = re.sub(r"<[^>]+>", " ", page).lower()                                         # видимый текст, без путей картинок
     assert not [w for w in theme.FOREIGN_BRANDS if w in text]
+    from app import config
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    monkeypatch.setattr(config, "CONTACT", "https://t.me/example")
+    page = client.get("/welcome").text
+    assert 'href="/join"' in page and "пилот" not in page and "t.me/example" in page   # контакт — в подвале
 
 
 def _parent_token(client, sid):

@@ -151,9 +151,11 @@ def send_if_due():
 
 
 async def scheduler():
+    from . import parent_bot              # parent_bot импортирует weekly
     while True:
-        try:
-            await asyncio.to_thread(send_if_due)
-        except Exception:  # сводка не должна ронять сайт
-            log.exception("weekly summary failed")
+        for job in (send_if_due, parent_bot.send_if_due):
+            try:
+                await asyncio.to_thread(job)
+            except Exception:  # сводка не должна ронять сайт
+                log.exception("weekly summary failed")
         await asyncio.sleep(CHECK_EVERY)

@@ -18,6 +18,23 @@
   <p>Пока здесь никого нет. Откройте ссылку для родителей, которую дал преподаватель, и нажмите «Добавить в мой кабинет».</p>
 </section>
 {% endfor %}
+{% if tg and kids %}
+<section class="card family-tg">
+  <div class="eyebrow">📬 Отчёт в Telegram</div>
+  {% if fam.tg_chat_id %}
+  <p>Подключено: по воскресеньям вечером приходит короткий отчёт — дни занятий, решённые задачи, прогноз ОГЭ.</p>
+  {% if tg_sent == 'sent' %}<p class="pill ok">Отчёт отправлен — проверьте Telegram.</p>{% elif tg_sent == 'fail' %}<p class="pill bad">Не получилось отправить. Попробуйте позже.</p>{% endif %}
+  <div class="row">
+    <form method="post" action="/family/telegram">{{ fam_csrf(fam) }}<input type="hidden" name="action" value="test"><button class="btn btn-small">Прислать отчёт сейчас</button></form>
+    <form method="post" action="/family/telegram" data-confirm="Отключить отчёты в Telegram?">{{ fam_csrf(fam) }}<input type="hidden" name="action" value="off"><button class="btn btn-small btn-ghost">Отключить</button></form>
+  </div>
+  {% else %}
+  <p>Раз в неделю — короткий отчёт о занятиях прямо в Telegram. Нажмите кнопку, откроется наш бот — нажмите в нём «Start».</p>
+  {% if tg_sent == 'fail' %}<p class="pill bad">Бот сейчас недоступен. Попробуйте позже.</p>{% endif %}
+  <form method="post" action="/family/telegram">{{ fam_csrf(fam) }}<input type="hidden" name="action" value="connect"><button class="btn">Подключить Telegram</button></form>
+  {% endif %}
+</section>
+{% endif %}
 <p class="muted small">Ещё один ребёнок занимается здесь же? Откройте его ссылку для родителей — она добавит его в этот кабинет.
   <a href="/privacy">Как мы обращаемся с данными</a>.</p>
 </div>

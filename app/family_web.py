@@ -7,7 +7,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import auth, certificates, config, family, forecast, game, russian, students, subjects, theme
+from . import auth, certificates, config, family, forecast, game, parent_bot, russian, students, subjects, theme
 from .db import get_db
 from .content.checks import CHECK_BY_ID
 from .main import FamilyLogin, back, cert_signer, oge_progress, render
@@ -180,7 +180,28 @@ def family_home(request: Request, conn=Depends(get_db)):
                             "AND created_at >= ?", (sid, week)).fetchone()[0]
         kids.append({"st": st, "me": game.stats(conn, sid), "days": days,
                      "fc": forecast.forecast(oge_progress(conn, sid)) if "python" in subjects.of(st) else None})
-    return render(request, "family/home.html", conn, None, fam=fam, kids=kids)
+    return render(request, "family/home.html", conn, None, fam=fam, kids=kids, tg=parent_bot.enabled(),
+                  tg_sent=request.query_params.get("tg"))
+
+
+@router.post("/family/telegram")
+def family_telegram(request: Request, action: str = Form("connect"), csrf: str = Form(""), conn=Depends(get_db)):
+    """Подключить чат с ботом (одноразовая ссылка), отключить или прислать отчёт сейчас."""
+    fam = _family_only(request, conn)
+    family.check_csrf(fam, csrf)
+    if not parent_bot.enabled():
+        raise HTTPException(404)
+    if action == "off":
+        with conn:
+            parent_bot.disconnect(conn, fam["id"])
+        return back("/family")
+    if action == "test":
+        text = parent_bot.report(conn, fam["id"])
+        ok = bool(fam["tg_chat_id"] and text and parent_bot.send(fam["tg_chat_id"], text))
+        return back("/family?tg=%s" % ("sent" if ok else "fail"))
+    with conn:
+        link = parent_bot.new_link(conn, fam["id"])
+    return back(link or "/family?tg=fail")
 
 
 @router.get("/family/child/{sid}", response_class=HTMLResponse)
@@ -215,4 +236,4 @@ def family_unlink(sid: int, request: Request, csrf: str = Form(""), conn=Depends
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy(request: Request, conn=Depends(get_db)):
     return render(request, "privacy.html", conn, None, operator=config.OPERATOR, contact=config.CONTACT,
-                  version=family.CONSENT_VERSION, student_name="")
+                  version=family.CONSENT_VERSION, student_name="", tg_bot=parent_bot.enabled())

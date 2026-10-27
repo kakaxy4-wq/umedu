@@ -27,6 +27,8 @@ BASE_URL = os.environ.get("CQ_BASE_URL", "").rstrip("/")
 COOKIE_SECURE = os.environ.get("CQ_COOKIE_SECURE", "1") == "1"
 TELEGRAM_TOKEN = os.environ.get("CQ_TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("CQ_TELEGRAM_CHAT_ID", "")
+# бот читает сообщения родителей и шлёт им отчёт по воскресеньям (app/parent_bot.py); нужен CQ_TELEGRAM_TOKEN
+PARENT_BOT = os.environ.get("CQ_PARENT_BOT", "0") == "1"
 MAX_UPLOAD_MB = int(os.environ.get("CQ_MAX_UPLOAD_MB", "25"))
 
 # ---- экземпляр сайта: один код — несколько сайтов (КодКвест, ХимЛаб) со своими базами

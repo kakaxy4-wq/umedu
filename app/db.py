@@ -542,6 +542,20 @@ def _migrate_v1_to_v2(conn):
     return True
 
 
+PARENT_COLUMNS = [
+    ("tg_chat_id", "TEXT"),          # чат родителя с ботом — для еженедельного отчёта
+    ("tg_code", "TEXT"),             # одноразовый код ссылки t.me/<бот>?start=<код>
+    ("tg_code_at", "TEXT"),
+]
+
+
+def _ensure_parent_columns(conn):
+    have = _columns(conn, "parents")
+    for name, ddl in PARENT_COLUMNS:
+        if name not in have:
+            conn.execute("ALTER TABLE parents ADD COLUMN %s %s" % (name, ddl))
+
+
 def _ensure_user_columns(conn):
     """Новые колонки users добавляются к уже существующей базе (CREATE TABLE IF NOT EXISTS их не добавит)."""
     if "users" not in {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}:
@@ -561,6 +575,7 @@ def init_db():
     with conn:
         conn.executescript(SCHEMA)
         _ensure_user_columns(conn)   # на новой базе users только что создана по SCHEMA — без поздних колонок
+        _ensure_parent_columns(conn)
         if conn.execute("SELECT COUNT(*) FROM rewards").fetchone()[0] == 0:
             conn.executemany("INSERT INTO rewards (emoji, title, cost) VALUES (?, ?, ?)", DEFAULT_REWARDS)
             conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('economy_v2', '1')")

@@ -22,7 +22,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from markupsafe import Markup, escape
 from starlette.concurrency import run_in_threadpool
 
-from . import art, auth, config, events, game, levels, oge_drill, russian, season, students, subjects, theme, today, weekly
+from . import (art, auth, config, events, game, levels, oge_drill, parent_bot, russian, season, students, subjects, theme,
+               today, weekly)
 
 from .content.checks import CHECK_BY_ID, CHECKS, grade
 from .content.glossary import add_abbr
@@ -42,9 +43,11 @@ STATIC_VERSION = secrets.token_hex(4)
 async def lifespan(_app):
     config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     init_db()
-    task = asyncio.create_task(weekly.scheduler()) if os.environ.get("CQ_WEEKLY", "1") == "1" else None
+    tasks = [asyncio.create_task(weekly.scheduler())] if os.environ.get("CQ_WEEKLY", "1") == "1" else []
+    if parent_bot.enabled():
+        tasks.append(asyncio.create_task(parent_bot.poller()))
     yield
-    if task:
+    for task in tasks:
         task.cancel()
 
 

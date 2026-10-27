@@ -77,7 +77,7 @@ def load(request: Request, conn):
     if not token:
         return None
     row = conn.execute(
-        "SELECT p.id, p.username, p.display_name, s.csrf FROM parent_sessions s JOIN parents p ON p.id = s.parent_id "
+        "SELECT p.id, p.username, p.display_name, p.tg_chat_id, s.csrf FROM parent_sessions s JOIN parents p ON p.id = s.parent_id "
         "WHERE s.token_hash = ? AND s.expires_at > ? AND p.active = 1", (auth._token_hash(token), _now())).fetchone()
     return dict(row) if row else None
 

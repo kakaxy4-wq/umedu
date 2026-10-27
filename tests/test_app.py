@@ -1690,3 +1690,60 @@ def test_solo_student_needs_no_teacher(client, monkeypatch):
         game.open_due_checks(conn, sid)
     assert conn.execute("SELECT 1 FROM check_state WHERE student_id = ? AND id = 'w1'", (sid,)).fetchone()
     assert "final" not in {r[0] for r in conn.execute("SELECT id FROM check_state WHERE student_id = ?", (sid,))}
+
+
+def test_parent_telegram_report(client, monkeypatch):
+    """Родитель подключает бота одноразовой ссылкой, получает отчёт; /stop и кнопка отключают; ссылка живёт час."""
+    from datetime import timedelta
+    from app import config, parent_bot
+    from app.db import connect
+    sent = []
+
+    def fake_call(method, **p):
+        if method == "getMe":
+            return {"ok": True, "result": {"username": "umedu_test_bot"}}
+        if method == "sendMessage":
+            sent.append((p["chat_id"], p["text"]))
+        return {"ok": True, "result": []}
+    monkeypatch.setattr(parent_bot, "call", fake_call)
+    monkeypatch.setattr(parent_bot, "_me", {})
+    misha = sid_of("student")
+    tok = _parent_token(client, misha)
+    client.cookies.clear()
+    client.post("/parent/%s/account" % tok, data={"name": "Мама", "login": "mama", "password": "dlinnyi-parol", "consent": "1"})
+    assert "Подключить Telegram" not in client.get("/family").text            # бот выключен
+    monkeypatch.setattr(config, "PARENT_BOT", True)
+    monkeypatch.setattr(config, "TELEGRAM_TOKEN", "test")
+    page = client.get("/family").text
+    assert "Подключить Telegram" in page
+    csrf = _fam_csrf(page)
+    assert client.post("/family/telegram", data={"csrf": "bad"}).status_code == 403
+    r = client.post("/family/telegram", data={"csrf": csrf, "action": "connect"}, follow_redirects=False)
+    link = r.headers["location"]
+    assert link.startswith("https://t.me/umedu_test_bot?start=")
+    code = link.split("start=")[1]
+    conn = connect()
+    chat = {"id": 555, "type": "private"}
+    assert parent_bot.handle(conn, {"message": {"chat": dict(chat, type="group"), "text": "/start " + code}}) is None
+    assert "устарела" in parent_bot.handle(conn, {"message": {"chat": chat, "text": "/start wrong"}})[1]
+    assert "Готово, Мама" in parent_bot.handle(conn, {"message": {"chat": chat, "text": "/start " + code}})[1]
+    assert "устарела" in parent_bot.handle(conn, {"message": {"chat": chat, "text": "/start " + code}})[1]  # одноразовая
+    assert connect().execute("SELECT tg_chat_id FROM parents WHERE username = 'mama'").fetchone()[0] == "555"
+    page = client.get("/family").text
+    assert "Подключено" in page
+    client.post("/family/telegram", data={"csrf": csrf, "action": "test"})
+    assert sent and sent[-1][0] == "555" and "👤 Миша" in sent[-1][1] and "занятий не было" in sent[-1][1]
+    # воскресная рассылка — всем подключённым
+    sent.clear()
+    monkeypatch.setattr(config, "BASE_URL", "https://umedu.example")
+    assert parent_bot.send_reports(connect()) == 1
+    assert "https://umedu.example/family/child/%d" % misha in sent[0][1]
+    # /stop и устаревшая ссылка
+    assert "отключены" in parent_bot.handle(conn, {"message": {"chat": chat, "text": "/stop"}})[1]
+    assert connect().execute("SELECT tg_chat_id FROM parents WHERE username = 'mama'").fetchone()[0] is None
+    client.post("/family/telegram", data={"csrf": csrf, "action": "connect"})
+    with conn:
+        conn.execute("UPDATE parents SET tg_code_at = ?", ((config.now() - timedelta(hours=2)).isoformat(),))
+    code = conn.execute("SELECT tg_code FROM parents WHERE username = 'mama'").fetchone()[0]
+    assert "устарела" in parent_bot.handle(conn, {"message": {"chat": chat, "text": "/start " + code}})[1]
+    assert "Отчёт в Telegram" in client.get("/privacy").text

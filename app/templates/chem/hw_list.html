@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "chem/_macros.html" import hw_pill, when %}
+{% block title %}Домашние задания{% endblock %}
+{% block content %}
+<h1>📚 Домашние задания</h1>
+{% if hw %}
+<div class="table-scroll"><table class="table">
+  <tr><th>Задание</th><th>Срок</th><th>Статус</th></tr>
+  {% for h in hw %}
+  <tr><td><a href="/chem/hw/{{ h.id }}">{{ h.title|chem }}</a></td><td>{{ when(h.due_at) if h.due_at else '—' }}</td><td>{{ hw_pill(h) }}</td></tr>
+  {% endfor %}
+</table></div>
+{% else %}<p class="muted">Заданий пока нет — их выдаёт преподаватель после занятия.</p>{% endif %}
+{% endblock %}

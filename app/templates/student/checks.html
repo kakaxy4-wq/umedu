@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Проверки{% endblock %}
+{% block content %}
+<h1>📝 Проверки</h1>
+{% if chem_site %}<p class="muted">Входное тестирование покажет, с чего начать подготовку. Оценок нет — за прохождение начисляется опыт, сколько бы ни набрал.</p>
+{% else %}<p class="muted">Входное тестирование, срезы после каждого мира и итоговый тест. Оценок нет: за прохождение — +30 🏆, сколько бы ни набрал. Без таймера, можно не торопиться.</p>{% endif %}
+<div class="check-list">
+  {% for c in checks %}
+  {% set st = states.get(c.id) %}{% set res = results.get(c.id) %}
+  {% set open = st and st.opened_at %}
+  <a class="card check-item {{ 'done' if res else ('open' if open else 'locked') }}" href="/check/{{ c.id }}">
+    <span class="check-emoji">{{ c.emoji if (open or res) else '🔒' }}</span>
+    <span class="check-body">
+      <b>{{ c.title }}</b>
+      <small class="muted">{{ c.questions|length }} вопросов{% if c.minutes %} · ⏱ {{ c.minutes }} мин{% elif c.after_module and c.id != 'final' %} · после мира {{ c.after_module }}{% endif %}</small>
+    </span>
+    {% if res %}<span class="pill ok">✅ {{ res.right_count }} из {{ res.total }}</span>
+    {% elif open %}<span class="pill wait">Можно пройти →</span>
+    {% else %}<span class="pill">откроет преподаватель</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

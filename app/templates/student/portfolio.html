@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Портфолио{% endblock %}
+{% block content %}
+<div class="row between">
+  <h1>🗂️ Портфолио</h1>
+  <a class="btn" href="/portfolio/new">+ Новый проект</a>
+</div>
+<p class="muted">Здесь живут твои проекты: открытки, квесты, игры, боты. Публичным проектом можно поделиться ссылкой — друзья увидят код и смогут запустить его прямо в браузере. Все публичные проекты: <a href="/gallery">галерея</a>.</p>
+<div class="project-grid">
+  {% for p in projects %}
+  <div class="card project">
+    {% if p.image_path %}<img src="/files/project/{{ p.id }}/image" alt="" class="project-img">{% else %}<div class="project-img placeholder">🗂️</div>{% endif %}
+    <h3>{{ p.title }}</h3>
+    <p class="muted small">{{ p.description[:140] }}{% if p.description|length > 140 %}…{% endif %}</p>
+    <div class="row">
+      <a class="btn btn-small" href="/portfolio/{{ p.id }}/edit">Открыть</a>
+      {% if p.public %}
+        <a class="btn btn-small btn-ghost" href="/p/{{ p.slug }}" target="_blank">🌍 Публичная страница</a>
+        <button class="btn btn-small btn-ghost" data-copy="{{ (base_url or '') ~ '/p/' ~ p.slug }}">🔗</button>
+      {% else %}<span class="pill">🔒 только для нас</span>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="card center-card"><div class="big-emoji">✨</div><p>Пока пусто. Первая открытка из урока 6 отлично подойдёт!</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Вход для родителей{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="login-card card">
+  <div class="login-hero">👪</div>
+  <h1>Кабинет родителя</h1>
+  <p class="muted">{{ site_name }}</p>
+  {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
+  <form method="post" action="/family/login" class="stack">
+    <label>Логин<input name="username" autocomplete="username" autocapitalize="off" required autofocus></label>
+    <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn btn-big">Войти</button>
+  </form>
+  <p class="muted small">Кабинета ещё нет? Его заводят по ссылке для родителей от преподавателя.</p>
+  <p class="muted small"><a href="/login">Вход для ученика и преподавателя →</a></p>
+</div>
+{% endblock %}

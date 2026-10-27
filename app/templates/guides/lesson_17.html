@@ -1,0 +1,39 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Программа запоминает рекорды и данные даже после выключения.</p>
+  <p>Ключевые темы: <b>`open`, `with`, режимы `r`/`w`/`a`; JSON; `datetime`</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Разминка. · 10</span><span style="flex: 20">Чтение и запись файлов. Таблица ре · 20</span><span style="flex: 20">JSON — сохраняем словарь целиком. · 20</span><span style="flex: 15">Дневник с датами. Итог. · 15</span></div>
+  <p class="muted">Всего ~65 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/17/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">65 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Разминка.</td></tr><tr><td>2</td><td>(20 мин) Чтение и запись файлов. Таблица рекордов.</td></tr><tr><td>3</td><td>(20 мин) JSON — сохраняем словарь целиком.</td></tr><tr><td>4</td><td>(15 мин) Дневник с датами. Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`open`, `with`, режимы `r`/`w`/`a`</li><li>JSON</li><li>`datetime`</li></ul>
+  <p>Разбери пример «JSON» по строкам:</p><pre class="code-mini">import json
+hero = {"имя": "Рыцарь", "уровень": 3, "инвентарь": ["меч", "щит"]}
+text = json.dumps(hero, ensure_ascii=False, indent=2)
+print(text)
+back = json.loads(text)
+print(back["инвентарь"][0])</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>KeyError</td><td>ключа ещё нет в словаре</td><td>dict.get(key, значение по умолчанию)</td></tr><tr><td>UnicodeDecodeError при чтении файла</td><td>не указана кодировка</td><td>open(..., encoding="utf-8")</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `open`, `with`, режимы `r`/`w`/`a`.</li><li>Объясни своими словами: JSON.</li><li>Объясни своими словами: `datetime`.</li>
+  </ol>
+  <p><b>Домашка:</b> Карточки со словами храни в файле и добавь возможность пополнять словарь.</p>
+  <p><b>Со звёздочкой:</b> Статистика по каждому слову: сколько раз отвечал и процент правильных.</p>
+  <p>Задачи на сайте под уроком 17 — сайт проверяет автоматически.</p>
+</section>

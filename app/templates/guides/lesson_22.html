@@ -1,0 +1,52 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Что отличает поделку от игры: звуки, анимация, частицы и тряска экрана.</p>
+  <p>Ключевые темы: <b>`pygame.mixer`; Анимация кадров; Частицы; Game feel</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Показать пример игры «без сочности · 10</span><span style="flex: 20">Звуки: freesound.org или записать  · 20</span><span style="flex: 30">Частицы при поимке, вспышки, тряск · 30</span><span style="flex: 10">Итог. · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/22/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Показать пример игры «без сочности» и «с сочностью».</td></tr><tr><td>2</td><td>(20 мин) Звуки: freesound.org или записать самим.</td></tr><tr><td>3</td><td>(30 мин) Частицы при поимке, вспышки, тряска.</td></tr><tr><td>4</td><td>(10 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`pygame.mixer`</li><li>Анимация кадров</li><li>Частицы</li><li>Game feel</li></ul>
+  <p>Разбери пример «Частицы (логика)» по строкам:</p><pre class="code-mini">import random
+
+particles = []
+
+def explode(x, y):
+    for _ in range(20):
+        particles.append({"x": x, "y": y,
+                          "dx": random.uniform(-3, 3), "dy": random.uniform(-3, 3),
+                          "life": 30})
+
+def update():
+    for p in particles:
+        p["x"] += p["dx"]; p["y"] += p["dy"]; p["life"] -= 1
+    particles[:] = [p for p in particles if p["life"] &gt; 0]
+
+explode(100, 100)
+for frame in range(31):
+    update()
+print("Осталось частиц:", len(particles))</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Окно «не отвечает»</td><td>нет clock.tick(60) в цикле</td><td>добавь clock.tick(60)</td></tr><tr><td>Игра вылетает при закрытии</td><td>pygame.quit() не вызван</td><td>закрывай в обработке события QUIT</td></tr><tr><td>Персонаж улетает за экран</td><td>нет ограничения краёв</td><td>player.clamp_ip(screen.get_rect())</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `pygame.mixer`.</li><li>Объясни своими словами: Анимация кадров.</li><li>Объясни своими словами: Частицы.</li><li>Объясни своими словами: Game feel.</li>
+  </ol>
+  <p><b>Домашка:</b> Звуки, фоновая музыка и экран старта в «Поймай яблоко».</p>
+  <p><b>Со звёздочкой:</b> Эффект частиц при поимке.</p>
+  <p>Задачи на сайте под уроком 22 — сайт проверяет автоматически.</p>
+</section>

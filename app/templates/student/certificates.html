@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sid_field, csrf_field %}
+{% block title %}Сертификаты{% endblock %}
+{% block content %}
+<h1>🎓 Сертификаты{% if user.role == 'teacher' %} — {{ student_name }}{% endif %}</h1>
+<p class="muted">Сертификат появляется за каждый пройденный мир, за новый ранг и за окончание курса. Ещё преподаватель может вручить грамоту. Открой сертификат, нажми «Печать» — и можно вешать на стену.</p>
+
+{% if user.role == 'teacher' %}
+<div class="grid grid-2">
+  <section class="card teacher-box">
+    <div class="eyebrow">🎛️ Вручить грамоту</div>
+    <form method="post" action="/teacher/certificates" class="stack">
+      {{ csrf_field(user) }}{{ sid_field(sid) }}
+      <div class="row"><label style="flex: 0 0 90px">Значок <input name="emoji" value="🏅" maxlength="8"></label>
+        <label style="flex: 1">Название (для списка) <input name="title" required maxlength="80" placeholder="Лучшая игра года"></label></div>
+      <label>За что — так будет напечатано после имени
+        <input name="reason" required maxlength="240" placeholder="за самую весёлую игру на pygame"></label>
+      <label>Дата <input type="date" name="issued_at"></label>
+      <button class="btn">🏅 Вручить</button>
+    </form>
+  </section>
+  <section class="card teacher-box">
+    <div class="eyebrow">🎛️ Имена в сертификатах</div>
+    <form method="post" action="/teacher/cert-name" class="stack">
+      {{ csrf_field(user) }}{{ sid_field(sid) }}
+      <label>Как написать имя ученика (например, полностью: «Анна Смирнова»)
+        <input name="name" maxlength="80" value="{{ subject.full_name if subject else '' }}" placeholder="{{ student_name }}"></label>
+      <label>Подпись преподавателя (например, «А. В. Иванов»)
+        <input name="signer" maxlength="80" value="{{ signer }}"></label>
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+  </section>
+</div>
+{% endif %}
+
+<div class="cert-list">
+  {% for c in certs %}
+  <div class="card cert-item">
+    <span class="check-emoji">{{ c.emoji }}</span>
+    <span class="check-body"><b>{{ c.title }}</b><small class="muted">{{ c.heading }} · {{ c.date|dt(False) }}</small></span>
+    <a class="btn btn-small" href="/certificate/{{ c.kind }}/{{ c.ref }}" target="_blank" rel="noopener">🖨️ Открыть</a>
+    {% if user.role == 'teacher' and c.kind == 'custom' %}
+    <form method="post" action="/teacher/certificates/{{ c.id }}/delete" data-confirm="Удалить грамоту «{{ c.title }}»?">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="linklike" title="Удалить">🗑</button></form>
+    {% endif %}
+  </div>
+  {% else %}
+  <section class="card"><p>Пока сертификатов нет. Первый — за пройденный мир или за ранг «Бронза II» (100 🏆). Вперёд! 🚀</p></section>
+  {% endfor %}
+</div>
+{% endblock %}

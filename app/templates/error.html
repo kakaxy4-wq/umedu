@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Не найдено' if status == 404 else 'Не получилось' }}{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="login-card card">
+  <div class="login-hero">{{ '🔍' if status == 404 else '🙈' }}</div>
+  <h1>{{ 'Такой страницы нет' if status == 404 else 'Не получилось' }}</h1>
+  <p>{{ message }}</p>
+  <div class="row" style="justify-content: center">
+    <button type="button" class="btn" data-back>← Назад</button>
+    <a class="btn btn-ghost" href="/">На главную</a>
+  </div>
+</div>
+{% endblock %}

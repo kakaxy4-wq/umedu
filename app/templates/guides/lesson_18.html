@@ -1,0 +1,46 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Виртуальный питомец, который живёт между запусками и грустит, если про него забыть.</p>
+  <p>Ключевые темы: <b>Состояние программы в словаре; Сохранение в JSON; Время между запусками</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Обсуждаем, что умеет питомец. · 10</span><span style="flex: 45">Сытость, настроение, энергия; дейс · 45</span><span style="flex: 15">День демо модуля, проект в Портфол · 15</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/18/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Обсуждаем, что умеет питомец.</td></tr><tr><td>2</td><td>(45 мин) Сытость, настроение, энергия; действия; ASCII-арт по настроению; сохранение.</td></tr><tr><td>3</td><td>(15 мин) День демо модуля, проект в Портфолио.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Состояние программы в словаре</li><li>Сохранение в JSON</li><li>Время между запусками</li></ul>
+  <p>Разбери пример «Основа тамагочи» по строкам:</p><pre class="code-mini">pet = {"имя": "Байт", "сытость": 5, "настроение": 5}
+
+def show():
+    face = "(^_^)" if pet["настроение"] &gt; 3 else "(-_-)"
+    print(face, pet)
+
+for action in ["кормить", "играть", "играть"]:
+    if action == "кормить":
+        pet["сытость"] = min(10, pet["сытость"] + 3)
+    elif action == "играть":
+        pet["настроение"] += 2
+        pet["сытость"] -= 1
+    show()</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>KeyError</td><td>ключа ещё нет в словаре</td><td>dict.get(key, значение по умолчанию)</td></tr><tr><td>UnicodeDecodeError при чтении файла</td><td>не указана кодировка</td><td>open(..., encoding="utf-8")</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Состояние программы в словаре.</li><li>Объясни своими словами: Сохранение в JSON.</li><li>Объясни своими словами: Время между запусками.</li>
+  </ol>
+  <p><b>Домашка:</b> Добавь своё действие и случайные события («питомец нашёл монетку»).</p>
+  <p><b>Со звёздочкой:</b> Магазин за монеты.</p>
+  <p>Задачи на сайте под уроком 18 — сайт проверяет автоматически.</p>
+</section>

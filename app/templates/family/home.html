@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Кабинет родителя{% endblock %}
+{% block content %}
+<div class="parent-page">
+{% include "family/_bar.html" %}
+<h1>Здравствуйте, {{ fam.display_name }}!</h1>
+{% for k in kids %}
+<a class="card family-kid" href="/family/child/{{ k.st.id }}">
+  <span class="family-kid-rank">{{ k.me.level.emoji }}</span>
+  <span class="check-body">
+    <b>{{ k.st.display_name }}</b> <small class="muted">{{ k.me.level.title }}</small>
+    <small>Дней с занятиями за неделю: {{ k.days }} из 7 · последний вход {{ k.st.last_seen_at|ago }}{% if k.fc and k.fc.enough_data %} · прогноз ОГЭ: <b>{{ k.fc.grade }}</b>{% endif %}</small>
+  </span>
+  <span class="btn btn-small btn-ghost">Подробнее →</span>
+</a>
+{% else %}
+<section class="card">
+  <p>Пока здесь никого нет. Откройте ссылку для родителей, которую дал преподаватель, и нажмите «Добавить в мой кабинет».</p>
+</section>
+{% endfor %}
+<p class="muted small">Ещё один ребёнок занимается здесь же? Откройте его ссылку для родителей — она добавит его в этот кабинет.
+  <a href="/privacy">Как мы обращаемся с данными</a>.</p>
+</div>
+{% endblock %}

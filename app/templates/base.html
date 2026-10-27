@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru" data-v="{{ v }}"{% if calm %} data-calm="1"{% endif %}{% if public_site %} data-site="public"{% endif %}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_name }}{% endblock %} · {{ site_name }}</title>
+{% if user %}<meta name="csrf" content="{{ user.csrf }}">{% endif %}
+{% if logo %}<link rel="icon" href="{{ logo }}" type="image/svg+xml">{% else %}<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{ brand }}</text></svg>">{% endif %}
+<link rel="stylesheet" href="/static/vendor/codemirror/codemirror.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/app.css?v={{ v }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% if user %}
+<header class="topbar">
+  <button class="nav-toggle" aria-label="Меню">☰</button>
+  <a class="logo" href="/">{% if logo %}<img src="{{ logo }}" alt="" class="logo-mark"> {{ wordmark(site_name) }}{% else %}{{ brand }} {{ site_name }}{% endif %}</a>
+  {% if user.role == 'teacher' and all_students and not chem_site %}
+  <details class="student-switch">
+    <summary title="Чей кабинет смотрим">
+      <span class="avatar a{{ sid % 6 }}">{{ student_name[:1] }}</span>
+      <span class="switch-name">{{ student_name }}</span>
+      <span class="switch-caret" aria-hidden="true">▾</span>
+    </summary>
+    <div class="switch-menu">
+      <div class="switch-title">Кабинет ученика</div>
+      {% for s in all_students %}
+      <form method="post" action="/teacher/select">
+        <input type="hidden" name="csrf" value="{{ user.csrf }}"><input type="hidden" name="next" value="{{ nav }}">
+        <button name="student_id" value="{{ s.id }}" class="switch-item {{ 'current' if s.id == sid }}">
+          <span class="avatar a{{ s.id % 6 }}">{{ s.display_name[:1] }}</span>
+          <span class="switch-item-name">{{ s.display_name }}<small>урок {{ s.unlocked }}</small></span>
+          {% if s.id == sid %}<span class="switch-check">✓</span>{% endif %}
+        </button>
+      </form>
+      {% endfor %}
+      <div class="switch-sep"></div>
+      <a class="switch-link" href="/teacher/student/{{ sid }}">Профиль {{ student_name }}</a>
+      <a class="switch-link" href="/teacher/students">👥 Все ученики · ➕ добавить</a>
+    </div>
+  </details>
+  {% endif %}
+  {% if chem_site %}{% if me and user.role == 'student' %}
+  <div class="hud">
+    <span class="hud-item" title="Уровень растёт от решённых задач, занятий и ДЗ">⭐ <b>уровень {{ me.level.num }}</b></span>
+    <span class="hud-item" title="Опыт">✨ <b>{{ me.xp }}</b></span>
+  </div>
+  {% endif %}
+  {% elif me %}
+  <div class="hud">
+    <a href="/achievements" class="hud-item" title="Ранг: {{ me.level.title }}">{{ me.level.emoji }} <b>{{ me.level.title }}</b></a>
+    <a href="/achievements" class="hud-item" title="Трофеи">🏆 <b>{{ me.xp }}</b></a>
+    <a href="/shop" class="hud-item" title="Гемы — тратятся в магазине">💎 <b>{{ me.coins }}</b></a>
+    <a href="/daily" class="hud-item {% if me.streak %}hot{% endif %}" title="Дней подряд с задачей дня">🔥 <b>{{ me.streak }}</b></a>
+  </div>
+  {% endif %}
+</header>
+<nav class="sidenav">
+  {% if chem_site %}{% include "chem/_nav.html" %}{% else %}
+  {# Меню блоками по предметам: Python и русский не перемешиваются, награды — отдельно. #}
+  {% set py_links = [
+    ("/map", "🗺️", "Карта курса"), ("/homework", "📬", "Домашка"), ("/daily", "☀️", "Задача дня"), ("/oge", "🎯", "ОГЭ"),
+    ("/trainer", "🏀", "Арена"), ("/bots", "⚔️", "Битва ботов"), ("/playground", "🧪", "Песочница"), ("/cheatsheet", "📒", "Шпаргалка")] %}
+  {% set prize_links = [
+    ("/achievements", "🏅", "Награды и рейтинг" if calm else "Бойцы и награды"), ("/season", "🎟️", "Пасс сезона"),
+    ("/shop", "💎", "Магазин подарков"), ("/certificates", "🎓", "Сертификаты")] %}
+  {% set more_links = [("/checks", "📝", "Проверки"), ("/portfolio", "🗂️", "Портфолио")] %}
+  {% set ru_links = [
+    ("/ru", "🏠", "Обзор"), ("/ru/review", "🔁", "Мои ошибки"), ("/ru/commas", "✍️", "Запятые"), ("/ru/spell", "⚡", "Арена букв"),
+    ("/ru/basis", "🧩", "Основа предложения"), ("/ru/dict", "📝", "Диктант"), ("/ru/rules", "📒", "Правила")] %}
+  {% set teacher = user.role == 'teacher' %}
+  {#- Блок меню сворачивается; раскрыт, если в нём текущая страница. Ученику предметы раскрыты по умолчанию,
+      преподавателю кабинет ученика свёрнут — иначе меню в три экрана. Выбор запоминается в браузере (app.js). -#}
+  {% macro group(key, title, links, default_open) -%}
+  {% set ns = namespace(active=False) %}
+  {% for href, icon, label in links %}{% if nav == href or (href not in ('/ru', '/teacher') and nav.startswith(href)) %}{% set ns.active = True %}{% endif %}{% endfor %}
+  <details class="nav-group" data-key="{{ key }}" {{ 'open' if ns.active or default_open }}{{ ' data-active=1' if ns.active }}>
+    <summary class="nav-title">{{ title }}</summary>
+    {% for href, icon, label in links %}
+    <a href="{{ href }}" class="{{ 'active' if nav == href or (href not in ('/ru', '/teacher') and nav.startswith(href)) }}">{{ icon }} {{ label }}
+      {%- if href == '/ru/review' and ru_due %} <span class="badge">{{ ru_due }}</span>{% endif %}
+      {%- if href == '/teacher/reviews' and pending_hw %} <span class="badge">{{ pending_hw }}</span>{% endif %}
+      {%- if href == '/teacher/rewards' and pending_buy %} <span class="badge">{{ pending_buy }}</span>{% endif %}</a>
+    {% endfor %}
+  </details>
+  {%- endmacro %}
+  {% if teacher %}
+  <a href="/teacher" class="nav-home {{ 'active' if nav == '/teacher' }}">🎛️ Пульт {% if pending_reviews %}<span class="badge">{{ pending_reviews }}</span>{% endif %}</a>
+  {{ group("t-lessons", "📅 Занятия", [("/teacher/lessons", "📅", "Уроки"), ("/teacher/students", "👥", "Ученики")], True) }}
+  {{ group("t-check", "📬 Проверить", [("/teacher/reviews", "📬", "Домашки"), ("/teacher/checks", "📝", "Тесты и срезы"),
+      ("/teacher/solutions", "🧾", "Решения задач")], True) }}
+  {{ group("t-report", "📊 Награды и отчёты", [("/teacher/rewards", "🎁", "Запросы наград"), ("/teacher/journal", "📜", "Журнал"),
+      ("/teacher/weekly", "📊", "Сводка недели"), ("/teacher/analytics", "📈", "Аналитика")], pending_buy) }}
+  <div class="nav-sep">Кабинет: {{ student_name or 'нет учеников' }}</div>
+  {% else %}
+  <a href="/" class="nav-home {{ 'active' if nav == '/' }}">🏠 Главная</a>
+  {% if 'python' in subj or 'russian' in subj %}<a href="/today" class="nav-home {{ 'active' if nav == '/today' }}">📅 План на сегодня</a>{% endif %}
+  {% endif %}
+  {% if 'python' in subj %}{{ group("py", "🐍 Python", py_links, not teacher) }}{% endif %}
+  {% if 'russian' in subj %}{{ group("ru", "📖 Русский язык", ru_links, not teacher) }}{% endif %}
+  {{ group("prize", "🏆 Награды", prize_links, False) }}
+  {{ group("more", "Ещё", more_links, False) }}
+  {% endif %}
+  <form method="post" action="/logout" class="logout">
+    <input type="hidden" name="csrf" value="{{ user.csrf }}">
+    <button class="linklike">🚪 Выйти ({{ user.display_name }})</button>
+  </form>
+</nav>
+{% endif %}
+<main class="{% if user %}with-nav{% else %}plain{% endif %}">
+{% block content %}{% endblock %}
+</main>
+{% if notices %}<script type="application/json" id="page-notices">{{ notices|tojson }}</script>{% endif %}
+<script src="/static/vendor/codemirror/codemirror.js?v={{ v }}"></script>
+<script src="/static/vendor/codemirror/python.js?v={{ v }}"></script>
+<script src="/static/vendor/codemirror/matchbrackets.js?v={{ v }}"></script>
+<script src="/static/vendor/codemirror/closebrackets.js?v={{ v }}"></script>
+<script src="/static/js/runner.js?v={{ v }}"></script>
+<script src="/static/js/app.js?v={{ v }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

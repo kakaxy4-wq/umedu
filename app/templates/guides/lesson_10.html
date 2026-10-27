@@ -1,0 +1,38 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Храним много значений в одной переменной. Генератор никнеймов и игра «Виселица».</p>
+  <p>Ключевые темы: <b>Списки, индексы; `append`, `len`, `in`; Цикл по списку</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Разбор домашнего задания. · 10</span><span style="flex: 15">Списки: создание, индексы, `append · 15</span><span style="flex: 10">«Шляпа с предсказаниями», генерато · 10</span><span style="flex: 30">Упрощённая «Виселица». · 30</span><span style="flex: 5">Итог. · 5</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/10/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Разбор домашнего задания.</td></tr><tr><td>2</td><td>(15 мин) Списки: создание, индексы, `append`, `len`, `in`, `for item in lst`.</td></tr><tr><td>3</td><td>(10 мин) «Шляпа с предсказаниями», генератор никнеймов.</td></tr><tr><td>4</td><td>(30 мин) Упрощённая «Виселица».</td></tr><tr><td>5</td><td>(5 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Списки, индексы</li><li>`append`, `len`, `in`</li><li>Цикл по списку</li></ul>
+  <p>Разбери пример «Генератор никнеймов» по строкам:</p><pre class="code-mini">import random
+adj = ["Космический", "Бешеный", "Тихий", "Огненный", "Хитрый"]
+noun = ["Енот", "Пиксель", "Дракон", "Кодер", "Ниндзя"]
+for _ in range(5):
+    print(random.choice(adj), random.choice(noun))</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Цикл выполняется «на один раз» больше/меньше</td><td>границы range: правая не включается</td><td>проверь range(1, n + 1)</td></tr><tr><td>Программа «зависла»</td><td>условие while не меняется внутри</td><td>проверь, что счётчик/переменная меняются</td></tr><tr><td>IndexError: list index out of range</td><td>индекс за пределами списка</td><td>индексы идут с 0, последний — len(list) - 1</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Списки, индексы.</li><li>Объясни своими словами: `append`, `len`, `in`.</li><li>Объясни своими словами: Цикл по списку.</li>
+  </ol>
+  <p><b>Домашка:</b> Доделай «Виселицу»: ASCII-рисунок человечка и случайное слово из списка.</p>
+  <p><b>Со звёздочкой:</b> Списки слов по темам, выбор темы в начале.</p>
+  <p>Задачи на сайте под уроком 10 — сайт проверяет автоматически.</p>
+</section>

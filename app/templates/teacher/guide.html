@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Подготовка · урок {{ lesson.num }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/teacher/lessons">Уроки</a> · <a href="/lesson/{{ lesson.num }}">урок {{ lesson.num }}</a></p>
+<h1>📖 Подготовка к уроку {{ lesson.num }}: {{ lesson.emoji }} {{ lesson.title }}</h1>
+<div class="row no-print">
+  <button class="btn btn-small" data-print>🖨️ Распечатать рассказ</button>
+  {% if cards %}<a class="btn btn-small btn-alt" href="/teacher/guide/{{ lesson.num }}/cards" target="_blank" rel="noopener">🃏 Карточки для печати ({{ cards|length }})</a>{% endif %}
+  <a class="btn btn-small btn-ghost" href="/lesson/{{ lesson.num }}">Страница урока →</a>
+</div>
+<p class="muted">Видишь только ты. <span class="g-say-mini">Так выделено</span> — что можно сказать почти дословно, <span class="g-ask-mini">так</span> — вопрос ученику.</p>
+{% if draft %}
+<section class="card g-draft">📝 <b>Черновик.</b> План по шагам и разбор примеров собраны из плана урока. Подробная подготовка — рассказ с фактами, иллюстрации, карточки — появится позже, как у уроков 1–3.</section>
+{% endif %}
+<div class="guide">
+{% if steps %}
+<section class="card g-steps" data-steps="guide-{{ lesson.num }}">
+  <div class="row between"><h2>✅ План по шагам</h2><button type="button" class="btn btn-small btn-ghost no-print" data-steps-reset>Снять галочки</button></div>
+  <div class="g-steps-cols">
+    {% for key, title in [("before", "До урока"), ("during", "На уроке"), ("after", "После урока")] %}
+    <div>
+      <h3>{{ title }}</h3>
+      {% for s in steps[key] %}
+      <label class="g-step"><input type="checkbox" data-step="{{ key }}-{{ loop.index }}"> <span>{{ s|md }}</span></label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% filter abbr %}{% include "guides/lesson_%d.html" % lesson.num %}{% endfilter %}
+{% if glossary %}
+<section class="card g-glossary">
+  <h2>🔤 Словарик сокращений</h2>
+  <dl>{% for term, expl in glossary %}<dt>{{ term }}</dt><dd>{{ expl }}</dd>{% endfor %}</dl>
+</section>
+{% endif %}
+</div>
+{% endblock %}

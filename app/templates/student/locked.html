@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Закрыто{% endblock %}
+{% block content %}
+<div class="card center-card">
+  <div class="big-emoji">🔒</div>
+  <h1>Урок {{ lesson.num }} ещё закрыт</h1>
+  <p class="muted">Он откроется на занятии. А пока можно порешать задачи из открытых уроков, сходить на Арену или поэкспериментировать в Песочнице.</p>
+  <div class="row center"><a class="btn" href="/map">К карте</a><a class="btn btn-alt" href="/trainer">На Арену 🏀</a></div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import oge_forecast %}
+{% block title %}ОГЭ по информатике{% endblock %}
+{% block content %}
+<h1>🎯 ОГЭ по информатике{% if user.role == 'teacher' %} — {{ student_name }}{% endif %}</h1>
+<p class="muted">Экзамен в 9 классе: 16 заданий, 150 минут, максимум 21 балл. Готовимся по ходу курса — задачи в формате экзамена встроены в уроки и помечены <span class="pill oge-pill">ОГЭ №…</span>, пробник части 1 лежит в <a href="/checks">«Проверках»</a>, а первую часть можно гонять в тренажёре вариантов — кнопка «🎲» у номера.</p>
+{{ oge_forecast(fc) }}
+<a class="card check-banner" href="/oge/mock"><span class="check-emoji">🎯</span><span><b>Пробник первой части — каждый раз новый</b><br><small>Номера 1–10 и 12 в формате ОГЭ, 30 минут, проверка разом</small></span><span class="btn btn-small">Начать →</span></a>
+<p class="small"><a href="{{ demo_url }}" target="_blank" rel="noopener">Демоверсия и спецификация ФИПИ →</a> · <a href="{{ guide_url }}" target="_blank" rel="noopener">Методические рекомендации ФИПИ по подготовке (2026) →</a></p>
+
+<div class="oge-grid">
+  {% for num, (title, how) in numbers.items() %}{% set p = progress[num] %}
+  <section class="card oge-num {{ 'has-python' if p.tasks }}" id="n{{ num }}">
+    <span class="n">{{ num }}</span>
+    <div>
+      <h3>{{ title }}</h3>
+      <div class="meta">{{ how }}</div>
+      {% if p.tasks %}
+      <ul>
+        {% for t in p.tasks %}
+        <li>{% if t.lesson <= upto %}<a href="/task/{{ t.id }}">{{ t.title.replace('ОГЭ-16: ', '').replace('ОГЭ: ', '') }}</a>{% else %}<span class="muted">🔒 {{ t.title.replace('ОГЭ-16: ', '').replace('ОГЭ: ', '') }} — урок {{ t.lesson }}</span>{% endif %}{% if t.id in solved %} ✅{% endif %}</li>
+        {% endfor %}
+      </ul>
+      <div class="meta">решено {{ p.solved }} из {{ p.tasks|length }}{% if p.trial %} · в пробнике {{ p.trial[0] }}/{{ p.trial[1] }}{% endif %}</div>
+      {% elif p.trial %}
+      <div class="meta">в пробнике {{ p.trial[0] }}/{{ p.trial[1] }}</div>
+      {% endif %}
+      {% if p.has_drill %}
+      <p><a class="btn btn-small btn-ghost" href="/oge/drill/{{ num }}">🎲 Тренажёр вариантов</a></p>
+      {% if p.drill %}<div class="meta">{{ '🏅 освоено · ' if p.drill.mastered }}тренажёр: верно {{ p.drill.ok }} из {{ p.drill.n }}</div>{% endif %}
+      {% endif %}
+      {% if p.robot %}
+      <p><a class="btn btn-small" href="/oge/robot">🤖 Тренажёр Робота</a></p>
+      <div class="meta">решено {{ p.robot[0] }} из {{ p.robot[1] }}</div>
+      {% endif %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+{% if everyone|length > 1 %}
+<h2>Все ученики</h2>
+<p class="muted small">Решённые задачи в формате номера · ✓ — номер верно решён в пробнике.</p>
+<div class="table-scroll">
+<table class="table">
+  <tr><th>Ученик</th>{% for num in numbers if progress[num].tasks or num in (4, 7, 9, 15) %}<th>№{{ num }}</th>{% endfor %}</tr>
+  {% for s, pr in everyone %}
+  <tr class="{{ 'row-current' if s.id == sid }}"><td>{{ s.display_name }}</td>
+    {% for num in numbers if progress[num].tasks or num in (4, 7, 9, 15) %}{% set p = pr[num] %}
+    <td>{% if p.tasks %}{{ p.solved }}/{{ p.tasks|length }}{% endif %}{% if p.robot %}🤖 {{ p.robot[0] }}/{{ p.robot[1] }}{% endif %}{% if p.trial %} <span class="{{ 'score score-hi' if p.trial[0] == p.trial[1] else ('score score-mid' if p.trial[0] else 'score score-lo') }}">{{ '✓' if p.trial[0] == p.trial[1] else p.trial[0] ~ '/' ~ p.trial[1] }}</span>{% endif %}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<section class="card" style="margin-top: 18px">
+  <div class="eyebrow">Что за пределами сайта</div>
+  <p class="small">Задания 13 (презентация или текстовый документ) и 14 (электронная таблица) делаются в офисных программах — на экзамене это LibreOffice. Их тренируем на занятиях на компьютере, задание 11 (поиск в папках) — тоже. Номера 1–10 и 12 можно решать
+    бесконечно: у каждого есть «🎲 Тренажёр вариантов», условия каждый раз новые. Задание 15 (Робот) на экзамене выполняется в КуМире: логику тренируем в <a href="/oge/robot">тренажёре Робота</a>, а запись на КуМире сайт показывает после решения.</p>
+</section>
+{% endblock %}

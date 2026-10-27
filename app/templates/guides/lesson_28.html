@@ -1,0 +1,45 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Свой бот в Telegram, которым можно пользоваться с телефона!</p>
+  <p>Ключевые темы: <b>@BotFather и токен; `pyTelegramBotAPI`; Команды `/start`, `/help`</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Создаём бота через @BotFather. Ток · 10</span><span style="flex: 25">Эхо-бот, `/start`, `/help`. · 25</span><span style="flex: 25">Бот играет в «Угадай число» или КН · 25</span><span style="flex: 10">Итог. · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/28/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Создаём бота через @BotFather. Токен — это пароль, его нельзя публиковать!</td></tr><tr><td>2</td><td>(25 мин) Эхо-бот, `/start`, `/help`.</td></tr><tr><td>3</td><td>(25 мин) Бот играет в «Угадай число» или КНБ.</td></tr><tr><td>4</td><td>(10 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>@BotFather и токен</li><li>`pyTelegramBotAPI`</li><li>Команды `/start`, `/help`</li></ul>
+  <p>Разбери пример «Эхо-бот (на компьютере)» по строкам:</p><pre class="code-mini">import telebot
+bot = telebot.TeleBot("ТВОЙ_ТОКЕН")
+
+@bot.message_handler(commands=["start"])
+def start(message):
+    bot.reply_to(message, "Привет! Я бот. Напиши мне что-нибудь")
+
+@bot.message_handler(func=lambda m: True)
+def echo(message):
+    bot.reply_to(message, message.text[::-1])
+
+bot.infinity_polling()</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>requests.exceptions.ConnectionError</td><td>нет сети или опечатка в URL</td><td>проверь адрес, оберни в try/except</td></tr><tr><td>KeyError в ответе API</td><td>не тот путь в JSON</td><td>распечатай data целиком и посмотри структуру</td></tr><tr><td>Бот не отвечает</td><td>неверный токен или нет infinity_polling()</td><td>проверь токен и вызов bot.infinity_polling()</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: @BotFather и токен.</li><li>Объясни своими словами: `pyTelegramBotAPI`.</li><li>Объясни своими словами: Команды `/start`, `/help`.</li>
+  </ol>
+  <p><b>Домашка:</b> Добавь 3 своих команды (`/joke`, `/coin`, `/weather`).</p>
+  <p><b>Со звёздочкой:</b> Команда, которая отвечает картинкой.</p>
+  <p>Задачи на сайте под уроком 28 — сайт проверяет автоматически.</p>
+</section>

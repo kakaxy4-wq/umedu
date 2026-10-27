@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Пробник ОГЭ: часть 1{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/oge">ОГЭ по информатике</a></p>
+<h1>🎯 Пробник первой части{% if results is none %} · вариант {{ key }}{% endif %}</h1>
+{% if user.role == 'teacher' %}<p class="pill wait">Режим просмотра: ответы преподавателя не записываются в статистику ученика</p>{% endif %}
+
+{% if results is none %}
+<p class="muted">{{ items|length }} заданий в формате ОГЭ — номера 1–10 и 12, каждый раз новые. На экзамене на всю первую часть уходит около получаса. Таймер мягкий: по истечении времени ответы всё равно примутся.</p>
+<div class="check-timer" data-started="{{ started }}" data-minutes="{{ minutes }}">⏱ <b>{{ minutes }}:00</b> <span>осталось из {{ minutes }} минут</span></div>
+<form method="post" action="/oge/mock" class="stack">
+  {{ csrf_field(user) }}
+  <input type="hidden" name="k" value="{{ key }}">
+  <input type="hidden" name="t" value="{{ t }}">
+  {% for it in items %}
+  <section class="card statement oge-drill" id="n{{ it.num }}">
+    <div class="eyebrow">№{{ it.num }} · {{ it.title }}</div>
+    {% for p in it.text %}{% if p is none %}<pre class="oge-code">{{ it.variant.code }}</pre>{% else %}<p>{{ p }}</p>{% endif %}{% endfor %}
+    {% if it.variant.table %}
+    <div class="table-scroll"><table class="table oge-table">
+      <tr>{% for c in it.variant.table[0] %}<th>{{ c }}</th>{% endfor %}</tr>
+      {% for row in it.variant.table[1:] %}<tr>{% for c in row %}{% if loop.first and it.variant.table[0][0] == '' %}<th>{{ c }}</th>{% else %}<td>{{ c }}</td>{% endif %}{% endfor %}</tr>{% endfor %}
+    </table></div>
+    {% endif %}
+    <label class="oge-answer">Ответ <input name="a{{ it.num }}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+  </section>
+  {% endfor %}
+  <button class="btn">📝 Сдать пробник</button>
+</form>
+{% else %}
+<section class="card center-card">
+  <div class="big-emoji">{{ '🏆' if score == results|length else ('💪' if score * 2 >= results|length else '📚') }}</div>
+  <h2>{{ score }} из {{ results|length }}{% if xp %} · +{{ xp }} 🏆{% endif %}</h2>
+  <p class="muted">{% if spent %}Заняло {{ spent }} мин. {% endif %}На экзамене каждое из этих заданий — 1 балл.</p>
+  <div class="row" style="justify-content: center"><a class="btn" href="/oge/mock">Новый пробник</a><a class="btn btn-ghost" href="/oge">К номерам ОГЭ</a></div>
+</section>
+<div class="table-scroll"><table class="table">
+  <tr><th>№</th><th>Тема</th><th>Твой ответ</th><th>Верный</th><th></th></tr>
+  {% for r in results %}
+  <tr><td>{{ r.num }}</td><td>{{ r.title }}</td><td>{{ r.given or '—' }}</td><td>{{ r.answer }}</td>
+    <td>{{ '✅' if r.ok else '❌' }}</td></tr>
+  {% if not r.ok %}<tr><td></td><td colspan="4" class="small muted">{{ r.explain }} <a href="/oge/drill/{{ r.num }}">Потренировать №{{ r.num }} →</a></td></tr>{% endif %}
+  {% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

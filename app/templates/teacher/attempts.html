@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }} — попытки{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/teacher/solutions">← Все задачи</a> · <a href="/task/{{ task.id }}">открыть задачу</a></div>
+<h1>{{ task.title }} <small class="muted">— {{ student_name }}</small></h1>
+<p>{{ task.text|md }}</p>
+<details class="card"><summary>Эталонное решение</summary><pre class="code-mini">{{ task.solution }}</pre></details>
+{% for a in attempts %}
+<section class="card attempt {{ 'ok' if a.passed else 'bad' }}">
+  <div class="row between"><b>{{ '✅ прошло' if a.passed else '❌ не прошло' }}</b><small class="muted">{{ a.created_at|dt }}</small></div>
+  <pre class="code-mini">{{ a.code }}</pre>
+</section>
+{% else %}<p class="muted">Попыток пока не было.</p>{% endfor %}
+{% endblock %}

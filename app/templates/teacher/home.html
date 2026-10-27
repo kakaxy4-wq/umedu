@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sid_field, csrf_field, level_bar %}
+{% block title %}Пульт преподавателя{% endblock %}
+{% block content %}
+<h1>🎛️ Пульт преподавателя</h1>
+
+{% if pending or purchases %}
+<section class="card todo-card">
+  <div class="eyebrow">🔔 Ждёт тебя · {{ pending|length + purchases|length }}</div>
+  {% for s in pending %}
+  <a class="todo-item" href="/teacher/reviews#sub{{ s.id }}">
+    <span class="todo-emoji">📬</span>
+    <span><b>Проверить домашку: {{ s.who }}, урок {{ s.lesson }}</b><br><small class="muted">сдана {{ s.created_at|dt }}{% if s.star %} · ⭐ со звёздочкой{% endif %}</small></span>
+    <span class="btn btn-small">Проверить →</span>
+  </a>
+  {% endfor %}
+  {% for p in purchases %}
+  <a class="todo-item" href="/teacher/rewards">
+    <span class="todo-emoji">🎁</span>
+    <span><b>Запрос подарка: {{ p.who }} — {{ p.title }}</b><br><small class="muted">{{ p.cost }} 💎 · выдать или отклонить</small></span>
+    <span class="btn btn-small">Ответить →</span>
+  </a>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if alerts %}
+<section class="card alerts-card">
+  <div class="row between"><div class="eyebrow">🚨 Кому нужна помощь · {{ alerts|length }}</div><a href="/teacher/students" class="small">Все ученики →</a></div>
+  <ul class="alerts">
+    {% for a in alerts[:12] %}<li class="alert-l{{ a.level }}"><span>{{ a.emoji }}</span><a href="{{ a.link }}"><b>{{ a.name }}</b> — {{ a.text }}</a></li>{% endfor %}
+  </ul>
+  {% if alerts|length > 12 %}<p class="muted small">…и ещё {{ alerts|length - 12 }}</p>{% endif %}
+</section>
+{% endif %}
+
+{% if roster|length > 1 %}
+<section class="card roster-card">
+  <div class="eyebrow">👥 Ученики</div>
+  <div class="roster">
+    {% for r in roster %}
+    <form method="post" action="/teacher/select" class="roster-item {{ 'active' if r.student.id == sid }}">
+      <input type="hidden" name="csrf" value="{{ user.csrf }}"><input type="hidden" name="student_id" value="{{ r.student.id }}"><input type="hidden" name="next" value="/teacher">
+      <button>
+        <span class="roster-name">{{ r.stats.level.emoji }} {{ r.student.display_name }}</span>
+        <small>урок {{ r.upto }} · 🏆 {{ r.stats.xp }} · за неделю +{{ r.week }}</small>
+        <small class="muted">{{ r.student.last_seen_at|ago }}{% if r.pending %} · 📬 {{ r.pending }}{% endif %}</small>
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="grid grid-home">
+  <section class="card span2 hero-card">
+    {% if current %}
+    <div class="eyebrow">👤 <a href="/teacher/student/{{ sid }}">{{ student_name }}</a> · текущий урок {{ current.num }} из 34{% if lvl %} · <a href="/teacher/student/{{ sid }}#level" title="{{ lvl.pace }}">{{ lvl.emoji }} {{ lvl.title }}</a>{% endif %}</div>
+    <h2>{{ current.emoji }} {{ current.title }}</h2>
+    <div class="row">
+      <a class="btn" href="/lesson/{{ current.num }}">План занятия →</a>
+      {% if current_guide %}<a class="btn btn-ghost" href="/teacher/guide/{{ current.num }}">📖 Подготовка</a>{% endif %}
+      {% if not (state and state.done_at) %}
+      <form method="post" action="/teacher/lesson/{{ current.num }}/done">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-alt">✅ Занятие проведено (+20 🏆)</button></form>
+      {% elif upto < 34 %}
+      <form method="post" action="/teacher/lesson/{{ upto + 1 }}/open">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-alt">🔓 Открыть урок {{ upto + 1 }}</button></form>
+      {% if lvl and lvl.title == 'Про' and upto < 33 %}
+      <form method="post" action="/teacher/lesson/{{ upto + 2 }}/open">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-ghost" title="Темп «Про»: знакомые темы — быстро, через задачи">⏩ Сразу уроки {{ upto + 1 }}–{{ upto + 2 }}</button></form>
+      {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+    <form method="post" action="/teacher/schedule" class="row schedule">
+      {{ csrf_field(user) }}{{ sid_field(sid) }}
+      <label>Следующее занятие <input type="datetime-local" name="next_lesson_at" value="{{ next_lesson_at }}"></label>
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+    {% if subject %}
+    <form method="post" action="/teacher/student/{{ sid }}/subjects" class="row schedule">
+      {{ csrf_field(user) }}<input type="hidden" name="next" value="/teacher">
+      <span>📚 Предметы</span>
+      {% for n, info in subjects_all.items() %}
+      <label class="check"><input type="checkbox" name="{{ n }}" value="1" {{ 'checked' if n in subj }}> {{ info.emoji }} {{ info.title }}</label>
+      {% endfor %}
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    {{ level_bar(me, calm) }}
+    <div class="mini-stats">
+      <div><b>{{ me.tasks_solved }}/{{ me.tasks_total }}</b><small>задач</small></div>
+      <div><b>{{ me.streak }}</b><small>серия 🔥</small></div>
+      <div><b>{{ attempts_week }}</b><small>попыток за неделю</small></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">📬 Ждут проверки</div>
+    {% for s in pending %}<p><a href="/teacher/reviews">{{ s.who }} · урок {{ s.lesson }}</a> · {{ s.created_at|dt }}{% if s.star %} ⭐{% endif %}</p>
+    {% else %}<p class="muted">Всё проверено 👍</p>{% endfor %}
+    <div class="eyebrow">🎁 Запросы наград</div>
+    {% for p in purchases %}<p><a href="/teacher/rewards">{{ p.who }} · {{ p.title }}</a> · {{ p.cost }} 💎</p>
+    {% else %}<p class="muted">Нет запросов</p>{% endfor %}
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">⚡ Выдать трофеи — {{ student_name }}</div>
+    <form method="post" action="/teacher/xp" class="stack">
+      {{ csrf_field(user) }}{{ sid_field(sid) }}
+      <label>Сколько (можно минус)<input type="number" name="amount" value="10" min="-500" max="500" required></label>
+      <label>За что<input name="reason" placeholder="Сам нашёл баг и объяснил его" required></label>
+      <button class="btn btn-small">Начислить</button>
+    </form>
+  </section>
+
+  <section class="card span2">
+    <div class="eyebrow">📊 {{ student_name }}: активность за 2 недели (трофеи по дням)</div>
+    <div class="bars">
+      {% set mx = (week|map(attribute='xp')|max) if week else 1 %}
+      {% for d in week %}
+      <div class="bar" title="{{ d.day }}: {{ d.xp }} 🏆, событий {{ d.n }}"><i style="height: {{ (100 * d.xp / (mx or 1))|int if d.xp > 0 else 2 }}%"></i><small>{{ d.day[8:10] }}</small></div>
+      {% else %}<p class="muted">Пока нет активности.</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="card span2">
+    <div class="eyebrow">📜 {{ student_name }}: последние события</div>
+    <ul class="feed">
+      {% for e in events %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>
+      {% else %}<li class="muted">Пока пусто</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

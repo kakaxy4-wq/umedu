@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ cert.heading }} — {{ cert.title }} · {{ site_name }}</title>
+<link rel="stylesheet" href="/static/css/app.css?v={{ v }}">
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  html, body { background: #e9e6f5; margin: 0; }
+  body { color: #1d1838; font-family: "Golos Text", system-ui, sans-serif; }
+  .cert-tools { display: flex; gap: 10px; justify-content: center; padding: 16px; flex-wrap: wrap; }
+  .cert-tools .muted { color: #6b6690; align-self: center; font-size: .9rem; }
+  .sheet-wrap { overflow-x: auto; padding: 0 16px 32px; }
+  .sheet {
+    width: 297mm; height: 210mm; margin: 0 auto; background: #fff; position: relative; box-sizing: border-box;
+    padding: 12mm; box-shadow: 0 10px 40px rgba(40, 20, 90, .25);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .frame {
+    height: 100%; box-sizing: border-box; border-radius: 6mm; position: relative; overflow: hidden;
+    border: 2.5mm solid transparent;
+    background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #7b2ff7, #ff7a1a, #ffc531, #7b2ff7) border-box;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 9mm 20mm 8mm;
+  }
+  .frame::before, .frame::after {
+    content: ""; position: absolute; width: 90mm; height: 90mm; border-radius: 50%; opacity: .09;
+    background: radial-gradient(circle, #7b2ff7, transparent 70%);
+  }
+  .frame::before { top: -30mm; left: -30mm; }
+  .frame::after { bottom: -30mm; right: -30mm; background: radial-gradient(circle, #ff7a1a, transparent 70%); }
+  .c-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 1; }
+  .c-site { font-size: 4.2mm; letter-spacing: .4em; text-transform: uppercase; color: #7b2ff7; font-weight: 800; }
+  .c-emoji { font-size: 18mm; line-height: 1; margin: 4mm 0 1mm; }
+  .c-heading { font-size: 14mm; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin: 0;
+    background: linear-gradient(90deg, #7b2ff7, #ff7a1a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .c-given { font-size: 5mm; color: #6b6690; margin: 3mm 0 1mm; }
+  .c-name { font-size: 13mm; font-weight: 800; margin: 0; border-bottom: .5mm solid #ded9f5; padding: 0 10mm 2mm; }
+  .c-reason { font-size: 6mm; max-width: 215mm; margin: 5mm 0 0; line-height: 1.35; }
+  .c-details { font-size: 3.8mm; color: #6b6690; max-width: 230mm; margin: 4mm 0 0; line-height: 1.5; }
+  .c-foot { width: 100%; display: flex; position: relative; z-index: 1; margin-top: 5mm; justify-content: space-between; align-items: flex-end; font-size: 4.2mm; }
+  .c-foot .sign { text-align: center; min-width: 70mm; }
+  .c-foot .line { border-top: .4mm solid #1d1838; padding-top: 1.5mm; color: #6b6690; font-size: 3.6mm; }
+  .c-foot .who { font-weight: 700; margin-bottom: 1mm; }
+  @media print {
+    html, body { background: #fff; }
+    .cert-tools { display: none; }
+    .sheet-wrap { padding: 0; overflow: visible; }
+    .sheet { box-shadow: none; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="cert-tools">
+  <button class="btn" data-print>🖨️ Печать / сохранить PDF</button>
+  <a class="btn btn-ghost" href="{{ back_url or '/certificates' }}">← Все сертификаты</a>
+  <span class="muted">В настройках печати: альбомная ориентация, поля — «нет», включить фон.</span>
+</div>
+<div class="sheet-wrap">
+  <div class="sheet sheet-fit">
+    <div class="frame">
+      <div class="c-main">
+      <div class="c-site">🐍 {{ site_name }} · курс Python</div>
+      <div class="c-emoji">{{ cert.emoji }}</div>
+      <h1 class="c-heading">{{ cert.heading }}</h1>
+      <div class="c-given">{{ 'награждается' if cert.kind == 'custom' else 'выдан' }}</div>
+      <p class="c-name">{{ holder }}</p>
+      <p class="c-reason">{{ cert.reason }}</p>
+      {% if cert.details %}<p class="c-details">{{ cert.details }}</p>{% endif %}
+      </div>
+      <div class="c-foot">
+        <div class="sign"><div class="who">{{ cert.date|dt(False) }} {{ year }} г.</div><div class="line">дата</div></div>
+        <div class="sign"><div class="who">{{ teacher_name }}</div><div class="line">преподаватель</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/static/js/app.js?v={{ v }}"></script>
+</body>
+</html>

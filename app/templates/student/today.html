@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}План на сегодня{% endblock %}
+{% block content %}
+<h1>📅 План на сегодня{% if user.role == 'teacher' %} — {{ student_name }}{% endif %}</h1>
+<p class="muted">10–15 минут: {{ plan.total }} коротких шага. Закрой все — и забирай сундук. Каждый день новый план.</p>
+
+<section class="card today-card">
+  <div class="row between"><b>Сделано {{ plan.done }} из {{ plan.total }}</b>{% if plan.complete %}<span class="pill ok">план выполнен 🎉</span>{% endif %}</div>
+  <div class="progress"><i style="width: {{ (100 * plan.done / (plan.total or 1))|int }}%"></i></div>
+  <ol class="today-steps">
+    {% for s in plan.steps %}
+    <li class="{{ 'done' if s.done }}">
+      <a href="{{ s.href }}">
+        <span class="today-emoji">{{ '✅' if s.done else s.emoji }}</span>
+        <span class="today-body"><b>{{ s.title }}</b><small class="muted">{{ s.note }}</small></span>
+        {% if not s.done %}<span class="btn btn-small">Начать →</span>{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ol>
+  <div class="today-chest">
+    {% set ci = chest_img('legendary') %}
+    {% if plan.claimed %}
+      <p>🎁 Сундук за сегодня уже открыт. Завтра — новый план!</p>
+    {% elif plan.complete and user.role == 'student' %}
+      <form method="post" action="/today/claim">{{ csrf_field(user) }}
+        <button class="btn btn-big">{% if ci %}<img src="{{ ci }}" alt="" class="today-chest-img">{% endif %} Открыть сундук!</button>
+      </form>
+    {% else %}
+      <p class="muted">{% if ci %}<img src="{{ ci }}" alt="" class="today-chest-img locked">{% endif %} Сундук откроется, когда все шаги будут сделаны.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

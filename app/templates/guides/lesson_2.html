@@ -1,0 +1,169 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Ученик различает три типа данных — целые числа, дробные и текст, — пользуется <code>//</code> и <code>%</code> в жизненных задачах и, главное, <b>перестаёт бояться красных ошибок</b>: читает сообщение и сам чинит программу.</p>
+  <div class="g-timeline-bar">
+    <span style="flex: 10">Разминка · 10</span><span style="flex: 15">Типы, // и % · 15</span><span style="flex: 20">Охота на баги · 20</span><span style="flex: 20">Практика · 20</span><span style="flex: 5">Итог</span>
+  </div>
+  <p class="muted">Всего ~70 минут. Подготовь: 5 программ с ошибками (ниже — скопируй в песочницу заранее), 47 конфет или монеток для блока про <code>//</code> и <code>%</code> — можно заменить спичками, <a href="/teacher/guide/2/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<!-- ============================================================ блок 1 -->
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">10 мин</span><h2>1. Разминка «Что выведет?»</h2></div>
+  <p>Начни с домашки: пусть ученик покажет свою анкету с рамкой и запустит её. Похвали за любую рамку, даже кривую, и спроси, что было самым сложным.</p>
+  <p class="g-say">«Сыграем в "угадай вывод". Я показываю код, ты говоришь, что напечатает Python. Потом проверяем запуском.»</p>
+  <table class="table g-ops">
+    <tr><th>Код</th><th>Ответ</th><th>На что обратить внимание</th></tr>
+    <tr><td><code>print(2 + 2)</code></td><td>4</td><td>Числа складываются.</td></tr>
+    <tr><td><code>print("2" + "2")</code></td><td>22</td><td>В кавычках — текст, он склеивается. Помнишь «5» + «5» с прошлого урока?</td></tr>
+    <tr><td><code>print("2" * 3)</code></td><td>222</td><td>Текст, умноженный на число, повторяется.</td></tr>
+    <tr><td><code>print(7 / 2)</code></td><td>3.5</td><td>Деление всегда даёт дробь, даже <code>6 / 2</code> → 3.0.</td></tr>
+    <tr><td><code>print("2" + 2)</code></td><td>ошибка!</td><td>Мостик к теме урока: «Python не знает, что ты хочешь — склеить или сложить. Давай разберёмся почему».</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ блок 2 -->
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">15 мин</span><h2>2. Типы данных, <code>//</code> и <code>%</code></h2></div>
+  <p class="g-say">«У каждого значения в Python есть тип — как у предметов в рюкзаке: тетради, ручки, яблоки. С разными типами можно делать разное: яблоко можно съесть, а тетрадь — нет.»</p>
+  <table class="table g-ops">
+    <tr><th>Тип</th><th>Что это</th><th>Примеры</th><th>Что с ним можно</th></tr>
+    <tr><td><code>int</code></td><td>целое число (от англ. <i>integer</i> — целый)</td><td><code>7</code>, <code>-3</code>, <code>2026</code></td><td>считать, сравнивать</td></tr>
+    <tr><td><code>float</code></td><td>дробное число (от <i>floating point</i> — «плавающая точка»)</td><td><code>3.5</code>, <code>0.1</code>, <code>-2.0</code></td><td>считать (дробная часть — через <b>точку</b>, не запятую!)</td></tr>
+    <tr><td><code>str</code></td><td>строка, текст (от <i>string</i> — строка, нитка)</td><td><code>"кот"</code>, <code>"7"</code>, <code>""</code></td><td>склеивать, повторять, искать буквы</td></tr>
+  </table>
+  <p>Покажи <code>type()</code>: <code>print(type(7))</code>, <code>print(type("7"))</code>, <code>print(type(7 / 1))</code>. И превращения: <code>int("12")</code> → 12, <code>str(12)</code> → "12", <code>float("2.5")</code> → 2.5.</p>
+
+  <h3>Вау-момент: компьютер ошибается в арифметике?</h3>
+  <pre class="code-mini">print(0.1 + 0.2)</pre>
+  <p class="g-ask"><b>Спроси сначала:</b> «Сколько будет?» — 0.3, конечно. А Python напишет <b>0.30000000000000004</b>.</p>
+  <p class="g-say">«Компьютер хранит числа в двоичной системе — только нулями и единицами. Число 0,1 в двоичной системе — бесконечная дробь, как 1/3 = 0,3333… у нас. Компьютер её обрезает, и появляется крошечная ошибка. Поэтому деньги в программах часто считают в копейках — целыми числами.»</p>
+
+  <h3>Делим конфеты: <code>//</code> и <code>%</code></h3>
+  <p>Высыпи 47 конфет (монеток, спичек) и предложи разделить поровну на 5 человек. Пусть ученик раскладывает руками, а потом проверит Python:</p>
+  <pre class="code-mini">candies = 47
+kids = 5
+print("Каждому:", candies // kids)
+print("Останется:", candies % kids)</pre>
+  <figure class="g-figure">
+    <svg viewBox="0 0 720 270" role="img" aria-label="47 конфет на 5 детей: по 9 каждому и 2 остаются">
+      {% for kid in range(5) %}
+      <text x="22" y="{{ 52 + kid * 42 }}" font-size="24">{{ ["🧒", "👧", "👦", "🧑", "👱"][kid] }}</text>
+      {% for c in range(9) %}
+      <circle cx="{{ 80 + c * 40 }}" cy="{{ 44 + kid * 42 }}" r="14" fill="var(--accent)" opacity=".8"/>
+      {% endfor %}
+      {% endfor %}
+      <text x="250" y="262" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">47 // 5 = 9 — каждому по 9</text>
+      <rect x="470" y="52" width="210" height="150" rx="16" fill="var(--wait-bg)" stroke="var(--wait)" stroke-width="2" stroke-dasharray="6 5"/>
+      <circle cx="545" cy="110" r="14" fill="var(--accent2)"/>
+      <circle cx="590" cy="110" r="14" fill="var(--accent2)"/>
+      <text x="575" y="160" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">47 % 5 = 2</text>
+      <text x="575" y="182" text-anchor="middle" font-size="13" fill="var(--muted)">остаток</text>
+      <text x="575" y="262" text-anchor="middle" font-size="13" fill="var(--muted)">Проверка: 9 · 5 + 2 = 47</text>
+    </svg>
+    <figcaption><code>//</code> — сколько получит каждый, <code>%</code> — сколько останется. Проверка всегда одна: частное × делитель + остаток = исходное число.</figcaption>
+  </figure>
+
+  <h3>Где в жизни прячется остаток</h3>
+  <div class="g-facts">
+    <div class="g-fact"><span>🕒</span><p><b>Часы.</b> Сейчас 22:00, через 5 часов будет <code>(22 + 5) % 24</code> = 3 часа ночи. Циферблат — это и есть остаток.</p></div>
+    <div class="g-fact"><span>⚖️</span><p><b>Чётное или нечётное.</b> Число чётное, если <code>n % 2</code> равно 0. Так игры решают, чей ход.</p></div>
+    <div class="g-fact"><span>🔢</span><p><b>Последняя цифра:</b> <code>2026 % 10</code> = 6. А <code>2026 // 10</code> = 202 — число без последней цифры.</p></div>
+    <div class="g-fact"><span>📅</span><p><b>Дни недели.</b> Если сегодня понедельник, то через 100 дней — <code>100 % 7</code> = 2 дня вперёд, то есть среда.</p></div>
+  </div>
+  <figure class="g-figure">
+    <svg viewBox="0 0 720 250" role="img" aria-label="Часы как остаток от деления">
+      <circle cx="130" cy="125" r="100" fill="var(--bg2)" stroke="var(--accent)" stroke-width="4"/>
+      {% set pts = [(130, 43, "12"), (171, 54, "1"), (201, 84, "2"), (212, 130, "3"), (201, 176, "4"), (171, 206, "5"), (130, 217, "6"), (89, 206, "7"), (59, 176, "8"), (48, 130, "9"), (59, 84, "10"), (89, 54, "11")] %}
+      {% for x, y, label in pts %}
+      <text x="{{ x }}" y="{{ y + 6 }}" text-anchor="middle" font-size="17" font-weight="700" fill="{{ 'var(--accent2)' if label == '3' else 'var(--text)' }}">{{ label }}</text>
+      {% endfor %}
+      <line x1="130" y1="125" x2="190" y2="125" stroke="var(--accent2)" stroke-width="5" stroke-linecap="round"/>
+      <line x1="130" y1="125" x2="130" y2="62" stroke="var(--text)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="130" cy="125" r="6" fill="var(--text)"/>
+      <text x="280" y="80" font-size="20" font-weight="800" fill="var(--text)">15 часов на циферблате — это 3</text>
+      <text x="280" y="115" font-size="18" font-family="var(--mono)" fill="var(--accent)">print(15 % 12)   # 3</text>
+      <text x="280" y="155" font-size="16" fill="var(--muted)">Стрелка прошла круг (12) и ещё 3 часа.</text>
+      <text x="280" y="182" font-size="16" fill="var(--muted)">Остаток от деления — это «что осталось после</text>
+      <text x="280" y="205" font-size="16" fill="var(--muted)">целых кругов».</text>
+    </svg>
+    <figcaption>Нарисуй циферблат на листке и спроси: «Сколько будет на часах через 30 часов, если сейчас 12?» — <code>30 % 12</code> = 6.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ блок 3 -->
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">20 мин</span><h2>3. Охота на баги</h2></div>
+  <p class="g-say">«У программистов ошибки бывают каждый день — у новичков и у самых крутых. Разница в одном: опытный программист читает сообщение об ошибке, а новичок пугается. Сегодня научимся читать.»</p>
+
+  <figure class="g-figure">
+    <svg viewBox="0 0 720 250" role="img" aria-label="Как читать сообщение об ошибке">
+      <rect x="20" y="20" width="680" height="120" rx="12" fill="var(--code-bg)"/>
+      <text x="40" y="52" font-size="15" font-family="var(--mono)" fill="var(--code-text)">Traceback (most recent call last):</text>
+      <text x="40" y="78" font-size="15" font-family="var(--mono)" fill="var(--code-text)">  File "main.py", line <tspan fill="var(--gold)" font-weight="800">2</tspan>, in &lt;module&gt;</text>
+      <text x="40" y="104" font-size="15" font-family="var(--mono)" fill="var(--code-text)">    prnt("Привет, " + name)</text>
+      <text x="40" y="128" font-size="15" font-family="var(--mono)" fill="#ff8fa3" font-weight="800">NameError: name 'prnt' is not defined</text>
+      <rect x="20" y="160" width="215" height="76" rx="12" fill="var(--wait-bg)" stroke="var(--gold)" stroke-width="2"/>
+      <text x="127" y="190" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)">① Где?</text>
+      <text x="127" y="214" text-anchor="middle" font-size="13" fill="var(--muted)">номер строки — line 2</text>
+      <rect x="252" y="160" width="215" height="76" rx="12" fill="var(--bad-bg)" stroke="var(--bad)" stroke-width="2"/>
+      <text x="360" y="190" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)">② Что за ошибка?</text>
+      <text x="360" y="214" text-anchor="middle" font-size="13" fill="var(--muted)">слово перед двоеточием</text>
+      <rect x="484" y="160" width="215" height="76" rx="12" fill="var(--ok-bg)" stroke="var(--ok)" stroke-width="2"/>
+      <text x="592" y="190" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)">③ Подсказка</text>
+      <text x="592" y="214" text-anchor="middle" font-size="13" fill="var(--muted)">«prnt не определено»</text>
+    </svg>
+    <figcaption>Читаем <b>снизу вверх</b>: последняя строка — что случилось, выше — где. Сайт ещё и переводит сообщение на русский и подсвечивает строку, но учим читать оригинал: в Thonny и VS Code перевода не будет.</figcaption>
+  </figure>
+
+  <h3>5 программ с ошибками — скопируй в песочницу заранее</h3>
+  <p>Давай по одной. Ученик запускает, читает ошибку вслух («где, что, подсказка»), чинит. Не подсказывай сразу — дай 1–2 минуты подумать.</p>
+  <table class="table g-ops">
+    <tr><th>Программа</th><th>Ошибка</th><th>Как починить</th></tr>
+    <tr><td><code>prnt("Привет")</code></td><td>NameError</td><td>Опечатка: <code>print</code>. Python не знает слова, которого нет.</td></tr>
+    <tr><td><code>print("Привет)</code></td><td>SyntaxError</td><td>Кавычка не закрыта — Python не понял, где кончается текст.</td></tr>
+    <tr><td><code>age = 13<br>print("Мне " + age)</code></td><td>TypeError</td><td>Нельзя склеить текст и число: <code>str(age)</code> или запятая в print.</td></tr>
+    <tr><td><code>n = int("пять")</code></td><td>ValueError</td><td>int() понимает только цифры. Ввод «пять» вместо 5 — ошибка пользователя.</td></tr>
+    <tr><td><code>print(10 / 0)</code></td><td>ZeroDivisionError</td><td>На ноль делить нельзя — и в математике, и в Python.</td></tr>
+  </table>
+  <p class="g-ask"><b>Бонус:</b> пример «Найди и исправь ошибку» из урока — там три ошибки сразу. Python показывает только первую: починил — запусти снова — увидишь следующую. Так и работают программисты.</p>
+
+  <h3>Цена одной ошибки — истории для рассказа</h3>
+  <ul class="g-list">
+    <li><b>«Фобос-1» (1988).</b> Советская станция летела к Марсу и его спутнику Фобосу. В одной из команд, переданных с Земли, оказалась ошибка — и станция отключила систему ориентации. Солнечные батареи отвернулись от Солнца, и связь с аппаратом потеряли. Одна неверная строчка — и межпланетная станция потеряна.</li>
+    <li><b>«Ариан-5» (1996).</b> Европейская ракета взорвалась через 37 секунд после первого старта. Программа пыталась уложить большое дробное число (float) в маленькую ячейку для целых чисел — получилось переполнение, и компьютер ракеты сошёл с ума. <b>Ошибка типов</b> — ровно то, что мы сегодня разбираем.</li>
+  </ul>
+  <p class="g-tip">💡 Вывод для ученика: ошибка — нормальная часть работы. Важно не «не ошибаться», а уметь найти и починить. Поэтому на сайте есть достижение «Победил баг».</p>
+</section>
+
+<!-- ============================================================ блок 4 -->
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">20 мин</span><h2>4. Практика: задачи на сайте</h2></div>
+  <p>Задачи под уроком проверяются автоматически. Твоя роль — не давать ответ, а задавать наводящие вопросы. Подсказка на сайте появляется после двух неудачных попыток.</p>
+  <table class="table g-ops">
+    <tr><th>Задача</th><th>Наводящий вопрос</th><th>Ключ</th></tr>
+    <tr><td>🐞 Охота на баги</td><td>«Что Python пишет в последней строке?»</td><td>три ошибки: imput, prnt, скобка, плюс int()</td></tr>
+    <tr><td>⏱️ Калькулятор времени</td><td>«Сколько минут в часе? Сколько целых часов в 125 минутах?»</td><td><code>m // 60</code> и <code>m % 60</code></td></tr>
+    <tr><td>🔢 Разбери число</td><td>«Как получить последнюю цифру? А без последней цифры?»</td><td><code>n // 10</code> и <code>n % 10</code></td></tr>
+    <tr><td>🍕 Сколько пиццы</td><td>«Если нужно 9 кусков, хватит одной пиццы? А 17?»</td><td>округление вверх: <code>(x + 7) // 8</code></td></tr>
+    <tr><td>🎯 Выстрелы до победы</td><td>«Если у врага 10 hp (очков здоровья), а выстрел снимает 3, — хватит 3 выстрелов?»</td><td><code>(hp + dmg - 1) // dmg</code></td></tr>
+  </table>
+  <p class="g-tip">💡 Округление вверх — частая трудность. Объясни на пицце: «если кусков нужно чуть больше, чем в целых пиццах, нужна ещё одна». Прибавляем «почти целую пиццу» (7 кусков) и делим нацело.</p>
+  <p>Если остались силы — конвертер единиц:</p>
+  <pre class="code-mini">km = float(input("Километры: "))
+print("Это", km * 1000, "метров")
+print("Пешком примерно", km / 5, "часа")</pre>
+</section>
+
+<!-- ============================================================ блок 5 -->
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">5 мин</span><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Назови три типа данных и приведи пример каждого.</li>
+    <li>Что выведет <code>print(23 // 4, 23 % 4)</code>? (5 3)</li>
+    <li>Как узнать, что число чётное?</li>
+    <li>Ошибка «NameError» — что она обычно значит? (опечатка в имени)</li>
+    <li>Откуда читать сообщение об ошибке — сверху или снизу?</li>
+  </ol>
+  <p><b>Домашка:</b> «Калькулятор времени» — минуты в часы и минуты. <b>Со звёздочкой:</b> конвертер игровой валюты любимой игры в рубли — узнай у ученика, во что он играет, и подскажи курс.</p>
+</section>

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Кабинет родителя{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="login-card card">
+  <div class="login-hero">👪</div>
+  <h1>Кабинет родителя</h1>
+  <p class="muted">Ребёнок: <b>{{ st.display_name }}</b> · {{ site_name }}</p>
+  {% if fam %}
+  <p>Вы уже вошли как <b>{{ fam.display_name }}</b>.</p>
+  <form method="post" action="/parent/{{ token }}/link">{{ fam_csrf(fam) }}<button class="btn btn-big">➕ Добавить {{ st.display_name }} в мой кабинет</button></form>
+  {% else %}
+  {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
+  <form method="post" action="/parent/{{ token }}/account" class="stack">
+    <label>Как к вам обращаться<input name="name" value="{{ form.name or '' }}" maxlength="60" required autofocus placeholder="Например, Анна Сергеевна"></label>
+    <label>Логин<input name="login" value="{{ form.login or '' }}" autocomplete="username" autocapitalize="off" required pattern="[a-zA-Z0-9_.\-]{2,32}"></label>
+    <label>Пароль (от 8 символов)<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+    <p class="muted small">Можно взять такой: <code>{{ suggested }}</code> — его легко запомнить.</p>
+    <label class="check"><input type="checkbox" name="consent" value="1" required> <span>Я родитель или законный представитель ребёнка и согласен(на) на обработку данных моих и ребёнка по <a href="/privacy" target="_blank" rel="noopener">политике</a>.</span></label>
+    <button class="btn btn-big">Завести кабинет</button>
+  </form>
+  <p class="muted small">Ни телефона, ни почты не нужно. Уже есть кабинет? <a href="/family/login">Войдите</a> и снова откройте ссылку.</p>
+  {% endif %}
+</div>
+{% endblock %}

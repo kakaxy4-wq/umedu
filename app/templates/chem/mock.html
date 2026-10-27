@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Пробник {{ m.ex.title }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="{{ '/chem/teacher/mocks' if user.role == 'teacher' else '/chem/mock' }}">← Пробники</a></p>
+<h1>⏱️ Пробник {{ m.ex.title }}{% if user.role == 'teacher' %} — {{ who }}{% endif %}</h1>
+
+{% if m.status == 'given' %}
+<section class="card">
+  <p>{{ m.ex.numbers|length }} {{ "задания" if m.ex.numbers|length % 10 in (2, 3, 4) and m.ex.numbers|length % 100 not in (12, 13, 14) else "заданий" }} · {{ m.ex.minutes }} минут · максимум {{ m.ex.max }} первичных баллов.</p>
+  <ul class="small-list">
+    <li>Время пойдёт сразу после нажатия «Начать» — как на экзамене.</li>
+    <li>Ответы части 1 сохраняются автоматически, можно возвращаться к любому заданию.</li>
+    <li>Развёрнутые задания ({{ m.ex.long|sort|join(', ') }}) реши на бумаге и в конце приложи фото.</li>
+    <li>Таблица Менделеева и таблица растворимости разрешены — как на экзамене.</li>
+  </ul>
+  {% if user.role == 'student' %}
+  <form method="post" action="/chem/mock/{{ m.id }}/start" data-confirm="Начать? Время пойдёт сразу — {{ m.ex.minutes }} минут.">
+    {{ csrf_field(user) }}<button class="btn btn-big">▶ Начать</button></form>
+  {% else %}<p class="muted">Ученик ещё не начал.</p>{% endif %}
+</section>
+
+{% elif m.status == 'running' %}
+{% if user.role == 'student' %}
+<div class="mock-timer card" data-mock-timer="{{ left|int }}" data-mock-id="{{ m.id }}">
+  <span>⏳ Осталось <b class="mock-left">—</b></span>
+  <span class="small muted mock-saved">Ответы сохраняются автоматически</span>
+</div>
+<form method="post" action="/chem/mock/{{ m.id }}/finish" enctype="multipart/form-data" id="mock-form" data-confirm="Сдать пробник? Изменить ответы будет нельзя.">
+  {{ csrf_field(user) }}
+  {% for r in rows %}
+  <section class="card mock-task {{ 'long' if r.long }}" id="n{{ r.num }}">
+    <div class="eyebrow">№{{ r.num }} · {{ r.title }} · {{ r.max }} балл{{ 'а' if r.max in (2, 3, 4) else ('ов' if r.max >= 5 else '') }}</div>
+    <p class="chem-text">{{ r.task.text|chem }}</p>
+    {% if r.long %}<p class="small muted">✍️ Реши на бумаге. Фото всех развёрнутых решений приложишь в конце.</p>
+    {% else %}<label class="mock-answer">Ответ <input name="a_{{ r.num }}" value="{{ r.given }}" autocomplete="off" inputmode="decimal"
+      placeholder="{{ 'число' if r.task.mode == 'num' else 'цифры' }}" data-mock-answer="{{ r.num }}"></label>{% endif %}
+  </section>
+  {% endfor %}
+  {% if long_max %}
+  <section class="card"><label>📷 Фото развёрнутых решений (можно несколько; можно добавить и после сдачи)
+    <input type="file" name="files" accept="image/*,.pdf,.heic" multiple></label></section>
+  {% endif %}
+  <button class="btn btn-big">✅ Сдать пробник</button>
+</form>
+{% else %}
+<section class="card"><p>Ученик решает пробник. Осталось около {{ ((left or 0) / 60)|round|int }} мин.</p></section>
+{% endif %}
+
+{% else %}
+<section class="card mock-score">
+  <div class="big">{{ m.score }}<small class="muted"> / {{ m.ex.max }}</small></div>
+  <div>
+    <div>Часть 1 (краткий ответ): <b>{{ m.points.values()|sum }}</b> из {{ short_max }}</div>
+    <div>Развёрнутая часть: {% if m.status == 'checked' %}<b>{{ m.long_points.values()|sum }}</b> из {{ long_max }}{% else %}<span class="pill wait">ждёт проверки преподавателем</span>{% endif %}</div>
+    <small class="muted">Первичные баллы. Перевод в отметку и тестовый балл публикует Рособрнадзор перед экзаменом.</small>
+    {% if m.comment %}<div class="teacher-comment">💬 {{ m.comment }}</div>{% endif %}
+  </div>
+</section>
+
+<div class="table-wrap"><table class="table mock-table">
+  <tr><th>№</th><th>Тема</th><th>Ответ</th><th>Верно</th><th>Баллы</th></tr>
+  {% for r in rows %}
+  <tr class="{{ 'row-ok' if r.got == r.max else ('' if r.long else 'row-bad') }}">
+    <td><a href="#s{{ r.num }}">{{ r.num }}</a></td><td>{{ r.title }}</td>
+    <td>{{ '✍️ на бумаге' if r.long else (r.given or '—') }}</td><td>{{ r.right if r.right is not none else '' }}</td>
+    <td>{{ r.got if r.got is not none else '…' }} / {{ r.max }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+<h2 id="files">📷 Фото развёрнутых решений</h2>
+<p>{% for f in files %}<a class="pill" href="/chem/mock-file/{{ f.id }}" target="_blank">📎 {{ f.file_name }}</a> {% else %}<span class="muted">Фото нет.</span>{% endfor %}</p>
+{% if user.role == 'student' and m.status == 'finished' and long_max %}
+<form method="post" action="/chem/mock/{{ m.id }}/files" enctype="multipart/form-data" class="row">
+  {{ csrf_field(user) }}<input type="file" name="files" accept="image/*,.pdf,.heic" multiple required><button class="btn btn-small">Добавить фото</button>
+</form>
+{% endif %}
+
+{% if user.role == 'teacher' and long_max %}
+<section class="card teacher-box">
+  <div class="eyebrow">🎛️ Баллы за развёрнутую часть</div>
+  <form method="post" action="/chem/teacher/mock/{{ m.id }}/grade" class="stack">
+    {{ csrf_field(user) }}
+    <div class="row wrap">
+    {% for r in rows if r.long %}
+      <label>№{{ r.num }} (из {{ r.max }})<input name="l_{{ r.num }}" type="number" min="0" max="{{ r.max }}" value="{{ r.got if r.got is not none else '' }}" class="num" required></label>
+    {% endfor %}
+    </div>
+    <label>Комментарий ученику<textarea name="comment" rows="2">{{ m.comment }}</textarea></label>
+    <button class="btn">Сохранить баллы</button>
+  </form>
+</section>
+{% endif %}
+
+<h2>Разбор</h2>
+{% for r in rows %}
+<details class="card mock-task" id="s{{ r.num }}">
+  <summary><b>№{{ r.num }}</b> · {{ r.title }} — {{ r.got if r.got is not none else '…' }} / {{ r.max }}</summary>
+  <p class="chem-text">{{ r.task.text|chem }}</p>
+  {% if r.why %}<div class="chem-sample">{{ r.why|chem }}</div>{% endif %}
+</details>
+{% endfor %}
+{% endif %}
+{% endblock %}

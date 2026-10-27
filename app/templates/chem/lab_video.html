@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Эффектные опыты{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/chem/lab">← Лаборатория</a></div>
+<h1>🎬 Эффектные опыты</h1>
+<p class="muted">Посмотри опыт и ответь: что наблюдаем? Признаки реакций нужны в ОГЭ (12, 17, 23) и ЕГЭ (24).
+  Сейчас опытов: {{ items|length }} из {{ total }} — новые появляются по мере съёмки.</p>
+<div class="video-grid">
+  {% for it in items %}
+  <section class="card video-card" data-video-quiz="{{ it.id }}">
+    <video src="/static/video/chem/{{ it.id }}.mp4" poster="/static/video/chem/{{ it.id }}.jpg" controls muted playsinline preload="none"></video>
+    <h3>Опыт {{ loop.index }}{% if it.reagents %}: {{ it.reagents|chem }}{% endif %} {% if it.id in solved %}<span class="pill ok">✅ решён</span>{% endif %}</h3>
+    <p class="small muted">Посмотри видео. Что наблюдаем?</p>
+    <div class="video-options">
+      {% for o in it.options %}<button type="button" class="btn btn-ghost btn-small" data-answer="{{ loop.index0 }}">{{ o }}</button>{% endfor %}
+    </div>
+    <div class="video-result" hidden></div>
+  </section>
+  {% else %}
+  <div class="card center-card"><div class="big-emoji">🎬</div><p>Видео опытов скоро появятся.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

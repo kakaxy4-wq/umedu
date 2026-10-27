@@ -1,0 +1,14 @@
+{% macro hw_pill(h) -%}
+{% if h.status == 'checked' %}<span class="pill ok">✅ проверено{% if h.score is not none %} · {{ h.score }}{% if h.max_score %}/{{ h.max_score }}{% endif %}{% endif %}</span>
+{% elif h.status == 'submitted' %}<span class="pill wait">⏳ на проверке</span>
+{% elif h.comment %}<span class="pill bad">🔧 доработать</span>
+{% else %}<span class="pill">📝 задано</span>{% endif %}
+{%- endmacro %}
+
+{% macro money(v) -%}{{ '{:,}'.format(v).replace(',', ' ') }} ₽{%- endmacro %}
+
+{% macro when(iso) -%}{{ iso[8:10] }}.{{ iso[5:7] }}{% if iso|length > 10 %} в {{ iso[11:16] }}{% endif %}{%- endmacro %}
+
+{% macro status_pill(l, statuses) -%}
+{% set s = statuses[l.status] %}<span class="pill lesson-{{ l.status }}">{{ s[0] }} {{ s[1] }}{% if l.status == 'missed' %}{{ ' · оплачивается' if l.charged else ' · без оплаты' }}{% endif %}</span>
+{%- endmacro %}

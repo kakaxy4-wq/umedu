@@ -1,0 +1,62 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Игра «Поймай яблоко»: корзина, падающие яблоки, очки и жизни.</p>
+  <p>Ключевые темы: <b>`Rect` и `colliderect`; Текст на экране; Жизни и Game Over</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Разбор домашнего задания. · 10</span><span style="flex: 30">Падающие яблоки, столкновения чере · 30</span><span style="flex: 20">Счёт, жизни, текст `pygame.font`. · 20</span><span style="flex: 10">Итог. · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/21/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Разбор домашнего задания.</td></tr><tr><td>2</td><td>(30 мин) Падающие яблоки, столкновения через `Rect`.</td></tr><tr><td>3</td><td>(20 мин) Счёт, жизни, текст `pygame.font`.</td></tr><tr><td>4</td><td>(10 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`Rect` и `colliderect`</li><li>Текст на экране</li><li>Жизни и Game Over</li></ul>
+  <p>Разбери пример «Ловим яблоки» по строкам:</p><pre class="code-mini">import pygame, random
+pygame.init()
+screen = pygame.display.set_mode((600, 600))
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 40)
+basket = pygame.Rect(260, 560, 80, 20)
+apple = pygame.Rect(random.randint(0, 580), 0, 20, 20)
+score, lives, speed = 0, 3, 4
+while lives &gt; 0:
+    for e in pygame.event.get():
+        if e.type == pygame.QUIT:
+            lives = 0
+    keys = pygame.key.get_pressed()
+    basket.x += (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * 8
+    apple.y += speed
+    if apple.colliderect(basket):
+        score += 1; speed += 0.3
+        apple.topleft = (random.randint(0, 580), 0)
+    elif apple.y &gt; 600:
+        lives -= 1
+        apple.topleft = (random.randint(0, 580), 0)
+    screen.fill((135, 206, 235))
+    pygame.draw.rect(screen, (139, 69, 19), basket)
+    pygame.draw.circle(screen, (220, 20, 60), apple.center, 10)
+    screen.blit(font.render(f"Очки: {score}  Жизни: {lives}", True, (0, 0, 0)), (10, 10))
+    pygame.display.flip()
+    clock.tick(60)
+pygame.quit()
+print("Игра окончена! Очки:", score)</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Программа падает с ошибкой</td><td>читай сообщение снизу вверх</td><td>последняя строка — причина, выше — где искать</td></tr><tr><td>Код работает не так, как ожидал</td><td>сравни с примером построчно</td><td>запусти по шагам в песочнице</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `Rect` и `colliderect`.</li><li>Объясни своими словами: Текст на экране.</li><li>Объясни своими словами: Жизни и Game Over.</li>
+  </ol>
+  <p><b>Домашка:</b> Добавь бомбы, которые нельзя ловить, и рост скорости.</p>
+  <p><b>Со звёздочкой:</b> Экран Game Over с рекордом в файле. Или сделай вариант «Броски в кольцо» 🏀: мяч летит по дуге, кольцо двигается.</p>
+  <p>Задачи на сайте под уроком 21 — сайт проверяет автоматически.</p>
+</section>

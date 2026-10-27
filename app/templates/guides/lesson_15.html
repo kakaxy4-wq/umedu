@@ -1,0 +1,38 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Сортировка, статистика и генератор паролей. А ещё переходим на VS Code — как у профи.</p>
+  <p>Ключевые темы: <b>`sorted`, `sum`, `max`, `min`; `enumerate`; Модуль `string`; VS Code</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 15">Ставим VS Code. · 15</span><span style="flex: 15">`sorted`, `sum`, `max`, `min`, `re · 15</span><span style="flex: 15">Статистика оценок, «топ-5 игр». · 15</span><span style="flex: 20">Генератор паролей. Задачи на сайте · 20</span><span style="flex: 5">Итог. · 5</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/15/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(15 мин) Ставим VS Code.</td></tr><tr><td>2</td><td>(15 мин) `sorted`, `sum`, `max`, `min`, `remove`, `pop`, `enumerate`.</td></tr><tr><td>3</td><td>(15 мин) Статистика оценок, «топ-5 игр».</td></tr><tr><td>4</td><td>(20 мин) Генератор паролей. Задачи на сайте.</td></tr><tr><td>5</td><td>(5 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`sorted`, `sum`, `max`, `min`</li><li>`enumerate`</li><li>Модуль `string`</li><li>VS Code</li></ul>
+  <p>Разбери пример «Генератор паролей» по строкам:</p><pre class="code-mini">import random, string
+symbols = string.ascii_letters + string.digits + "!@#$%"
+for _ in range(5):
+    password = "".join(random.choice(symbols) for _ in range(12))
+    print(password)</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>IndexError: list index out of range</td><td>индекс за пределами списка</td><td>индексы идут с 0, последний — len(list) - 1</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `sorted`, `sum`, `max`, `min`.</li><li>Объясни своими словами: `enumerate`.</li><li>Объясни своими словами: Модуль `string`.</li><li>Объясни своими словами: VS Code.</li>
+  </ol>
+  <p><b>Домашка:</b> «Лотерея»: компьютер выбирает 6 чисел из 49 (`random.sample`), игрок вводит свои — сколько совпало?</p>
+  <p><b>Со звёздочкой:</b> Сколько в среднем нужно сыграть, чтобы угадать 3 числа? Запусти 10 000 раз.</p>
+  <p>Задачи на сайте под уроком 15 — сайт проверяет автоматически.</p>
+</section>

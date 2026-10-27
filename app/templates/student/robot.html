@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Робот: {{ task.title }}{{ ' — как на экзамене' if exam }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/oge/robot">← Робот</a></p>
+<header class="task-head">
+  <h1>🤖 {{ task.title }}</h1>
+  <div class="row">
+    <span class="pill">{{ '⭐' * task.level }}</span>
+    <span class="pill">+{{ xp }} 🏆</span>
+    <a class="pill oge-pill" href="/oge#n15">🎯 ОГЭ №15</a>
+    <span id="robot-badge" class="pill {{ 'ok' if solved }}">{{ '✅ Решено' if solved else 'Не решено' }}</span>
+    {% if exam %}<a class="pill" href="/oge/robot/{{ task.id }}">📘 Учебный режим</a>
+    {% else %}<a class="pill" href="/oge/robot/{{ task.id }}?exam=1" title="Без подсказок, с чистого листа, поля проверки неизвестны">🎓 Как на экзамене</a>{% endif %}
+  </div>
+</header>
+
+<section class="card statement">
+  {% if exam %}<p class="pill wait">🎓 Как на экзамене: подсказок нет, программа пишется с чистого листа. Кнопка «Сдать» проверит её
+    на полях, которых ты не видишь, и скажет только итог: 2 балла или 0.</p>{% endif %}
+  <p>{{ task.text }}</p>
+  {% if not exam %}<details><summary>💡 Подсказка</summary><p>{{ task.hint }}</p></details>{% endif %}
+</section>
+
+<div id="robot-app" class="robot-app" data-task="{{ task.id }}" data-user="{{ user.id }}"{% if exam %} data-exam="1"{% endif %}>
+  <script type="application/json" id="robot-fields">{{ fields|tojson }}</script>
+  <section class="card robot-board">
+    <div class="row between">
+      <div class="robot-tabs" role="tablist"></div>
+      <label class="small check"><input type="checkbox" data-robot-goal checked> показать цель</label>
+    </div>
+    <div class="robot-svg" aria-label="Поле Робота"></div>
+    <div class="row small muted robot-legend">
+      <span><i class="lg lg-robot"></i> Робот</span><span><i class="lg lg-goal"></i> надо закрасить</span>
+      <span><i class="lg lg-paint"></i> закрашено</span><span><i class="lg lg-extra"></i> лишнее</span>
+      <label class="robot-speed">скорость <input type="range" min="1" max="5" value="3" data-robot-speed></label>
+    </div>
+  </section>
+
+  <section class="card robot-code codebox" data-ready="1"><!-- data-ready: стили редактора общие, но CodeBox тут не нужен -->
+    <div class="cb-bar">
+      <button type="button" class="btn btn-run" data-robot-run>▶ Запустить</button>
+      <button type="button" class="btn btn-check" data-robot-check>{{ '📝 Сдать' if exam else '✔ Проверить на всех полях' }}</button>
+      <button type="button" class="btn btn-ghost" data-robot-reset title="Вернуть исходный код">↺</button>
+      <span class="cb-status" data-robot-status></span>
+    </div>
+    <textarea data-robot-code spellcheck="false" autocapitalize="off">{{ code }}</textarea>
+    <div class="robot-result" data-robot-result hidden></div>
+    <script type="application/json" id="robot-starter">{{ starter|tojson }}</script>
+  </section>
+</div>
+
+<details class="card">
+  <summary><b>📒 Команды Робота</b></summary>
+  <table class="table robot-help">
+    <tr><th>Python</th><th>Что делает</th><th>КуМир</th></tr>
+    {% for py, what, ku in help %}<tr><td><code>{{ py }}</code></td><td>{{ what }}</td><td><code>{{ ku }}</code></td></tr>{% endfor %}
+  </table>
+</details>
+
+<section class="card robot-answer" data-robot-answer {% if not answer %}hidden{% endif %}>
+  <div class="eyebrow">🏁 Эталонное решение</div>
+  <div class="grid grid-2">
+    <div><b>Python</b><pre data-robot-sol-py>{{ answer.solution if answer else '' }}</pre></div>
+    <div><b>КуМир — так на экзамене</b><pre data-robot-sol-ku>{{ answer.kumir if answer else '' }}</pre></div>
+  </div>
+  {% if next_task %}<p><a class="btn" href="/oge/robot/{{ next_task.id }}">Следующая: {{ next_task.title }} →</a></p>{% endif %}
+</section>
+{% endblock %}

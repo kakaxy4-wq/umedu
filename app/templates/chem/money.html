@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "chem/_macros.html" import money, when %}
+{% block title %}Оплаты{% endblock %}
+{% block content %}
+{% set months = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'] %}
+<h1>💰 Оплаты</h1>
+<div class="row between">
+  <a class="btn btn-small btn-ghost" href="/chem/teacher/money?month={{ prev }}">← {{ months[prev[5:7]|int - 1] }}</a>
+  <b>{{ months[month[5:7]|int - 1]|capitalize }} {{ month[:4] }}</b>
+  <a class="btn btn-small btn-ghost" href="/chem/teacher/money?month={{ nxt }}">{{ months[nxt[5:7]|int - 1] }} →</a>
+</div>
+
+<div class="grid grid-2" style="margin-top: 14px">
+  <section class="card"><div class="eyebrow">Получено за месяц</div><div class="big-number">{{ money(total) }}</div><small class="muted">записей: {{ rows|length }}</small></section>
+  <section class="card"><div class="eyebrow">Занятий к оплате за месяц</div><div class="big-number">{{ lessons_n }}</div><small class="muted">на сумму {{ money(lessons_sum) }}</small></section>
+</div>
+
+<section class="card">
+  <div class="row between"><div class="eyebrow">Записи</div><a class="btn btn-small btn-ghost" href="/chem/teacher/money.csv?month={{ month }}">⬇️ Скачать для Excel</a></div>
+  {% if rows %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Дата</th><th>Ученик</th><th>Сумма</th><th>Комментарий</th></tr>
+    {% for r in rows %}<tr><td>{{ when(r.paid_at) }}</td><td><a href="/chem/teacher/student/{{ r.student_id }}#money">{{ r.who }}</a></td><td>{{ money(r.amount) }}</td><td>{{ r.note }}</td></tr>{% endfor %}
+  </table></div>
+  {% else %}<p class="muted">В этом месяце оплат не было.</p>{% endif %}
+</section>
+
+{% if debtors %}
+<section class="card">
+  <div class="eyebrow">Должны сейчас</div>
+  <ul class="clean-list">{% for d in debtors %}<li><a href="/chem/teacher/student/{{ d.student.id }}#money">{{ d.student.display_name }}</a>{% if not d.student.active %} <small class="muted">(в архиве)</small>{% endif %} — <b class="bad-text">{{ money(-d.balance) }}</b></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

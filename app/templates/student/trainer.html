@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Арена{% endblock %}
+{% block content %}
+<h1>🏀 Арена</h1>
+<p class="muted">60 секунд, считаем в уме. Ответил быстрее чем за 3 секунды — <b>трёхочковый</b>, иначе двухочковый. Пять верных подряд — 🔥 серия. За каждые 2 верных ответа +1 🏆 (до {{ cap }} в день). Для программиста особенно полезны степени двойки, <code>//</code> и <code>%</code> и двоичная система — они будут на ОГЭ!</p>
+
+<div id="trainer" class="card trainer">
+  <div class="tr-start">
+    <div class="mode-grid">
+      {% for key, title in modes.items() %}
+      <button class="mode-btn" data-mode="{{ key }}" data-title="{{ title }}">
+        <b>{{ title }}</b>
+        <small>рекорд: <span data-best="{{ key }}">{{ best.get(key, 0) }}</span></small>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="tr-game" hidden>
+    <div class="tr-top">
+      <span class="tr-mode"></span>
+      <span>⏱ <b class="tr-timer">60</b></span>
+      <span>✔ <b class="tr-score">0</b></span>
+      <span>🏀 <b class="tr-points">0</b> очк.</span>
+    </div>
+    <div class="tr-bar"><i></i></div>
+    <div class="tr-q">…</div>
+    <form class="tr-form" autocomplete="off">
+      <input class="tr-input" inputmode="numeric" autocomplete="off" aria-label="Ответ">
+      <button class="btn">⏎</button>
+    </form>
+    <div class="tr-flash"></div>
+  </div>
+  <div class="tr-end" hidden>
+    <div class="big-emoji">🏁</div>
+    <h2>Верных ответов: <span class="tr-final"></span></h2>
+    <p>Очков: <b class="tr-final-points"></b> · трёхочковых: <b class="tr-threes"></b> · промахов: <b class="tr-wrong"></b></p>
+    <p class="tr-info muted"></p>
+    <button class="btn tr-again">Ещё раз</button>
+  </div>
+</div>
+
+{% if runs %}
+<h2>Последние матчи</h2>
+<table class="table">
+  <tr><th>Когда</th><th>Режим</th><th>Верно</th><th>Ошибки</th><th>🏆</th></tr>
+  {% for r in runs %}
+  <tr><td>{{ r.created_at|dt }}</td><td>{{ modes[r.mode] }}</td><td>{{ r.correct }}</td><td>{{ r.wrong }}</td><td>{{ r.xp }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+<p class="muted small">💡 Идея: на уроке 8 ты напишешь свою умножайку на Python — открой её в <a href="/playground?starter=trainer">Песочнице</a>.</p>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Карта экзамена{% endblock %}
+{% block content %}
+{% set ex = pr.ex %}
+<h1>🗺️ {{ ex.title }} по химии — карта номеров</h1>
+{% if user.role == 'teacher' %}
+<div class="row">{% for key, e in exams.items() %}<a class="btn btn-small {{ '' if key == pr.exam else 'btn-ghost' }}" href="/chem/map?exam={{ key }}">{{ e.title }} · {{ e.grade }} класс</a>{% endfor %}</div>
+<p class="small muted">Банк задач: {{ total }} авторских задач по образцу ФИПИ — черновик для проверки; для {{ generators }} номеров — бесконечные варианты 🎲. Дополнительно — <a href="{{ ex.bank }}" target="_blank" rel="noopener">открытый банк заданий ФИПИ</a>.</p>
+{% endif %}
+<p class="muted">{{ ex.numbers|length }} заданий, максимум {{ ex.max }} первичных баллов, {{ ex.minutes }} минут. Структура — по спецификации ФИПИ 2026 (<a href="{{ ex.spec }}" target="_blank" rel="noopener">демоверсии и спецификации</a>).</p>
+
+{% if user.role == 'student' %}
+<section class="card pass-head">
+  <div><div class="eyebrow">Прогноз по части с кратким ответом</div>
+    <div class="big">{{ pr.forecast|round|int }}<small class="muted"> / {{ pr.short_max }}</small></div></div>
+  <div style="flex: 1; min-width: 220px">
+    <div class="progress"><i style="width: {{ (100 * pr.forecast / pr.short_max)|round|int }}%"></i></div>
+    <small class="muted">Считаем по твоим ответам на задачи каждого номера. Задания с развёрнутым ответом
+      ({{ pr.ex.long|sort|join(', ') }}) оценивает преподаватель — они добавят до {{ ex.max - pr.short_max }} баллов.</small>
+  </div>
+</section>
+{% endif %}
+
+<div class="exam-grid">
+  {% for r in pr.rows %}
+  <section class="card exam-num {{ 'long' if r.long }} {{ 'good' if r.tried and r.share >= 90 }}">
+    <span class="n">{{ r.num }}</span>
+    <div class="exam-body">
+      <h3>{{ r.title }}</h3>
+      <div class="meta">{{ r.points }} балл{{ 'а' if r.points in (2, 3, 4) else ('ов' if r.points >= 5 else '') }}{% if r.long %} · развёрнутый ответ{% endif %}{% if user.role == 'student' and r.tried and not r.long %} · {{ r.share }}% верно{% endif %}</div>
+      {% if r.tasks %}
+      <div class="exam-tasks">
+        {% for x in r.tasks %}{% set b = r.best.get(x.id) %}
+        <a class="exam-task {{ 'ok' if b is not none and b >= r.points else ('half' if b else ('bad' if b == 0 else '')) }}" href="/chem/task/{{ x.id }}" title="Задача {{ loop.index }}">{{ loop.index }}</a>
+        {% endfor %}
+      </div>
+      {% elif not r.gen %}<div class="meta">задачи скоро появятся</div>{% endif %}
+      {% if r.gen %}<a class="btn btn-small btn-ghost exam-gen" href="/chem/variant?exam={{ pr.exam }}&num={{ r.num }}" title="Новое условие каждый раз, ответ проверяется автоматически">🎲 Новый вариант</a>{% endif %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

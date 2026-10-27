@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox, csrf_field %}
+{% block title %}{{ project.title if project else 'Новый проект' }}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/portfolio">← Портфолио</a></div>
+<h1>{{ project.title if project else 'Новый проект' }}</h1>
+<form method="post" action="/portfolio/save" enctype="multipart/form-data" id="project-form" class="stack card">
+  {{ csrf_field(user) }}
+  <input type="hidden" name="pid" value="{{ project.id if project else 0 }}">
+  <input type="hidden" name="code" value="">
+  <label>Название<input name="title" required maxlength="120" value="{{ project.title if project else '' }}"></label>
+  <label>Описание — что это, как играть, что было сложно
+    <textarea name="description" rows="4">{{ project.description if project else '' }}</textarea></label>
+  <label>Код (если проект работает в браузере — его можно будет запустить на публичной странице)</label>
+  {{ codebox(project.code if project else '') }}
+  <div class="grid grid-2">
+    <label>Картинка-обложка (скриншот)
+      <input type="file" name="image" accept="image/*">
+      {% if project and project.image_path %}<img src="/files/project/{{ project.id }}/image" alt="" class="thumb">{% endif %}</label>
+    <label>Файл проекта (.py, .zip, .exe)
+      <input type="file" name="upload">
+      {% if project and project.file_name %}<a href="/files/project/{{ project.id }}/file">📎 {{ project.file_name }}</a>{% endif %}</label>
+  </div>
+  <label class="check"><input type="checkbox" name="public" value="1" {% if project and project.public %}checked{% endif %}> 🌍 Публичный проект — можно делиться ссылкой</label>
+  <button class="btn">💾 Сохранить</button>
+</form>
+{% if project %}
+<form method="post" action="/portfolio/{{ project.id }}/delete" data-confirm="Удалить проект навсегда?" class="danger-zone">
+  {{ csrf_field(user) }}<button class="linklike danger">🗑 Удалить проект</button>
+</form>
+{% endif %}
+{% endblock %}

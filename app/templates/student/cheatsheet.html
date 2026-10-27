@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Шпаргалка{% endblock %}
+{% block content %}
+<h1>📒 Шпаргалка</h1>
+<p class="muted">Всё самое нужное в одном месте. Новые разделы появляются вместе с уроками{% if locked %} — ещё {{ locked }} впереди 🔒{% endif %}.</p>
+<div class="cheat-grid">
+  {% for s in sections %}
+  <section class="card cheat">
+    <h3>{{ s.title }} <small class="muted">урок {{ s.lesson }}</small></h3>
+    <table>
+      {% for code, desc in s["items"] %}<tr><td><pre>{{ code }}</pre></td><td>{{ desc }}</td></tr>{% endfor %}
+    </table>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

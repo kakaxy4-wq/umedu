@@ -1,0 +1,39 @@
+{
+  "_comment": "Арт КодКвеста. Промпт = prompt айтема + look группы + style + avoid. Блоки style/avoid не менять посреди набора — на них держится единый стиль. Цвета — из app/static/css/app.css.",
+  "style": "STYLE: cute chunky 2D game mascot illustration for a kids coding school, bold rounded shapes, thick dark violet outline #1d1838, flat colors with soft cel shading, light from top-left, big friendly expressive eyes, confident cheerful mood, centered single subject, generous empty margin around the subject, clean silhouette readable at 64 px, flat solid magenta #FF00FF background, uniform color, no gradient, no texture, no shadow on the background, no cast shadow, subject floating on flat background",
+  "avoid": "NEGATIVE: no text, no letters, no numbers, no watermark, no signature, no UI, no frame, no border, no multiple subjects, no collage, no sprite sheet, no photorealism, no 3D render, no pink or magenta colors on the subject, no logos or characters from existing games or brands",
+  "skin_themes": {
+    "_comment": "Скины бойцов — запас виртуальных наград (tools/gpu-queue.md, п. 6). Промпт скина = prompt бойца + тема + look brawler + style + avoid. Лицо, силуэт и основной цвет бойца сохраняются — меняется только наряд.",
+    "winter": "same character, now wearing a cosy knitted winter scarf and a small woolly hat with a pompom, a few snowflakes around",
+    "cyber": "same character, now with glowing cyan visor goggles and a sleek futuristic armor trim in dark violet with cyan light lines",
+    "space": "same character, now in a chunky white astronaut suit with a round clear helmet, small mission patch without text"
+  },
+  "looks": {
+    "brawler": "bust portrait from the chest up, body turned slightly to the right, looking at the viewer",
+    "world": "single emblem object, front view, like a round game level badge icon"
+  },
+  "items": [
+    {"id": "brawler_01_pitosha", "kind": "brawler", "prompt": "Pitosha, a friendly young python snake hero standing upright in a coil like a fighter ready for battle, glossy green body #2fbf71 with a warm yellow belly #ffc531, small orange headband #ff7a1a with flying ends, tiny smiling fangs"},
+    {"id": "brawler_02_turtle", "kind": "brawler", "prompt": "Turtle, a calm cheerful turtle artist wearing a tiny purple beret #7b2ff7, green skin #3fae6a, hexagon-patterned shell in warm brown #b7791f, holding a short pencil like a sword"},
+    {"id": "brawler_03_cyclomet", "kind": "brawler", "prompt": "Cyclomet, a small round robot whose chest is a glowing circular arrow loop symbol, body in cool teal #1e88e5 and light grey, one antenna with an orange tip #ff7a1a, energetic pose with one fist raised"},
+    {"id": "brawler_04_randomer", "kind": "brawler", "prompt": "Randomer, a playful living white dice cube character with violet dots #7b2ff7 as freckles, small arms and legs, mischievous grin, winking, slightly tilted as if rolling"},
+    {"id": "brawler_05_functioner", "kind": "brawler", "prompt": "Functioner, a young wizard with a tall purple hat #7b2ff7 decorated with gold curly bracket shapes #ffc531, round glasses, orange scarf #ff7a1a, holding a short glowing wand"},
+    {"id": "brawler_06_shifro", "kind": "brawler", "prompt": "Shifro, a stylish secret agent cat in a dark violet trench coat #1d1838 with raised collar, small black sunglasses pushed down the nose, grey fur, holding a golden key-shaped cipher wheel #ffc531"},
+    {"id": "brawler_07_slovarnik", "kind": "brawler", "prompt": "Slovarnik, a wise old owl librarian with green feathers #10a36b, round spectacles, wearing a ring of golden keys #ffc531 on a necklace, holding a thick closed book"},
+    {"id": "brawler_08_pixel", "kind": "brawler", "prompt": "Pixel, an energetic gamer kid hero made of chunky pixel-art blocks, blocky orange hoodie #ff7a1a, headphones, blue visor glasses #1e88e5, thumbs up"},
+    {"id": "brawler_09_botbro", "kind": "brawler", "prompt": "Bot-Bro, a friendly messenger robot with a rounded light-blue body #4cc9f0, a speech bubble shaped screen face showing two smiling dot eyes, small paper-plane shaped jetpack, waving hello"},
+    {"id": "brawler_10_master", "kind": "brawler", "prompt": "Master of Code, a majestic but friendly young dragon with violet scales #7b2ff7 and golden horns #ffc531, small wings, glowing orange eyes #ff7a1a, proud legendary pose, sparkles around"},
+    {"id": "world_1_turtle", "kind": "world", "prompt": "a cute turtle drawing a colorful spiral with a pencil on paper, badge for the world 'first steps and drawing'"},
+    {"id": "world_2_games", "kind": "world", "prompt": "a die and a small treasure map scroll with a question mark path, badge for the world 'logic and console games'"},
+    {"id": "world_3_data", "kind": "world", "prompt": "an old golden key over a stack of colorful labeled boxes, badge for the world 'strings, lists, dictionaries and files'"},
+    {"id": "world_4_pygame", "kind": "world", "prompt": "a chunky retro game controller with a tiny pixel character jumping above it, badge for the world 'making games'"},
+    {"id": "world_5_real", "kind": "world", "prompt": "a small planet globe with a friendly chat robot orbiting it, badge for the world 'Python in the real world: internet, bots, data'"},
+    {"id": "world_6_project", "kind": "world", "prompt": "a cartoon rocket launching with a bright flame, badge for the world 'final project'"},
+    {"id": "ruhero_1_zapyataika", "kind": "brawler", "prompt": "Zapyataika, a small lively comma-shaped ink drop hero with stubby arms and legs, deep blue ink body #3b5bdb with a white highlight, holding a tiny feather quill like a sword"},
+    {"id": "ruhero_2_bukvoed", "kind": "brawler", "prompt": "Bukvoed, a round chubby bookworm hero peeking out of an open hardcover book, soft green body #2fbf71, big round glasses, happily munching a crumbly paper scrap"},
+    {"id": "ruhero_3_enen", "kind": "brawler", "prompt": "En-En, a small ninja hero in a dark violet suit #5b3fd1 with a red headband #e5484d, holding two short training staffs crossed like a double strike"},
+    {"id": "ruhero_4_kornelius", "kind": "brawler", "prompt": "Kornelius, a cheerful walking sprout hero with a round seed-like body #c08457, two bright green leaves on top #30a46c and visible little roots as feet, holding a small magnifying glass"},
+    {"id": "ruhero_5_syntax_rex", "kind": "brawler", "prompt": "Syntax-Rex, a friendly small t-rex hero, orange body #f76b15 with a warm yellow belly #ffc531, holding a giant chunky marker pen in its tiny arms, proud grin"},
+    {"id": "ruhero_6_gramotey", "kind": "brawler", "prompt": "Gramotey, a wise young owl hero with a small golden crown #ffc531, purple feathers #8e4ec6, wearing a tiny academic gown and holding a rolled scroll"}
+  ]
+}

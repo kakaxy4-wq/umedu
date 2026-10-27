@@ -1,0 +1,34 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Враги, препятствия, очки, сложность. И главное умение программиста — отладка.</p>
+  <p>Ключевые темы: <b>Отладка через `print`; «Резиновая уточка»; Баланс сложности</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 60">Работа над игрой. Помогай с трудны · 60</span><span style="flex: 10">Показать отладку: `print`, чтение  · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/25/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(60 мин) Работа над игрой. Помогай с трудными местами, но код пишет ребёнок.</td></tr><tr><td>2</td><td>(10 мин) Показать отладку: `print`, чтение ошибок, «объясни проблему вслух».</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Отладка через `print`</li><li>«Резиновая уточка»</li><li>Баланс сложности</li></ul>
+  
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Окно «не отвечает»</td><td>нет clock.tick(60) в цикле</td><td>добавь clock.tick(60)</td></tr><tr><td>Игра вылетает при закрытии</td><td>pygame.quit() не вызван</td><td>закрывай в обработке события QUIT</td></tr><tr><td>Персонаж улетает за экран</td><td>нет ограничения краёв</td><td>player.clamp_ip(screen.get_rect())</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Отладка через `print`.</li><li>Объясни своими словами: «Резиновая уточка».</li><li>Объясни своими словами: Баланс сложности.</li>
+  </ol>
+  <p><b>Домашка:</b> Доведи игру до состояния «можно играть от начала до проигрыша».</p>
+  <p><b>Со звёздочкой:</b> Уровни сложности.</p>
+  <p>Задачи на сайте под уроком 25 — сайт проверяет автоматически.</p>
+</section>

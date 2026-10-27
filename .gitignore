@@ -1,0 +1,9 @@
+data/
+app/static/vendor/
+__pycache__/
+*.pyc
+.env
+.venv/
+.pytest_cache/
+*.db
+private/

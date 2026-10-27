@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% from "chem/_macros.html" import when %}
+{% block title %}План занятия{% endblock %}
+{% block content %}
+{% macro topic_box(t, checked) %}
+  <label class="plan-topic {{ 'on' if checked }}">
+    <input type="checkbox" name="topics" value="{{ t.id }}" {{ 'checked' if checked }}>
+    <span>{{ t.title }}{% if t.nums %} <small class="muted">№{{ t.nums|join(', ') }}</small>{% endif %}</span>
+    {% if t.title in covered %}<small class="pill ok">пройдено {{ covered[t.title][8:10] }}.{{ covered[t.title][5:7] }}</small>{% endif %}
+    {% if t.id in elsewhere %}<small class="pill">в плане на {{ elsewhere[t.id][8:10] }}.{{ elsewhere[t.id][5:7] }}</small>{% endif %}
+  </label>
+{% endmacro %}
+<p><a href="/chem/teacher/student/{{ st.id }}#lessons">← {{ st.display_name }}</a></p>
+<h1>📝 План занятия · {{ lesson.starts_at[8:10] }}.{{ lesson.starts_at[5:7] }} в {{ lesson.starts_at[11:16] }}</h1>
+<p class="muted">{{ st.display_name }} · {{ lesson.minutes }} мин · {% set s = statuses[lesson.status] %}{{ s[0] }} {{ s[1] }}.
+  Отметь темы, которые хотите затронуть, и нажми «Составить план» — получится черновик по минутам, его можно поправить и сохранить.
+  Когда занятие отмечено «✅ Был», его темы попадают в историю и в программе становятся пройденными.</p>
+{% if saved %}<p class="pill ok">Сохранено</p>{% endif %}
+{% if hw_given %}<p class="pill ok">ДЗ задано — его видно у ученика и в профиле, раздел «Домашние задания»</p>{% endif %}
+
+<form method="post" class="lesson-plan">
+  {{ csrf_field(user) }}
+  <section class="card">
+    <div class="eyebrow">🧭 Ещё не проходили ({{ fresh|length }})</div>
+    <div class="plan-topics">{% for t in fresh %}{{ topic_box(t, t.id in plan.topic_ids) }}{% else %}<p class="muted">Вся программа пройдена — можно взять темы на повторение ниже.</p>{% endfor %}</div>
+    {% if done %}
+    <details class="plan-repeat" {{ 'open' if done|selectattr('id', 'in', plan.topic_ids)|list }}><summary class="small">🔁 Уже пройдено — на повторение ({{ done|length }})</summary>
+      <div class="plan-topics">{% for t in done %}{{ topic_box(t, t.id in plan.topic_ids) }}{% endfor %}</div>
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">🗒️ План</div>
+    <textarea name="plan" id="plan-text" rows="16" class="plan-text" placeholder="Нажми «Составить план» — или напиши свой.">{{ plan.plan }}</textarea>
+    <div class="row">
+      <button class="btn" name="action" value="draft" data-ask="Заменить текст плана новым черновиком по выбранным темам?" data-ask-if="#plan-text" title="Черновик по выбранным темам заменит текст плана">🪄 Составить план по темам</button>
+      <button class="btn btn-ghost" name="action" value="save">💾 Сохранить</button>
+      {% if plan.updated_at %}<small class="muted">сохранено {{ when(plan.updated_at) }}</small>{% endif %}
+    </div>
+  </section>
+</form>
+
+{% if plan.topic_ids %}
+<section class="card">
+  <div class="eyebrow">✏️ Задачи для разбора на занятии</div>
+  {% for tid in plan.topic_ids %}
+  <p><b>{{ topic_by_id[tid].title }}</b>:
+    {% for x in tasks[tid] %}{% if x.id %}<a class="pill" href="/chem/task/{{ x.id }}" target="_blank">№{{ x.num }}</a>{% else %}<span class="pill">№{{ x.num }} письменно</span>{% endif %} {% else %}<span class="muted small">без номеров экзамена</span>{% endfor %}
+    {% if topic_by_id[tid].nums %}<form method="post" action="/chem/teacher/student/{{ st.id }}/hw-topic" class="inline" data-confirm="Задать {{ st.display_name }} ДЗ по теме «{{ topic_by_id[tid].title }}»?">{{ csrf_field(user) }}<input type="hidden" name="topic" value="{{ tid }}"><input type="hidden" name="next" value="/chem/teacher/lesson/{{ lesson.id }}/plan"><button class="btn btn-small btn-ghost" title="Задать ДЗ по этой теме">📚 ДЗ по теме</button></form>{% endif %}
+  </p>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="eyebrow">📜 История занятий</div>
+  {% for h in history %}
+  <p class="small"><b>{{ h.starts_at[8:10] }}.{{ h.starts_at[5:7] }}</b> — {{ (h.topic or 'тема не указана')|chem }}{% if h.has_plan %} · <a href="/chem/teacher/lesson/{{ h.id }}/plan">план</a>{% endif %}</p>
+  {% else %}<p class="muted small">Проведённых занятий пока нет.</p>{% endfor %}
+</section>
+{% endblock %}

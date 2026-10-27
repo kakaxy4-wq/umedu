@@ -1,0 +1,40 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Программа узнаёт реальную погоду за окном и курс валют.</p>
+  <p>Ключевые темы: <b>Что такое API; `requests.get`; Разбор JSON-ответа</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">API — как официант в ресторане. · 10</span><span style="flex: 30">open-meteo.com — погода без ключей · 30</span><span style="flex: 20">Курс валют, случайные факты. · 20</span><span style="flex: 10">Итог. · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/27/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) API — как официант в ресторане.</td></tr><tr><td>2</td><td>(30 мин) open-meteo.com — погода без ключей. Разбор JSON.</td></tr><tr><td>3</td><td>(20 мин) Курс валют, случайные факты.</td></tr><tr><td>4</td><td>(10 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Что такое API</li><li>`requests.get`</li><li>Разбор JSON-ответа</li></ul>
+  <p>Разбери пример «Погода (на компьютере)» по строкам:</p><pre class="code-mini">import requests
+url = "https://api.open-meteo.com/v1/forecast"
+params = {"latitude": 55.75, "longitude": 37.62, "current_weather": True}
+data = requests.get(url, params=params).json()
+w = data["current_weather"]
+print("Температура:", w["temperature"], "°C")
+print("Ветер:", w["windspeed"], "км/ч")</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>KeyError</td><td>ключа ещё нет в словаре</td><td>dict.get(key, значение по умолчанию)</td></tr><tr><td>UnicodeDecodeError при чтении файла</td><td>не указана кодировка</td><td>open(..., encoding="utf-8")</td></tr><tr><td>requests.exceptions.ConnectionError</td><td>нет сети или опечатка в URL</td><td>проверь адрес, оберни в try/except</td></tr><tr><td>KeyError в ответе API</td><td>не тот путь в JSON</td><td>распечатай data целиком и посмотри структуру</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Что такое API.</li><li>Объясни своими словами: `requests.get`.</li><li>Объясни своими словами: Разбор JSON-ответа.</li>
+  </ol>
+  <p><b>Домашка:</b> «Утренняя сводка»: погода + курс доллара + цитата одной командой.</p>
+  <p><b>Со звёздочкой:</b> Совет, что надеть, в зависимости от температуры.</p>
+  <p>Задачи на сайте под уроком 27 — сайт проверяет автоматически.</p>
+</section>

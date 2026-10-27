@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox, csrf_field, hw_status, sid_field %}
+{% block title %}Урок {{ lesson.num }}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/map">Карта</a> › Мир {{ module.num }}: {{ module.title }}</div>
+<header class="lesson-head">
+  <span class="lesson-emoji">{{ lesson.emoji }}</span>
+  <div>
+    <div class="eyebrow">Урок {{ lesson.num }} из 34{% if state and state.done_at %} · ✅ проведён {{ state.done_at|dt(False) }}{% endif %}</div>
+    <h1>{{ lesson.title }}</h1>
+    <p class="lead">{{ lesson.intro }}</p>
+  </div>
+</header>
+
+{% if pace %}
+<section class="card pace-card">
+  <div class="eyebrow">🚀 Учусь сам</div>
+  {% if pace.need %}
+  <p>Реши <b>{{ pace.need }}</b> {{ 'задачу' if pace.need == 1 else 'задачи' }} этого урока — и он засчитается{% if not pace.last %}, а следующий откроется сам{% endif %}. Решено: <b>{{ [pace.have, pace.need]|min }} из {{ pace.need }}</b>.</p>
+  <div class="progress"><i style="width: {{ (100 * ([pace.have, pace.need]|min) / pace.need)|int }}%"></i></div>
+  {% elif user.role == 'student' %}
+  <p>В этом уроке нет задач с автопроверкой — прочитай его, повтори примеры у себя и отметь, когда разберёшься.</p>
+  <form method="post" action="/lesson/{{ lesson.num }}/self-done">{{ csrf_field(user) }}<button class="btn">✅ Урок изучен{% if not pace.last %} — дальше{% endif %}</button></form>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if user.role == 'teacher' %}
+<section class="card teacher-box">
+  <div class="eyebrow">🎛️ Для преподавателя — ход занятия</div>
+  {% if guide %}<p><a class="btn btn-small" href="/teacher/guide/{{ lesson.num }}">📖 Подготовка к уроку: рассказ, факты, карточки</a></p>{% endif %}
+  <ol class="plan">{% for p in lesson.plan %}<li>{{ p|md }}</li>{% endfor %}</ol>
+  <p><b>Вау-момент:</b> {{ lesson.wow|md }}</p>
+  <form method="post" action="/teacher/lesson/{{ lesson.num }}/note" class="stack">
+    {{ csrf_field(user) }}{{ sid_field(sid) }}
+    <label>Заметки к уроку — {{ student_name }} (видны только тебе)
+      <textarea name="note" rows="3">{{ state.teacher_note if state else '' }}</textarea></label>
+    <button class="btn btn-small">Сохранить заметку</button>
+  </form>
+</section>
+{% endif %}
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">📚 Что узнаем</div>
+    <ul class="learn">{% for x in lesson.learn %}<li>{{ x|md }}</li>{% endfor %}</ul>
+  </section>
+  <section class="card wow-card">
+    <div class="eyebrow">🤯 Вау-момент</div>
+    <p>{{ lesson.wow|md }}</p>
+  </section>
+</div>
+
+{% if lesson.examples %}
+<h2>💻 Примеры — запускай и меняй!</h2>
+{% for ex in lesson.examples %}
+<section class="example">
+  <h3>{{ ex.title }}{% if ex.local %} <span class="pill">на компьютере</span>{% endif %}</h3>
+  {{ codebox(ex.code, local=ex.local) }}
+</section>
+{% endfor %}
+{% endif %}
+
+{% if tasks %}
+<h2>🧩 Задачи с автопроверкой</h2>
+<div class="task-list">
+  {% for t in tasks %}
+  <a class="task-tile {% if t.id in solved %}solved{% endif %}" href="/task/{{ t.id }}">
+    <span class="task-state">{% if t.id in solved %}✅{% else %}{{ '⭐' * t.level }}{% endif %}</span>
+    <b>{{ t.title }}</b>{% if t.oge %} <span class="pill oge-pill">ОГЭ №{{ t.oge }}</span>{% endif %}
+    <small>+{{ t.xp }} 🏆{% if t.turtle %} · 🐢{% endif %}</small>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2 id="homework">🏠 Домашнее задание</h2>
+<section class="card hw-card">
+  <p>{{ lesson.homework|md }}</p>
+  {% if lesson.star %}<p class="star-task">⭐ <b>Со звёздочкой:</b> {{ lesson.star|md }}</p>{% endif %}
+
+  {% for s in subs %}
+  <div class="submission">
+    <div class="row"><b>Попытка от {{ s.created_at|dt }}</b> {{ hw_status(s.status) }}{% if s.star %}<span class="pill">⭐</span>{% endif %}
+      {% if s.xp_awarded %}<span class="pill ok">+{{ s.xp_awarded }} 🏆</span>{% endif %}</div>
+    {% if s.teacher_comment %}<div class="teacher-comment">💬 {{ s.teacher_comment }}</div>{% endif %}
+    {% if s.comment %}<p class="muted">{{ s.comment }}</p>{% endif %}
+    {% if s.code %}<details><summary>Код</summary><pre class="code-mini">{{ s.code }}</pre></details>{% endif %}
+    {% if s.file_name %}<a href="/files/sub/{{ s.id }}">📎 {{ s.file_name }}</a>{% endif %}
+  </div>
+  {% endfor %}
+
+  {% if user.role == 'student' %}
+  {% if subs %}<details class="resubmit" {% if subs[0].status == 'returned' %}open{% endif %}><summary class="btn btn-ghost btn-small">📤 Сдать новую версию</summary>{% endif %}
+  <form method="post" action="/lesson/{{ lesson.num }}/submit" enctype="multipart/form-data" id="hw-form" class="stack"
+        data-confirm="Сдать домашку на проверку? Преподаватель увидит этот код и комментарий.">
+    {{ csrf_field(user) }}
+    <input type="hidden" name="code" value="">
+    <p class="hw-howto small">✍️ <b>Делай домашку прямо здесь:</b> пиши код и жми «▶ Запустить» сколько угодно раз — это только проверка для тебя.
+      На проверку преподавателю уйдёт <b>только по кнопке «📬 Сдать на проверку»</b> внизу.</p>
+    {{ codebox((subs[0].code if subs else '') or '# Вставь сюда код домашнего задания\n') }}
+    <label>Файл (скриншот, .py, архив с игрой) — по желанию
+      <input type="file" name="upload"></label>
+    <label>Комментарий
+      <textarea name="comment" rows="2" placeholder="Что получилось, что было сложно?"></textarea></label>
+    {% if lesson.star %}<label class="check"><input type="checkbox" name="star" value="1"> Я сделал задание со звёздочкой ⭐</label>{% endif %}
+    <button class="btn">📬 Сдать на проверку</button>
+  </form>
+  {% if subs %}</details>{% endif %}
+  {% endif %}
+</section>
+
+<nav class="pager">
+  {% if prev_num %}<a href="/lesson/{{ prev_num }}">← Урок {{ prev_num }}</a>{% else %}<span></span>{% endif %}
+  {% if next_num %}<a href="/lesson/{{ next_num }}">Урок {{ next_num }} →</a>{% endif %}
+</nav>
+{% endblock %}

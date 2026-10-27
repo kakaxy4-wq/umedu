@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sid_field, csrf_field, hw_status %}
+{% block title %}Уроки{% endblock %}
+{% block content %}
+<h1>📅 Уроки — {{ student_name }}</h1>
+<p class="muted">Открыт до урока {{ upto }}. «Открыть» делает урок видимым ученику (и все предыдущие). «Проведено» начисляет +20 🏆 и засчитывает прогресс мира.</p>
+{% set cur = lessons|selectattr('current')|first %}
+{% for m in modules %}
+{% set ml = lessons|selectattr('module', 'equalto', m.num)|list %}
+{% set done_n = ml|selectattr('done')|list|length %}
+<details class="card module-block" id="m{{ m.num }}" {{ 'open' if (cur and cur.module == m.num) or (not cur and loop.first) }}>
+  <summary><b>{{ m.emoji }} Модуль {{ m.num }}. {{ m.title }}</b>
+    <small class="muted">уроки {{ ml[0].num }}–{{ ml[-1].num }} · проведено {{ done_n }} из {{ ml|length }}{% if done_n == ml|length %} ✅{% endif %}</small></summary>
+<table class="table lessons-table">
+  <tr><th>#</th><th>Урок</th><th>Задачи</th><th>Домашка</th><th>Статус</th><th></th></tr>
+  {% for l in lessons if l.module == m.num %}
+  {% set st = states.get(l.num) %}
+  <tr id="l{{ l.num }}" class="{{ 'row-current' if l.current }}">
+    <td>{{ l.num }}</td>
+    <td><a href="/lesson/{{ l.num }}">{{ l.emoji }} {{ l.title }}</a>{% if st and st.teacher_note %} 📝{% endif %}{% if l.num in guides %} <a href="/teacher/guide/{{ l.num }}" title="Подготовка к уроку">📖</a>{% endif %}</td>
+    <td>{% if l.tasks_total %}{{ l.tasks_solved }}/{{ l.tasks_total }}{% endif %}</td>
+    <td>{{ hw_status(l.hw_status) }}</td>
+    <td>{% if l.done %}✅ {{ st.done_at|dt(False) }}{% elif l.open %}🔓 открыт{% else %}🔒{% endif %}</td>
+    <td class="actions">
+      {% if not l.open %}
+      <form method="post" action="/teacher/lesson/{{ l.num }}/open">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-small btn-ghost">Открыть</button></form>
+      {% elif not l.done %}
+      <form method="post" action="/teacher/lesson/{{ l.num }}/done">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-small">Проведено</button></form>
+      {% else %}
+      <form method="post" action="/teacher/lesson/{{ l.num }}/undone" data-confirm="Снять отметку «Проведено» с урока {{ l.num }}? +20 🏆 за это занятие спишутся.">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="linklike small" title="Отменить, если нажато по ошибке">↩︎ отменить</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</details>
+{% endfor %}
+{% endblock %}

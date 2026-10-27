@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Проверка задач{% endblock %}
+{% block content %}
+<h1>✅ Проверка задач</h1>
+<p class="muted">Задачи и генераторы вариантов писались по образцу ФИПИ, но их нужно проверить глазами химика. Отметь «✅ Верно» или
+  «⚠️ Есть ошибка» с комментарием. Задача или генератор с ошибкой <b>сразу пропадает у учеников</b> (карта, ДЗ, пробники), пока
+  замечание не снято. Проверено: <b data-review-done>{{ done }}</b> из {{ total }}.</p>
+<div class="row">
+  {% for key, e in exams.items() %}<a class="btn btn-small {{ '' if key == exam else 'btn-ghost' }}" href="?exam={{ key }}&show={{ show }}">{{ e.title }}</a>{% endfor %}
+  <span class="muted">·</span>
+  {% for s, label in [('all', 'все'), ('todo', 'непроверенные'), ('issue', 'с ошибками')] %}<a class="btn btn-small {{ '' if s == show else 'btn-ghost' }}" href="?exam={{ exam }}&show={{ s }}">{{ label }}</a>{% endfor %}
+</div>
+
+{% if issues %}
+<details class="card"><summary>⚠️ Все замечания ({{ issues|length }}) — скопировать и отправить разработчику</summary>
+<textarea rows="8" readonly class="review-export">{% for k, r in issues %}{{ k }}: {{ r.comment }}
+{% endfor %}</textarea>
+</details>
+{% endif %}
+
+{% macro review_box(key, rev) -%}
+<div class="review-box {{ rev.status if rev else '' }}" data-review="{{ key }}">
+  <button type="button" class="btn btn-small btn-ghost" data-review-set="ok">✅ Верно</button>
+  <button type="button" class="btn btn-small btn-ghost" data-review-set="issue">⚠️ Есть ошибка</button>
+  <input class="review-comment" placeholder="Что не так (для ошибки)" value="{{ rev.comment if rev else '' }}">
+  {% if rev %}<button type="button" class="linklike small" data-review-set="clear">сбросить</button>{% endif %}
+  <span class="review-state small muted">{% if rev %}{{ '✅ проверено' if rev.status == 'ok' else '⚠️ скрыто от учеников' }}{% endif %}</span>
+</div>
+{%- endmacro %}
+
+{% for row in rows %}
+<section class="review-num">
+  <h2>№{{ row.num }} · {{ row.title }} <small class="muted">{{ row.points }} б.</small></h2>
+  {% for t in row.bank %}{% set rev = revs.get(t.id) %}
+  {% if show == 'all' or (show == 'todo' and not rev) or (show == 'issue' and rev and rev.status == 'issue') %}
+  <article class="card review-item">
+    <div class="eyebrow">Задача банка {{ t.id }}</div>
+    <p class="chem-text">{{ t.text|chem }}</p>
+    {% if t.mode != 'long' %}<p><b>Ответ:</b> {{ t.answer }}</p>{% endif %}
+    {% if t.why %}<div class="chem-sample">{{ t.why|chem }}</div>{% endif %}
+    {{ review_box(t.id, rev) }}
+  </article>
+  {% endif %}
+  {% endfor %}
+  {% if row.gen %}{% set rev = revs.get(row.gen.key) %}
+  {% if show == 'all' or (show == 'todo' and not rev) or (show == 'issue' and rev and rev.status == 'issue') %}
+  <article class="card review-item gen">
+    <div class="eyebrow">🎲 Генератор вариантов — {{ row.gen.samples|length }} образца (каждый раз условие новое, правила те же)</div>
+    {% for g in row.gen.samples %}
+    <details {{ 'open' if loop.first }}><summary>Образец {{ loop.index }} · {{ g.id }}</summary>
+      <p class="chem-text">{{ g.text|chem }}</p>
+      {% if g.mode != 'long' %}<p><b>Ответ:</b> {{ g.answer }}</p>{% endif %}
+      <div class="chem-sample">{{ g.why|chem }}</div>
+    </details>
+    {% endfor %}
+    {{ review_box(row.gen.key, rev) }}
+  </article>
+  {% endif %}{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

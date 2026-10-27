@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карточки · урок {{ lesson.num }} · {{ site_name }}</title>
+<link rel="stylesheet" href="/static/css/app.css?v={{ v }}">
+<style>
+  @page { size: A4 portrait; margin: 10mm; }
+  html, body { background: #e9e6f5; margin: 0; color: #1d1838; }
+  .cert-tools { display: flex; gap: 10px; justify-content: center; padding: 16px; flex-wrap: wrap; align-items: center; }
+  .cert-tools .muted { color: #6b6690; font-size: .9rem; }
+  .cards-sheet { width: 190mm; margin: 0 auto 30px; background: #fff; box-shadow: 0 10px 40px rgba(40, 20, 90, .2);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .fcard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: 45mm; border: .3mm dashed #b9b3d9; border-top: none; break-inside: avoid; }
+  .fcard:first-child { border-top: .3mm dashed #b9b3d9; }
+  .fcard > div { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 4mm 8mm; position: relative; }
+  .fcard .front { background: linear-gradient(135deg, #f4f2ff, #fff); font-size: 5.6mm; font-weight: 800; }
+  .fcard .back { border-left: .4mm dashed #7b2ff7; font-size: 4.4mm; line-height: 1.35; }
+  .fcard .tag { position: absolute; top: 2.5mm; left: 4mm; font-size: 2.8mm; letter-spacing: .15em; text-transform: uppercase; color: #7b2ff7; font-weight: 800; }
+  .fcard .back .tag { color: #ff7a1a; }
+  .fcard .num { position: absolute; bottom: 2.5mm; right: 4mm; font-size: 2.8mm; color: #9a95bd; }
+  .fcard code { font-family: "JetBrains Mono", monospace; background: #ebe7ff; padding: 0 1.2mm; border-radius: 1mm; font-size: .92em; }
+  @media print {
+    html, body { background: #fff; }
+    .cert-tools { display: none; }
+    .cards-sheet { box-shadow: none; margin: 0 auto; }
+  }
+  .ct { overflow-wrap: break-word; }
+</style>
+</head>
+<body>
+<div class="cert-tools">
+  <button class="btn" data-print>🖨️ Печать</button>
+  <a class="btn btn-ghost" href="/teacher/guide/{{ lesson.num }}">← К подготовке</a>
+  <span class="muted">Разрежь по серому пунктиру, сложи каждую карточку пополам по фиолетовой линии.</span>
+</div>
+<div class="cards-sheet sheet-fit">
+  {% for c in cards %}
+  <div class="fcard">
+    <div class="front"><span class="tag">{{ lesson.emoji }} Урок {{ lesson.num }}</span><div class="ct">{{ c.front|md }}</div><span class="num">{{ loop.index }}</span></div>
+    <div class="back"><span class="tag">Ответ</span><div class="ct">{{ c.back|md }}</div><span class="num">{{ loop.index }}</span></div>
+  </div>
+  {% endfor %}
+</div>
+<script src="/static/js/app.js?v={{ v }}"></script>
+</body>
+</html>

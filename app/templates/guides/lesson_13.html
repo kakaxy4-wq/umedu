@@ -1,0 +1,38 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Переворачиваем слова, ищем палиндромы и проверяем пароли на прочность.</p>
+  <p>Ключевые темы: <b>Срезы `s[::-1]`; Методы `upper`, `lower`, `replace`, `split`, `count`; Проверка пароля</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Разминка. · 10</span><span style="flex: 20">Индексы и срезы, палиндром «А роза · 20</span><span style="flex: 15">Методы строк. · 15</span><span style="flex: 20">Задачи на сайте: гласные, проверка · 20</span><span style="flex: 5">Итог. · 5</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/13/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Разминка.</td></tr><tr><td>2</td><td>(20 мин) Индексы и срезы, палиндром «А роза упала на лапу Азора».</td></tr><tr><td>3</td><td>(15 мин) Методы строк.</td></tr><tr><td>4</td><td>(20 мин) Задачи на сайте: гласные, проверка пароля.</td></tr><tr><td>5</td><td>(5 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Срезы `s[::-1]`</li><li>Методы `upper`, `lower`, `replace`, `split`, `count`</li><li>Проверка пароля</li></ul>
+  <p>Разбери пример «Палиндром» по строкам:</p><pre class="code-mini">phrase = "А роза упала на лапу Азора"
+clean = phrase.lower().replace(" ", "")
+print(clean)
+print(clean[::-1])
+print("Палиндром!" if clean == clean[::-1] else "Не палиндром")</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Сравнение строк не работает</td><td>регистр и пробелы</td><td>lower().replace(" ", "") перед сравнением</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Срезы `s[::-1]`.</li><li>Объясни своими словами: Методы `upper`, `lower`, `replace`, `split`, `count`.</li><li>Объясни своими словами: Проверка пароля.</li>
+  </ol>
+  <p><b>Домашка:</b> Программа делает из фразы аббревиатуру и находит самое длинное слово.</p>
+  <p><b>Со звёздочкой:</b> Перевод текста в «леет»: a → 4, e → 3, o → 0.</p>
+  <p>Задачи на сайте под уроком 13 — сайт проверяет автоматически.</p>
+</section>

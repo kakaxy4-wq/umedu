@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Сводка недели{% endblock %}
+{% block content %}
+<h1>📊 Сводка недели</h1>
+<p class="muted">{{ w.from.strftime('%d.%m') }} — {{ w.to.strftime('%d.%m.%Y') }}: последние 7 дней по всем активным ученикам.</p>
+
+{% if sent == 1 %}<p class="pill ok">✅ Сводка отправлена в Telegram</p>{% elif sent == 0 %}<p class="pill bad">Не получилось отправить — проверь настройки Telegram</p>{% endif %}
+
+<div class="weekly-grid">
+  {% for r in w.rows %}{% set st = r.student %}
+  <section class="card weekly-card {{ 'idle' if not r.days }}">
+    <div class="row between">
+      <h3><a href="/teacher/student/{{ st.id }}">{{ st.display_name }}</a></h3>
+      <span class="pill">+{{ r.xp }} 🏆</span>
+    </div>
+    <div class="weekly-days" title="Дней с занятиями из 7">{% for i in range(7) %}<i class="{{ 'on' if i < r.days }}"></i>{% endfor %} <small class="muted">{{ r.days }} из 7 дней</small></div>
+    <ul class="small">
+      {% if r.lessons %}<li>📅 Проведены уроки: {{ r.lessons|join(', ') }}</li>{% endif %}
+      <li>🧩 Задач решено: <b>{{ r.tasks }}</b> <span class="muted">(попыток {{ r.attempts }})</span></li>
+      {% if r.plans %}<li>📅 План дня выполнен: {{ r.plans }}</li>{% endif %}
+      {% if r.oge %}<li>🎲 Тренажёр ОГЭ: {{ r.oge }} вариантов</li>{% endif %}
+      {% if r.robot %}<li>🤖 Робот ОГЭ: {{ r.robot }}</li>{% endif %}
+      {% if r.fc %}<li>🎯 Прогноз ОГЭ: <b>{{ r.fc.points }} из {{ r.fc.max }}</b> — «{{ r.fc.grade }}»</li>{% endif %}
+      {% if r.ru[0] %}<li>📖 Русский: {{ r.ru[0] }} ответов, верно {{ r.ru[1] }}%</li>{% endif %}
+      {% if r.homework %}<li>📬 Домашек сдано: {{ r.homework }}</li>{% endif %}
+      {% for cid, right, total in r.checks %}<li>📝 Проверка {{ cid }}: {{ right }}/{{ total }}</li>{% endfor %}
+      <li class="muted">Открыт урок {{ r.upto }}</li>
+    </ul>
+    {% for a in r.alerts %}<p class="small">{{ a.emoji }} <a href="{{ a.link }}">{{ a.text }}</a></p>{% endfor %}
+  </section>
+  {% else %}
+  <p class="muted">Активных учеников нет.</p>
+  {% endfor %}
+</div>
+
+<section class="card">
+  <div class="eyebrow">✈️ Telegram</div>
+  {% if configured %}
+  <p class="small">Сводка уходит сама по воскресеньям в 19:00{% if last_sent %} · последняя отправка: неделя {{ last_sent }}{% endif %}.</p>
+  <form method="post" action="/teacher/weekly/send">{{ csrf_field(user) }}<button class="btn btn-small">Отправить сейчас</button></form>
+  {% else %}
+  <p class="small">Telegram пока не подключён. Чтобы сводка приходила сама по воскресеньям в 19:00 (и уведомления о домашках
+    и рангах — сразу), впиши в файл настроек <code>.env</code> на сервере <code>CQ_TELEGRAM_TOKEN</code> (токен бота
+    от @BotFather) и <code>CQ_TELEGRAM_CHAT_ID</code> (твой id), затем перезапусти сайт: <code>systemctl restart codequest</code>.</p>
+  {% endif %}
+  <details><summary class="small">Как выглядит сообщение</summary><pre class="weekly-text">{{ text }}</pre></details>
+</section>
+{% endblock %}

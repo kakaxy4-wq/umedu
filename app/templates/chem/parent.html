@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "chem/_macros.html" import money, when, hw_pill, status_pill %}
+{% block title %}{{ st.display_name }} — для родителей{% endblock %}
+{% block content %}
+{% set b = card.balance %}
+<section class="card login-card parent-head">
+  <div class="login-hero">{{ brand }}</div>
+  <h1>{{ st.display_name }}</h1>
+  <p class="muted">{{ grades.get(st.grade, '') }} · {{ site_name }}</p>
+</section>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">📅 Занятия</div>
+    <p>Посещено: <b>{{ card.visits }}</b>{% if card.missed %} · пропусков: {{ card.missed }}{% endif %}</p>
+    <p>Следующее: <b>{{ when(card.next.starts_at) if card.next else 'пока не назначено' }}</b></p>
+  </section>
+  <section class="card">
+    <div class="eyebrow">💰 Оплата</div>
+    <p>Баланс: <b class="{{ 'bad-text' if b.balance < 0 }}">{{ money(b.balance) }}</b>{% if b.balance < 0 %} — к оплате{% elif b.balance > 0 %} — предоплата{% endif %}</p>
+    <p class="small muted">Оплачено всего {{ money(b.paid) }}, занятий на {{ money(b.cost) }}.</p>
+  </section>
+</div>
+
+<section class="card">
+  <div class="eyebrow">📚 Домашние задания</div>
+  {% if hw %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Задание</th><th>Срок</th><th>Статус</th></tr>
+    {% for h in hw %}<tr><td>{{ h.title|chem }}</td><td>{{ when(h.due_at) if h.due_at else '—' }}</td><td>{{ hw_pill(h) }}</td></tr>{% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Заданий пока не было.</p>{% endif %}
+</section>
+
+<section class="card">
+  <div class="eyebrow">🗓 История занятий</div>
+  {% if lessons %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Дата</th><th>Тема</th><th>Отметка</th><th>Стоимость</th></tr>
+    {% for l in lessons %}<tr><td>{{ when(l.starts_at) }}</td><td>{{ l.topic|chem if l.topic else '—' }}{% for f in files.get(l.id, []) %} <a href="/parent/{{ token }}/lesson-file/{{ f.id }}" target="_blank">📄</a>{% endfor %}</td><td>{{ status_pill(l, statuses) }}</td><td>{{ money(l.price) if l.status == 'done' or (l.status == 'missed' and l.charged) else '—' }}</td></tr>{% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Занятий пока не было.</p>{% endif %}
+</section>
+
+{% if pays %}
+<section class="card">
+  <div class="eyebrow">🧾 Оплаты</div>
+  <ul class="clean-list">{% for p in pays %}<li>{{ when(p.paid_at) }} — {{ money(p.amount) }}{% if p.note %} <small class="muted">· {{ p.note }}</small>{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

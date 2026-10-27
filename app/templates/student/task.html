@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/lesson/{{ lesson.num }}">← Урок {{ lesson.num }}: {{ lesson.title }}</a></div>
+<header class="task-head">
+  <h1>{{ task.title }}</h1>
+  <div class="row">
+    <span class="pill">{{ '⭐' * task.level }} {{ ['', 'разминка', 'нормально', 'с подвохом'][task.level] }}</span>
+    <span class="pill">+{{ task.xp }} 🏆</span>
+    {% if task.turtle %}<span class="pill">🐢 черепашка</span>{% endif %}
+    {% if task.oge %}<a class="pill oge-pill" href="/oge#n{{ task.oge }}">🎯 как на ОГЭ №{{ task.oge }}</a>{% endif %}
+    <span id="task-badge" class="pill {{ 'ok' if solved }}">{{ '✅ Решено' if solved else 'Не решено' }}</span>
+  </div>
+</header>
+
+<section class="card statement">
+  <p>{{ task.text|md }}</p>
+  {% set visible = tests_public|selectattr('stdout', 'defined')|rejectattr('hidden')|list %}
+  {% if visible %}
+  <div class="examples-io">
+    {% for t in visible[:2] %}
+    <div class="io"><div><small>Ввод</small><pre>{{ t.stdin or '—' }}</pre></div><div><small>Вывод</small><pre>{{ t.stdout }}</pre></div></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% set calls = tests_public|selectattr('call', 'defined')|rejectattr('hidden')|list %}
+  {% if calls %}
+  <div class="examples-io">
+    {% for t in calls[:2] %}<div class="io"><pre>{{ t.call }}  →  {{ t.expect }}</pre></div>{% endfor %}
+  </div>
+  {% endif %}
+  <p class="muted small">Нажми «▶ Запустить», чтобы попробовать, и «✔ Проверить», чтобы сдать решение. Ctrl+Enter — быстрый запуск.</p>
+</section>
+
+{{ codebox(code, mode='task', task=task.id, tests=task.tests) }}
+
+<div class="row">
+  <button class="btn btn-ghost" id="show-hint" {% if fails >= 2 or solved %}hidden{% endif %}>💡 Подсказка</button>
+  <span id="fails" data-n="{{ fails }}"></span>
+</div>
+<div class="card hint-card" id="hint" {% if fails < 2 %}hidden{% endif %}>💡 {{ task.hint|md }}</div>
+
+<div class="card solution-card" id="solution" {% if not show_solution %}hidden{% endif %}>
+  <div class="eyebrow">📗 Эталонное решение{% if user.role == 'student' %} — сравни со своим{% endif %}</div>
+  <pre class="code-mini">{{ task.solution if show_solution else '' }}</pre>
+</div>
+
+<div id="next-task" {% if not solved %}hidden{% endif %} class="row">
+  {% if next_task %}<a class="btn" href="/task/{{ next_task.id }}">Следующая задача: {{ next_task.title }} →</a>
+  {% else %}<a class="btn" href="/lesson/{{ lesson.num }}">К уроку →</a>{% endif %}
+</div>
+{% endblock %}

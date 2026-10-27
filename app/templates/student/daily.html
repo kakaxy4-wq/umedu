@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox, numpad %}
+{% block title %}Задача дня{% endblock %}
+{% block content %}
+<h1>☀️ Задача дня</h1>
+<p class="muted">Каждый день — новый код. Угадай, что он выведет, <b>не запуская</b>. С первой попытки +15 🏆, со второй +8. Серия дней подряд — 🔥 {{ me.streak }} (рекорд {{ me.best_streak }}). Каждые 7 дней подряд — бонус +30 🏆.</p>
+
+<section class="card">
+  <h3>Что выведет этот код?</h3>
+  <pre class="code-big">{{ quiz.code }}</pre>
+  {% if user.role == 'student' %}
+  <form id="daily-form" class="stack">
+    {% if numeric %}
+    <label>Твой ответ <input name="answer" class="check-short num-answer" inputmode="none" autocomplete="off" required data-numpad {% if d.finished_at %}disabled{% endif %}></label>
+    {% if not d.finished_at %}{{ numpad() }}{% endif %}
+    {% else %}
+    <label>Твой ответ (если строк несколько — пиши каждую с новой строки)
+      <textarea name="answer" rows="2" required {% if d.finished_at %}disabled{% endif %}></textarea></label>
+    {% endif %}
+    <button class="btn" {% if d.finished_at %}disabled{% endif %}>Ответить</button>
+  </form>
+  {% endif %}
+  <div id="daily-result" class="daily-result" hidden></div>
+  <div id="daily-reveal" {% if not d.finished_at and user.role == 'student' %}hidden{% endif %}>
+    <h4>Правильный ответ</h4>
+    <pre class="code-mini">{{ quiz.answer if (d.finished_at or user.role == 'teacher') else '' }}</pre>
+    <p class="why">{{ quiz.why if (d.finished_at or user.role == 'teacher') else '' }}</p>
+    <h4>Проверь сам — запусти:</h4>
+    <div class="daily-code">{{ codebox(quiz.code) }}</div>
+  </div>
+</section>
+
+{% if history %}
+<h2>История</h2>
+<div class="history">
+  {% for h in history %}<span class="hist {{ 'ok' if h.solved else 'bad' }}" title="{{ h.day }}">{{ h.day[8:10] }}.{{ h.day[5:7] }} {{ '✅' if h.solved else '➖' }}</span>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

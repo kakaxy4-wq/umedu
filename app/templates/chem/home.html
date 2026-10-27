@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "chem/_macros.html" import hw_pill, when %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+{% set st = card.student %}
+<h1 class="hello">Привет, {{ st.display_name }}! 👋</h1>
+<p class="muted">{{ grades.get(st.grade, '') }}</p>
+
+{% if not entry_done %}
+<a class="card check-banner" href="/check/{{ entry_id }}">
+  <span class="check-emoji">🧭</span>
+  <span><b>Входное тестирование</b><br><small>{{ 'Добро пожаловать! ' if welcome }}20–30 минут, без оценок — покажет, с чего начать подготовку</small></span>
+  <span class="btn btn-small">Пройти →</span>
+</a>
+{% endif %}
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">📅 Занятия</div>
+    {% if upcoming %}
+    <ul class="clean-list">
+      {% for l in upcoming %}<li><b>{{ when(l.starts_at) }}</b>{% if l.topic %} · {{ l.topic|chem }}{% endif %}</li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted">Ближайших занятий пока нет в расписании.</p>{% endif %}
+    <p class="small muted">Посещено занятий: {{ card.visits }}</p>
+  </section>
+
+  <section class="card">
+    <div class="row between"><div class="eyebrow">📚 Домашние задания</div><a class="small" href="/chem/hw">Все →</a></div>
+    {% if hw %}
+    <ul class="clean-list">
+      {% for h in hw %}<li><a href="/chem/hw/{{ h.id }}">{{ h.title|chem }}</a> {{ hw_pill(h) }}{% if h.due_at and h.status == 'given' %} <small class="muted">до {{ when(h.due_at) }}</small>{% endif %}</li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted">Заданий пока нет.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">⭐ Прогресс</div>
+    <div class="mini-stats">
+      <div><b>{{ me.level.num }}</b><small>уровень</small></div>
+      <div><b>{{ me.xp }}</b><small>опыт</small></div>
+      <div><b>{{ me.streak }}</b><small>дней подряд 🔥</small></div>
+    </div>
+    <div class="progress"><i style="width: {{ me.level.progress }}%"></i></div>
+    <small class="muted">Опыт дают задачи, домашние задания и занятия.</small>
+  </section>
+
+  {% if sheets %}
+  <section class="card">
+    <div class="eyebrow">📄 Листочки с занятий</div>
+    <ul class="clean-list">{% for f in sheets %}<li><a href="/chem/lesson-file/{{ f.id }}" target="_blank">{{ f.starts_at[8:10] }}.{{ f.starts_at[5:7] }}{% if f.topic %} · {{ f.topic|chem }}{% endif %}</a></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <a class="card check-banner" href="/chem/map">
+    <span class="check-emoji">🗺️</span>
+    <span><b>Карта экзамена</b><br><small>Все номера {{ 'ОГЭ' if st.grade == 9 else 'ЕГЭ' }} — что уже получается, что подтянуть</small></span>
+    <span class="btn btn-small">Открыть →</span>
+  </a>
+</div>
+{% endblock %}

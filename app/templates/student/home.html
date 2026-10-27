@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "_macros.html" import level_bar, hw_status, week_board %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<h1 class="hello">Привет{% if student_name %}, {{ subject.badge ~ ' ' if subject and subject.badge }}{{ student_name }}{% endif %}! 👋</h1>
+{% if subject and subject.title %}<p class="hello-title">🏷️ {{ subject.title }}</p>{% endif %}
+
+{% if ru_ov %}
+<a class="card check-banner ru-home-banner" href="{{ '/ru/review' if ru_ov.due else '/ru' }}">
+  <span class="check-emoji">📖</span>
+  <span><b>Русский язык</b><br><small>{% if ru_ov.due %}Повторить ошибки: {{ ru_ov.due }} — это 2–3 минуты{% else %}Тренажёры запятых и букв — 5 минут в день хватит{% endif %}</small></span>
+  <span class="btn btn-small">{{ 'Повторить →' if ru_ov.due else 'Открыть →' }}</span>
+</a>
+{% endif %}
+{% if pending_check %}
+<a class="card check-banner" href="/check/{{ pending_check.id }}">
+  <span class="check-emoji">{{ pending_check.emoji }}</span>
+  <span><b>Тебя ждёт «{{ pending_check.title }}»</b><br><small>{{ pending_check.questions|length }} вопросов, без таймера · +30 🏆 за прохождение</small></span>
+  <span class="btn btn-small">Пройти →</span>
+</a>
+{% endif %}
+{% if plan and plan.steps %}
+<a class="card check-banner today-banner {{ 'done' if plan.complete }}" href="/today">
+  <span class="check-emoji">📅</span>
+  <span><b>План на сегодня — {{ plan.done }} из {{ plan.total }}</b><br><small>{% if plan.claimed %}сделано, сундук открыт 🎉{% elif plan.complete %}всё сделано — забери сундук!{% else %}10–15 минут, в конце — сундук{% endif %}</small></span>
+  <span class="btn btn-small">{{ 'Открыть' if plan.done else 'Начать' }} →</span>
+</a>
+{% endif %}
+
+<div class="grid grid-home">
+  <section class="card span2 hero-card">
+    {% if current %}
+    <div class="eyebrow">Сейчас изучаем · урок {{ current.num }}</div>
+    <h2>{{ current.emoji }} {{ current.title }}</h2>
+    <p>{{ current.intro }}</p>
+    <div class="row">
+      <a class="btn" href="/lesson/{{ current.num }}">Открыть урок →</a>
+      {% if current_state.tasks_total %}<span class="muted">Задачи: {{ current_state.tasks_solved }} / {{ current_state.tasks_total }}</span>{% endif %}
+      {{ hw_status(current_state.hw_status) }}
+    </div>
+    {% endif %}
+    {% if next_lesson_at %}
+    <div class="next-lesson">⏰ Следующее занятие {{ next_lesson_at|dt }} — через <b data-countdown="{{ next_lesson_at }}"></b></div>
+    {% endif %}
+  </section>
+
+  <a class="card pass-mini" href="/season">
+    <div class="row between"><b>{{ ico("pass", "🎟️", "ico-inline") }} Пасс «{{ pass_ov.season.title }}»</b><span class="muted small">ещё {{ pass_ov.season.days_left }} дн.</span></div>
+    <div class="pass-mini-tier">Ступень <b>{{ pass_ov.tier }}</b> из 20{% if pass_ov.premium %} · <span class="pill ok">премиум</span>{% endif %}</div>
+    <div class="progress"><i style="width: {{ pass_ov.progress }}%"></i></div>
+    <small class="muted">{% if pass_ov.ready %}🎁 Можно забрать наград: {{ pass_ov.ready }}{% elif pass_ov.tier < 20 %}До следующей ступени — {{ pass_ov.to_next }} 🏆{% else %}Пасс пройден! 👑{% endif %}</small>
+  </a>
+
+  <section class="card">
+    {{ level_bar(me, calm) }}
+    <div class="mini-stats">
+      <div><b>{{ me.tasks_solved }}</b><small>задач решено</small></div>
+      <div><b>{{ me.streak }}</b><small>дней подряд 🔥</small></div>
+      <div><b>{{ me.lessons_done }}</b><small>занятий</small></div>
+    </div>
+  </section>
+
+  <section class="card daily-card {% if daily.finished_at %}done{% endif %}">
+    <div class="eyebrow">{{ ico("py_daily", "☀️", "ico-inline") }} Задача дня</div>
+    {% if daily.finished_at %}
+      <h3>{% if daily.solved %}Выполнено! ✅{% else %}Сегодня не вышло — завтра получится!{% endif %}</h3>
+      <p class="muted">Серия: {{ me.streak }} 🔥. Новая задача появится завтра.</p>
+    {% elif daily.kind == 'quiz' %}
+      <h3>Что выведет этот код?</h3>
+      <pre class="code-mini">{{ daily_item.code }}</pre>
+      <a class="btn" href="/daily">Ответить · +15 🏆</a>
+    {% else %}
+      <h3>{{ daily_item.title }}</h3>
+      <p class="muted">Реши эту задачу сегодня — бонус +10 🏆 и серия не прервётся.</p>
+      <a class="btn" href="/task/{{ daily_item.id }}">Решать →</a>
+    {% endif %}
+  </section>
+
+  <section class="card arena-card">
+    <div class="eyebrow">{{ ico("py_arena", "🏀", "ico-inline") }} Арена</div>
+    <h3>60 секунд на счёт</h3>
+    <p class="muted">Быстрый ответ — трёхочковый! Лучший результат: <b>{{ trainer_best.values()|max if trainer_best else 0 }}</b></p>
+    <a class="btn btn-alt" href="/trainer">На арену →</a>
+  </section>
+
+  {% if returned %}
+  <section class="card span2 warn-card">
+    <div class="eyebrow">🔧 Нужно доработать</div>
+    {% for s in returned %}
+    <p><a href="/lesson/{{ s.lesson }}#homework">Домашка к уроку {{ s.lesson }}</a>: {{ s.teacher_comment }}</p>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="card span2">
+    <div class="eyebrow">{{ ico("py_map", "🗺️", "ico-inline") }} Путь</div>
+    <div class="path-strip">
+      {% for l in lessons %}
+      <a href="/lesson/{{ l.num }}" class="node {% if l.done %}done{% elif l.current %}current{% elif not l.open %}locked{% endif %}" title="{{ l.num }}. {{ l.title }}">
+        {% if l.open %}{{ l.emoji }}{% else %}🔒{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if board %}
+  <section class="card">
+    <div class="eyebrow">🏁 Рейтинг недели</div>
+    {{ week_board(board, sid, 5) }}
+    <p class="muted small">Считаются трофеи с понедельника — каждую неделю всё с нуля. <a href="/achievements#board">Весь рейтинг →</a></p>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="eyebrow">{{ ico("trophy", "🎯", "ico-inline") }} Ближайшие достижения</div>
+    <ul class="ach-mini">
+      {% for a in next_ach %}<li><span>{{ a[1] }}</span><div><b>{{ a[2] }}</b><small>{{ a[3] }}</small></div></li>{% endfor %}
+    </ul>
+    <a href="/achievements">{{ "Все награды →" if calm else "Все награды и бойцы →" }}</a>
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">📈 Последние трофеи</div>
+    <ul class="feed">
+      {% for e in recent %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }}</li>
+      {% else %}<li class="muted">Пока пусто — запусти первую программу!</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

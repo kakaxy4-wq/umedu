@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Подготовка к ОГЭ между занятиями{% endblock %}
+{% block body_class %}landing-page{% endblock %}
+{% block content %}
+<div class="landing">
+<header class="ld-top">
+  <span class="logo">{% if logo %}<img src="{{ logo }}" alt="" class="logo-mark"> {{ wordmark(site_name) }}{% else %}{{ brand }} {{ site_name }}{% endif %}</span>
+  <a class="btn btn-small btn-ghost" href="/login">Войти</a>
+</header>
+
+<section class="ld-hero">
+  <div>
+    <div class="eyebrow">Информатика · Python · русский язык · 8–9 класс</div>
+    <h1>Подготовка к ОГЭ, которая работает между занятиями</h1>
+    <p class="lead">Ученик занимается 10–15 минут в день в игре с рангами, героями и сундуками. Задания каждый раз новые — генератор
+      собирает вариант в формате экзамена и проверяет ответ сам. Родитель видит прогноз балла, преподаватель — кому нужна помощь.</p>
+    <div class="row">
+      {% if contact %}<a class="btn btn-big" href="{{ contact }}" target="_blank" rel="noopener">Попасть в пилот →</a>{% endif %}
+      <a class="btn btn-big btn-ghost" href="#how">Как это устроено</a>
+    </div>
+    <p class="small muted">Сейчас идёт бесплатный пилот с репетиторами. Код приглашения выдаёт ваш преподаватель.</p>
+  </div>
+  <div class="ld-hero-art" aria-hidden="true">
+    {% for n in (1, 3, 5) %}{% if brawler_img(n) %}<img src="{{ brawler_img(n) }}" alt="" class="ld-hero-img i{{ loop.index }}">{% endif %}{% endfor %}
+    {% if chest_img('Легендарный') %}<img src="{{ chest_img('Легендарный') }}" alt="" class="ld-chest">{% endif %}
+  </div>
+</section>
+
+<section class="ld-roles" id="how">
+  <div class="card ld-role">
+    <div class="ld-role-ico">{{ ico("py_daily", "🎒") }}</div>
+    <h2>Ученику</h2>
+    <ul>
+      <li><b>План на сегодня</b> — 3–4 коротких шага, в конце сундук.</li>
+      <li>Python прямо в браузере: пишешь код, сайт проверяет на скрытых тестах.</li>
+      <li>Тренажёр ОГЭ: бесконечные варианты номеров 1–10, 12, исполнитель «Робот».</li>
+      <li>Русский: запятые, орфограммы, диктанты; ошибки возвращаются на повторение.</li>
+      <li>Ранги, герои, сезон с наградами — за учёбу, а не за покупки.</li>
+    </ul>
+  </div>
+  <div class="card ld-role">
+    <div class="ld-role-ico">{{ ico("certificate", "👪") }}</div>
+    <h2>Родителю</h2>
+    <ul>
+      <li><b>Прогноз балла ОГЭ</b> по тому, что ребёнок реально решал, — и какие номера подтянуть.</li>
+      <li>Дни занятий за две недели: видно, держится ли ритм.</li>
+      <li>Домашние задания, проверки, сертификаты — по ссылке, без регистрации.</li>
+    </ul>
+  </div>
+  <div class="card ld-role">
+    <div class="ld-role-ico">{{ ico("py_homework", "🧑‍🏫") }}</div>
+    <h2>Преподавателю</h2>
+    <ul>
+      <li>Пульт: что ждёт проверки и кому нужна помощь — первым экраном.</li>
+      <li>Автопроверка задач и вариантов ОГЭ — меньше рутины.</li>
+      <li>34 урока Python с планами занятий; самостоятельный темп для тех, кто учится сам.</li>
+      <li>Сводка недели по каждому ученику.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="ld-steps">
+  <h2>Как проходит неделя</h2>
+  <ol>
+    <li><b>Занятие с преподавателем</b> — новая тема, разбор ошибок.</li>
+    <li><b>Каждый день 10–15 минут</b> — план на сегодня: задача дня, тренажёр ОГЭ, повторение.</li>
+    <li><b>Домашка</b> — прямо на сайте, с запуском кода и автопроверкой.</li>
+    <li><b>В воскресенье</b> — сводка: прогресс, прогноз балла, что подтянуть.</li>
+  </ol>
+</section>
+
+<section class="card ld-faq">
+  <h2>Вопросы</h2>
+  <details><summary>Можно заниматься без репетитора?</summary><p>Да: в самостоятельном темпе урок засчитывается, когда решена большая часть его задач, и следующий открывается сам.</p></details>
+  <details><summary>Нужно что-то устанавливать?</summary><p>Нет. Python работает прямо в браузере — на компьютере, планшете и телефоне.</p></details>
+  <details><summary>Откуда прогноз балла?</summary><p>Из точности по каждому номеру экзамена в тренажёре, «Роботе» и пробнике. Номера, которые ученик ещё не тренировал, в прогноз не входят и показываются отдельно — без приукрашивания.</p></details>
+  <details><summary>Какие данные о ребёнке нужны?</summary><p>Только имя или ник и класс. Ни телефона, ни почты ребёнка мы не просим.</p></details>
+</section>
+
+<footer class="ld-foot small muted">
+  {{ site_name }} · {% if contact %}<a href="{{ contact }}" target="_blank" rel="noopener">связаться</a> · {% endif %}<a href="/login">вход</a>{% if source_url %} · <a href="{{ source_url }}" target="_blank" rel="noopener">исходный код</a>{% endif %} · <a href="/privacy">данные</a>
+</footer>
+</div>
+{% endblock %}

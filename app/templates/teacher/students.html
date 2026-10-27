@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Ученики{% endblock %}
+{% block content %}
+<h1>👥 Ученики</h1>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">➕ Добавить ученика</div>
+    <form method="post" action="/teacher/students" class="stack">
+      {{ csrf_field(user) }}
+      <label>Имя на сайте — как обращаться к ученику
+        <input name="display_name" required maxlength="40" placeholder="{{ 'Имя или ник' if chem_site else 'Например, Аня' }}" autocomplete="off"></label>
+      {% if chem_site %}
+      <fieldset class="grade-pick"><legend>Класс</legend>
+        <label class="check"><input type="radio" name="grade" value="9" required> 9 класс · ОГЭ</label>
+        <label class="check"><input type="radio" name="grade" value="11" required> 11 класс · ЕГЭ</label>
+      </fieldset>
+      <label>Цена занятия, ₽ <input name="price" inputmode="numeric" placeholder="например, 1500"></label>
+      {% else %}
+      <label>Полное имя для сертификатов <small class="muted">(можно позже)</small>
+        <input name="full_name" maxlength="80" placeholder="Анна Смирнова" autocomplete="off"></label>
+      {% endif %}
+      <label>Логин <small class="muted">(пусто — придумаю из имени)</small>
+        <input name="username" maxlength="32" pattern="[a-zA-Z0-9_.\-]{2,32}" placeholder="anya" autocomplete="off" autocapitalize="off"></label>
+      <button class="btn">Создать и показать карточку доступа</button>
+      <p class="muted small">Пароль сайт придумает сам и покажет один раз — на карточке, которую можно распечатать или сфотографировать. Потерялся — «Новый пароль» в профиле ученика.</p>
+    </form>
+  </section>
+
+  {% if chem_site %}
+  <section class="card">
+    <div class="eyebrow">🔑 Ученики могут зарегистрироваться сами</div>
+    <p class="small">Код приглашения и ссылка — на <a href="/chem/teacher#invite">пульте</a>. Ученик сам выбирает класс, ник и пароль.</p>
+  </section>
+  {% else %}
+  <section class="card">
+    <div class="eyebrow">🏁 Рейтинг недели</div>
+    <form method="post" action="/teacher/leaderboard" class="row">
+      {{ csrf_field(user) }}
+      <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if board_on }} data-autosubmit> Показывать ученикам рейтинг</label>
+      <noscript><button class="btn btn-small">Сохранить</button></noscript>
+    </form>
+    <p class="muted small">Трофеи с понедельника, каждую неделю заново — у новичка и у отстающего есть шанс. Ученики видят только имена и трофеи недели, без задач и оценок. Появляется, когда учеников двое и больше.</p>
+    {% if board %}
+    <ol class="small-list">{% for r in board[:5] %}<li>{{ r.name }} — +{{ r.week }} 🏆</li>{% endfor %}</ol>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+
+<div class="row between">
+  <h2>{{ 'Архив' if archived else 'Активные' }} · {{ rows|length }}</h2>
+  <a href="/teacher/students{{ '' if archived else '?archived=1' }}" class="small">{{ '← Активные' if archived else 'Показать и архив →' }}</a>
+</div>
+<div class="table-scroll">
+<table class="table students-table">
+{% if chem_site %}
+  <tr><th>Ученик</th><th>Класс</th><th>Цена занятия</th><th>Последний вход</th></tr>
+  {% for r in rows %}{% set st = r.student %}
+  <tr class="{{ 'muted' if not st.active }}">
+    <td><a href="/chem/teacher/student/{{ st.id }}"><b>{{ st.display_name }}</b></a>{% if not st.active %} <span class="pill">архив</span>{% endif %}<br><small class="muted">{{ st.username }}</small></td>
+    <td>{{ st.grade or '—' }}</td><td>{{ st.price or 0 }} ₽</td><td>{{ st.last_seen_at|ago }}</td>
+  </tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ 'Архив пуст.' if archived else 'Учеников пока нет.' }}</td></tr>{% endfor %}
+{% else %}
+  <tr><th>Ученик</th><th>Ранг</th><th>🏆</th><th>Неделя</th><th>Урок</th><th>Задачи</th><th>Домашки</th><th>Последний вход</th></tr>
+  {% for r in rows %}{% set st = r.student %}
+  <tr class="{{ 'muted' if not st.active }} {{ 'row-current' if st.id == sid }}">
+    <td><a href="/teacher/student/{{ st.id }}"><b>{{ st.display_name }}</b></a> <span title="Предметы — меняются в профиле ученика">{% for n in subj_of(st) %}{{ subjects_all[n].emoji }}{% endfor %}</span>{% if not st.active %} <span class="pill">архив</span>{% endif %}<br><small class="muted">{{ st.username }}{% if st.level in levels_all %} · {{ levels_all[st.level].emoji }} {{ levels_all[st.level].title }}{% endif %}</small></td>
+    <td>{{ r.stats.level.emoji }} {{ r.stats.level.title }}</td>
+    <td>{{ r.stats.xp }}</td>
+    <td>+{{ r.week }}</td>
+    <td>{{ r.upto }} <small class="muted">({{ r.stats.lessons_done }} пров.)</small></td>
+    <td>{{ r.stats.tasks_solved }}</td>
+    <td>{{ r.stats.hw_approved }}{% if r.pending %} <span class="pill wait">📬 {{ r.pending }}</span>{% endif %}</td>
+    <td class="{{ 'bad-text' if r.seen_days is not none and r.seen_days >= 5 }}">{{ st.last_seen_at|ago }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="8" class="muted">{{ 'Архив пуст.' if archived else 'Пока нет учеников — добавь первого выше.' }}</td></tr>
+  {% endfor %}
+{% endif %}
+</table>
+</div>
+{% endblock %}

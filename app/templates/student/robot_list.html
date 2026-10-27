@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Робот — ОГЭ №15{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/oge#n15">ОГЭ по информатике</a></p>
+<h1>🤖 Исполнитель «Робот»</h1>
+<p class="muted">Задание 15 ОГЭ. Робот ходит по клетчатому полю со стенами и закрашивает клетки. Главная хитрость экзамена:
+  <b>длины стен неизвестны</b>. Программа должна работать на любом поле такого вида, поэтому сайт проверяет её
+  на нескольких полях: стены там длинные, короткие и длиной в одну клетку.</p>
+
+{% if not is_open %}
+<section class="card center-card">
+  <div class="big-emoji">🔒</div>
+  <p>Робот откроется вместе с уроком {{ lesson }}: там цикл <code>while</code>, без него Роботу не обойтись.</p>
+</section>
+{% else %}
+<section class="card check-banner robot-exam-banner">
+  <span class="check-emoji">🎓</span>
+  <span><b>Как на экзамене</b><br><small>Случайная задача (сначала нерешённые), без подсказок, с чистого листа. Итог — 2 балла или 0.</small></span>
+  <a class="btn btn-small" href="/oge/robot/exam">Начать →</a>
+</section>
+<div class="robot-tasks">
+  {% for t in tasks %}
+  <a class="card robot-task {{ 'done' if t.id in solved }}" href="/oge/robot/{{ t.id }}">
+    <span class="n">{{ loop.index }}</span>
+    <span><b>{{ t.title }}</b><br><small class="muted">{{ '⭐' * t.level }}</small></span>
+    <span class="mark">{{ '✅' if t.id in solved else '→' }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<section class="card">
+  <div class="eyebrow">📒 Команды Робота</div>
+  <table class="table robot-help">
+    <tr><th>Python (на сайте)</th><th>Что делает</th><th>КуМир (на экзамене)</th></tr>
+    {% for py, what, ku in help %}<tr><td><code>{{ py }}</code></td><td>{{ what }}</td><td><code>{{ ku }}</code></td></tr>{% endfor %}
+  </table>
+  <p class="small muted">Цикл <code>while условие:</code> в КуМире записывается как <code>нц пока условие … кц</code>,
+    а <code>and</code> и <code>not</code> — словами <code>и</code>, <code>не</code>. На экзамене можно решать на КуМире,
+    логика та же.</p>
+</section>
+{% endblock %}

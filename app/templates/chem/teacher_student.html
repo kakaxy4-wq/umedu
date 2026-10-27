@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% from "chem/_macros.html" import money, when, hw_pill %}
+{% block title %}{{ st.display_name }}{% endblock %}
+{% block content %}
+{% set b = card.balance %}
+<p class="crumbs"><a href="/chem/teacher">Пульт</a></p>
+<h1>👤 {{ st.display_name }}{% if not st.active %} <span class="pill">в архиве</span>{% endif %}</h1>
+<p class="muted">Логин <b>{{ st.username }}</b> · {{ grades.get(st.grade, 'класс не указан') }} · последний вход: {{ st.last_seen_at|ago }}</p>
+
+<div class="row">
+  <a class="btn btn-ghost" href="#lessons">📅 Занятия</a>
+  <a class="btn btn-ghost" href="#money">💰 Оплата: <b class="{{ 'bad-text' if b.balance < 0 }}">{{ money(b.balance) }}</b></a>
+  <a class="btn btn-ghost" href="#hw">📚 ДЗ</a>
+  <a class="btn btn-ghost" href="#access">🔑 Доступ</a>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">⚙️ Ученик</div>
+    <form method="post" action="/chem/teacher/student/{{ st.id }}/settings" class="stack">
+      {{ csrf_field(user) }}
+      <label>Имя или ник <input name="name" value="{{ st.display_name }}" maxlength="40"></label>
+      <label>Класс <select name="grade">{% for g, t in grades.items() %}<option value="{{ g }}" {{ 'selected' if st.grade == g }}>{{ t }}</option>{% endfor %}</select></label>
+      <label>Цена занятия, ₽ <input name="price" value="{{ st.price or 0 }}" inputmode="numeric"></label>
+      <label>Заметки (видишь только ты) <textarea name="notes" rows="3">{{ st.notes }}</textarea></label>
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">📊 Коротко</div>
+    <ul class="clean-list">
+      <li>Посещено занятий: <b>{{ card.visits }}</b>{% if card.missed %}, пропусков: {{ card.missed }}{% endif %}</li>
+      <li>Следующее занятие: <b>{{ when(card.next.starts_at) if card.next else '—' }}</b></li>
+      <li>Оплачено всего: {{ money(b.paid) }}, занятий на {{ money(b.cost) }}</li>
+      <li>Баланс: <b class="{{ 'bad-text' if b.balance < 0 }}">{{ money(b.balance) }}</b>{% if b.balance < 0 %} — долг{% elif b.balance > 0 %} — предоплата{% endif %}</li>
+      <li>Входное тестирование: {% set eid = 'chem%d_entry' % (st.grade or 9) %}{% if eid in results %}<a href="/teacher/checks?student={{ st.id }}">{{ results[eid].right_count }}/{{ results[eid].total }}</a>{% else %}ещё не пройдено{% endif %}</li>
+    </ul>
+  </section>
+</div>
+
+<section class="card" id="lessons">
+  <div class="eyebrow">📅 Занятия</div>
+  {% set students_for_form, fixed_sid, back_to = [], st.id, '/chem/teacher/student/%d#lessons' % st.id %}
+  <details class="add-lesson-box" {{ 'open' if not lessons and not history }}><summary class="btn btn-small btn-ghost">➕ Добавить занятие (можно сразу на несколько недель)</summary>
+    {% include "chem/_add_lesson.html" %}
+  </details>
+  {% set show_who, show_day = False, True %}
+  <div class="lesson-day">Предстоящие</div>
+  {% for l in lessons %}{% include "chem/_lesson_row.html" %}{% else %}<p class="muted small">Не запланировано.</p>{% endfor %}
+  {% if history %}
+  <div class="lesson-day">Прошедшие</div>
+  {% for l in history %}{% include "chem/_lesson_row.html" %}{% endfor %}
+  {% endif %}
+</section>
+
+<section class="card" id="money">
+  <div class="eyebrow">💰 Оплата наличными</div>
+  <form method="post" action="/chem/teacher/student/{{ st.id }}/payment" class="add-lesson">
+    {{ csrf_field(user) }}
+    <label>Сумма, ₽ <input name="amount" inputmode="numeric" required value="{{ st.price or '' }}"></label>
+    <label>Дата <input type="date" name="paid_at" value="{{ today }}"></label>
+    <label>Комментарий <input name="note" maxlength="200" placeholder="например, за 4 занятия"></label>
+    <button class="btn btn-small">➕ Получено</button>
+  </form>
+  {% if pays %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Дата</th><th>Сумма</th><th>Комментарий</th><th></th></tr>
+    {% for p in pays %}
+    <tr><td>{{ when(p.paid_at) }}</td><td>{{ money(p.amount) }}</td><td>{{ p.note }}</td>
+      <td><form method="post" action="/chem/teacher/payment/{{ p.id }}/delete" data-confirm="Удалить запись об оплате {{ money(p.amount) }}?">{{ csrf_field(user) }}<button class="linklike danger small">удалить</button></form></td></tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Оплат пока не было.</p>{% endif %}
+</section>
+
+<section class="card" id="program">
+  <div class="eyebrow">🧭 Программа · {{ grades.get(st.grade, '') }} · пройдено {{ topics_all|selectattr('title', 'in', covered)|list|length }} из {{ topics_all|length }}</div>
+  <p class="small muted">Темы занятию выбираются в «📝 План» у занятия; тема считается пройденной, когда занятие отмечено «✅ Был». «📚 ДЗ» — задачи банка и варианты по номерам темы, с автопроверкой.</p>
+  <ol class="topic-list">
+    {% for t in topics_all %}
+    <li class="{{ 'done' if t.title in covered }}">
+      <span>{{ '✅' if t.title in covered else '⬜' }} {{ t.title }}{% if t.nums %} <small class="muted">№{{ t.nums|join(', ') }}</small>{% endif %}{% if t.title in covered %} <small class="muted">· {{ covered[t.title][8:10] }}.{{ covered[t.title][5:7] }}.{{ covered[t.title][2:4] }}</small>{% endif %}</span>
+      {% if t.nums %}<form method="post" action="/chem/teacher/student/{{ st.id }}/hw-topic" data-confirm="Задать ДЗ по теме «{{ t.title }}»?">{{ csrf_field(user) }}<input type="hidden" name="topic" value="{{ t.id }}"><button class="btn btn-small btn-ghost" title="Задать ДЗ по этой теме">📚 ДЗ</button></form>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="card" id="hw">
+  <div class="eyebrow">📚 Домашние задания</div>
+  <form method="post" action="/chem/teacher/student/{{ st.id }}/hw-topic" class="add-lesson">
+    {{ csrf_field(user) }}
+    <label>ДЗ по теме <select name="topic">{% for t in topics_all if t.nums %}<option value="{{ t.id }}">{{ t.title }}</option>{% endfor %}</select></label>
+    <label>Срок <input type="date" name="due_at"></label>
+    <button class="btn btn-small">📚 Задать</button>
+  </form>
+  {% if hwerr %}<p class="pill bad">Пустое ДЗ не задать: напиши текст, приложи фото или нарисуй задание.</p>{% endif %}
+  <details class="add-lesson-box"><summary class="btn btn-small btn-ghost">📖 По учебнику</summary>
+    <form method="post" action="/chem/teacher/student/{{ st.id }}/hw" class="stack">
+      {{ csrf_field(user) }}<input type="hidden" name="kind" value="book">
+      <label>Учебник <input name="book" list="chem-textbooks" value="{{ last_textbook }}" placeholder="выбери или напиши свой"></label>
+      <datalist id="chem-textbooks">{% for b in textbooks %}<option value="{{ b }}">{% endfor %}</datalist>
+      <div class="row">
+        <label>Параграф <input name="paragraph" placeholder="§ 12" style="max-width: 9em"></label>
+        <label>Страницы <input name="pages" placeholder="45–49" style="max-width: 9em"></label>
+        <label>Задания <input name="exercises" placeholder="№ 2, 4, 5"></label>
+      </div>
+      <label>Комментарий <textarea name="text" rows="2" data-formula placeholder="Например: выписать определения, составить уравнения реакций"></textarea></label>
+      <div class="row">
+        <label>Срок <input type="date" name="due_at"></label>
+        <label>Макс. баллов <input name="max_score" inputmode="numeric" placeholder="необязательно" style="max-width: 9em"></label>
+      </div>
+      <button class="btn btn-small">📖 Задать</button>
+    </form>
+  </details>
+  <details class="add-lesson-box"><summary class="btn btn-small btn-ghost">✍️ Своё задание: текст, фото или от руки</summary>
+    <form method="post" action="/chem/teacher/student/{{ st.id }}/hw" enctype="multipart/form-data" class="stack">
+      {{ csrf_field(user) }}<input type="hidden" name="kind" value="text">
+      <label>Название <input name="title" maxlength="120" placeholder="Например: ОВР, задание 29 — 3 реакции"></label>
+      <label>Что сделать <textarea name="text" rows="4" data-formula placeholder="Условие, номера из сборника — или приложи фото/рисунок ниже"></textarea></label>
+      <label>Фото задания или рисунок <input type="file" name="files" accept="image/*,.pdf" multiple data-drawpad></label>
+      <div class="row">
+        <label>Срок <input type="date" name="due_at"></label>
+        <label>Макс. баллов <input name="max_score" inputmode="numeric" placeholder="необязательно" style="max-width: 9em"></label>
+      </div>
+      <button class="btn btn-small">Задать</button>
+    </form>
+  </details>
+  {% if hw %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Задание</th><th>Срок</th><th>Статус</th></tr>
+    {% for h in hw %}<tr><td><a href="/chem/hw/{{ h.id }}">{{ h.title }}</a></td><td>{{ when(h.due_at) if h.due_at else '—' }}</td><td>{{ hw_pill(h) }}</td></tr>{% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Заданий пока нет.</p>{% endif %}
+</section>
+
+<section class="card" id="mocks">
+  <div class="eyebrow">⏱️ Пробные варианты</div>
+  <form method="post" action="/chem/teacher/student/{{ st.id }}/mock" class="row">
+    {{ csrf_field(user) }}
+    <label>Срок (необязательно) <input type="date" name="due_at"></label>
+    <button class="btn btn-small">Выдать пробник</button>
+  </form>
+  {% if mocks %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Выдан</th><th>Статус</th><th>Баллы</th></tr>
+    {% for m in mocks %}<tr><td>{{ m.created_at|dt }}</td>
+      <td>{% if m.status == 'given' %}не начат{% elif m.status == 'running' %}решает{% elif m.status == 'finished' %}<b>📬 ждёт проверки</b>{% else %}✅ проверен{% endif %}</td>
+      <td><a href="/chem/mock/{{ m.id }}">{{ m.score if m.score is not none else '—' }} / {{ m.ex.max }}</a></td></tr>{% endfor %}
+  </table></div>
+  {% else %}<p class="muted small">Пробников пока не было. Ученик может начать пробник и сам — в разделе «⏱️ Пробник».</p>{% endif %}
+</section>
+
+<section class="card" id="access"><span id="parent"></span>
+  <div class="eyebrow">🔑 Доступ и родители</div>
+  {% if parent_url %}
+  <p class="small">Ссылка для родителей (без пароля, только просмотр: занятия, оплата, ДЗ): <code>{{ parent_url }}</code></p>
+  <form method="post" action="/teacher/student/{{ st.id }}/parent-link" data-confirm="Отключить ссылку для родителей?">{{ csrf_field(user) }}<input type="hidden" name="action" value="revoke"><button class="btn btn-small btn-ghost">⛔ Отключить ссылку</button></form>
+  {% else %}
+  <form method="post" action="/teacher/student/{{ st.id }}/parent-link">{{ csrf_field(user) }}<input type="hidden" name="action" value="new"><button class="btn btn-small">👪 Создать ссылку для родителей</button></form>
+  {% endif %}
+  <div class="row" style="margin-top: 10px">
+    <form method="post" action="/teacher/student/{{ st.id }}/password" data-confirm="Сделать новый пароль? Старый перестанет работать.">{{ csrf_field(user) }}<button class="btn btn-small btn-ghost">🔑 Новый пароль</button></form>
+    <form method="post" action="/teacher/student/{{ st.id }}/archive" data-confirm="{{ 'Вернуть ученика из архива?' if not st.active else 'Отправить в архив? Ученик не сможет войти; все данные сохранятся.' }}">{{ csrf_field(user) }}<input type="hidden" name="active" value="{{ 0 if st.active else 1 }}"><button class="btn btn-small btn-ghost">{{ '♻️ Вернуть из архива' if not st.active else '📦 В архив' }}</button></form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import oge_forecast %}
+{% block title %}Успехи: {{ st.display_name }}{% endblock %}
+{% block content %}
+<div class="parent-page">
+{% if fam %}{% include "family/_bar.html" %}{% endif %}
+<p class="eyebrow">👪 Для родителей · {{ site_name }}</p>
+{% if token and not linked %}
+<section class="card family-offer">
+  {% if fam %}
+  <p>Вы вошли в кабинет родителя как <b>{{ fam.display_name }}</b>. Добавить {{ st.display_name }} в ваш кабинет?</p>
+  <form method="post" action="/parent/{{ token }}/link">{{ fam_csrf(fam) }}<button class="btn btn-small">➕ Добавить в мой кабинет</button></form>
+  {% else %}
+  <p><b>Сохраните доступ:</b> заведите кабинет родителя — вход по логину и паролю, все дети в одном месте, ссылку больше не потеряете.</p>
+  <a class="btn btn-small" href="/parent/{{ token }}/account">👪 Завести кабинет</a> <a class="small" href="/family/login">У меня уже есть кабинет</a>
+  {% endif %}
+</section>
+{% endif %}
+<h1>{{ st.display_name }}: {{ me.level.emoji }} {{ me.level.title }}</h1>
+<p class="muted">Последний вход на сайт: {{ st.last_seen_at|ago }}{% if st.next_lesson_at %} · следующее занятие — {{ st.next_lesson_at|dt }}{% endif %}</p>
+
+<div class="grid grid-home">
+  <section class="card">
+    <div class="mini-stats">
+      <div><b>{{ me.lessons_done }}</b><small>занятий проведено</small></div>
+      <div><b>{{ me.hw_approved }}</b><small>домашек принято</small></div>
+      <div><b>{{ me.tasks_solved }}</b><small>задач решено</small></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="mini-stats">
+      <div><b>{{ me.xp }}</b><small>трофеев 🏆</small></div>
+      <div><b>{{ me.best_streak }}</b><small>дней подряд — рекорд</small></div>
+      <div><b>{{ certs|length }}</b><small>сертификатов</small></div>
+    </div>
+  </section>
+  <section class="card">
+    <p class="muted small">Трофеи начисляются за занятия, задачи, домашние задания и регулярность. Ранг растёт с трофеями: всего 10 рангов, от «Бронзы» до «Гуру Python».</p>
+  </section>
+</div>
+
+<section class="card">
+  <div class="eyebrow">📆 Занимался на сайте за 2 недели · {{ activity|selectattr('on')|list|length }} дн. из 14{% if plans %} · план дня выполнен {{ plans }} раз{% endif %}</div>
+  <div class="act-days">{% for a in activity %}<span class="act-day {{ 'on' if a.on }}" title="{{ a.day.strftime('%d.%m') }}">{{ a.day.day }}</span>{% endfor %}</div>
+  <p class="small muted">Хороший ритм — 4–5 дней в неделю по 10–15 минут: на сайте для этого есть «План на сегодня».</p>
+</section>
+
+{% if fc %}{{ oge_forecast(fc, False) }}{% endif %}
+
+{% if ru_ov %}
+<section class="card">
+  <div class="eyebrow">📖 Русский язык</div>
+  <p>За неделю: <b>{{ ru_ov.week_ok }}</b> верных из {{ ru_ov.week_n }}.{% if ru_ov.due %} Ждут повторения: {{ ru_ov.due }} ошибок.{% endif %}</p>
+  {% if ru_ov.weak %}<p class="small">Что подтянуть: {% for r in ru_ov.weak %}{{ r.title }} ({{ r.stats.pct }}%){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+</section>
+{% endif %}
+
+<h2>Занятия и домашние задания</h2>
+<div class="table-scroll">
+<table class="table">
+  <tr><th>Урок</th><th>Тема</th><th>Занятие</th><th>Домашнее задание</th><th>Задачи</th></tr>
+  {% for l in lessons|reverse %}{% set ls = states.get(l.num) %}
+  <tr>
+    <td>{{ l.num }}</td>
+    <td>{{ l.emoji }} {{ l.title }}</td>
+    <td>{% if l.done %}✅ {{ ls.done_at|dt(False) }}{% else %}<span class="muted">впереди</span>{% endif %}</td>
+    <td>{% if l.hw_status == 'approved' %}✅ принято{% elif l.hw_status == 'pending' %}⏳ на проверке{% elif l.hw_status == 'returned' %}🔧 на доработке{% elif l.done %}<span class="bad-text">не сдано</span>{% else %}—{% endif %}</td>
+    <td>{% if l.tasks_total %}{{ l.tasks_solved }}/{{ l.tasks_total }}{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+
+{% if results %}
+<h2>Проверки знаний</h2>
+<div class="table-scroll">
+<table class="table">
+  <tr><th>Проверка</th><th>Результат</th><th>Когда</th></tr>
+  {% for c, r in results %}
+  <tr><td>{{ c.emoji }} {{ c.title }}</td><td><b>{{ r.right_count }} из {{ r.total }}</b>{% if r.skipped %} <small class="muted">(пропущено {{ r.skipped }} — темы ещё впереди)</small>{% endif %}</td><td>{{ r.finished_at|dt(False) }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+{% if certs %}
+<h2>Сертификаты</h2>
+<div class="cert-list">
+  {% for c in certs %}
+  <div class="card cert-item">
+    <span class="check-emoji">{{ c.emoji }}</span>
+    <span class="check-body"><b>{{ c.title }}</b><small class="muted">{{ c.heading }} · {{ c.date|dt(False) }}</small></span>
+    <a class="btn btn-small" href="{{ cert_base }}/certificate/{{ c.kind }}/{{ c.ref }}" target="_blank" rel="noopener">🖨️ Открыть</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Последние успехи</h2>
+<ul class="feed">{% for e in recent %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% else %}<li class="muted">Пока пусто — всё впереди!</li>{% endfor %}</ul>
+{% if in_family %}
+<form method="post" action="/family/child/{{ st.id }}/unlink" class="muted small" data-confirm="Убрать {{ st.display_name }} из кабинета? Вернуть можно по ссылке от преподавателя.">{{ fam_csrf(fam) }}<button class="btn btn-small btn-ghost">Убрать из моего кабинета</button></form>
+{% else %}
+<p class="muted small">Эту страницу видят только те, у кого есть ссылка. Если ссылка попала не туда — попросите преподавателя сделать новую, старая перестанет работать.</p>
+{% endif %}
+</div>
+{% endblock %}

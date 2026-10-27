@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Пробники{% endblock %}
+{% block content %}
+<h1>⏱️ Пробники учеников</h1>
+<p class="muted">Выдать пробник — в профиле ученика. Сданные ждут баллов за развёрнутую часть.</p>
+<div class="table-wrap"><table class="table">
+  <tr><th>Ученик</th><th>Экзамен</th><th>Когда</th><th>Статус</th><th>Баллы</th></tr>
+  {% for m in mocks %}
+  <tr class="{{ 'row-current' if m.status == 'finished' }}">
+    <td>{{ m.who }}</td><td>{{ m.ex.title }}</td><td>{{ (m.finished_at or m.started_at or m.created_at)|dt }}</td>
+    <td>{% if m.status == 'given' %}выдан{% elif m.status == 'running' %}решает{% elif m.status == 'finished' %}<b>📬 ждёт проверки</b>{% else %}✅ проверен{% endif %}</td>
+    <td><a href="/chem/mock/{{ m.id }}">{{ m.score if m.score is not none else '—' }} / {{ m.ex.max }} →</a></td>
+  </tr>
+  {% else %}<tr><td colspan="5" class="muted">Пробников пока нет.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% from "_macros.html" import csrf_field %}
+{# одна строка занятия с быстрыми отметками; нужны l, statuses, back_to, show_who, show_day #}
+<div class="lesson-row lesson-{{ l.status }}">
+  <span class="lesson-time"><b>{{ l.starts_at[11:16] }}</b>{% if show_day %} <small class="muted">{{ l.starts_at[8:10] }}.{{ l.starts_at[5:7] }}</small>{% endif %}</span>
+  <span class="lesson-who">{% if show_who %}<a href="/chem/teacher/student/{{ l.student_id }}">{{ l.who }}</a>{% endif %}{% if l.topic %} <small class="muted">· {{ l.topic|chem }}</small>{% endif %}</span>
+  <span class="lesson-price small muted">{{ l.price }} ₽</span>
+  <span class="lesson-actions">
+    <a class="btn btn-small {{ '' if l.has_plan else 'btn-ghost' }}" href="/chem/teacher/lesson/{{ l.id }}/plan" title="Выбрать темы и составить план занятия">📝 План</a>
+    {% for f in (files or {}).get(l.id, []) %}<a class="pill lesson-sheet" href="/chem/lesson-file/{{ f.id }}" target="_blank" title="{{ f.file_name }}">📄 листочек{% if loop.length > 1 %} {{ loop.index }}{% endif %}</a>{% endfor %}
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}/file" enctype="multipart/form-data">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><label class="btn btn-small btn-ghost" title="Добавить фото листочка с занятия">📷 листочек<input type="file" name="files" accept="image/*,.pdf" multiple hidden data-autosubmit></label></form>
+    {% if l.status == 'planned' %}
+    {% if not l.future %}
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><button class="btn btn-small" name="status" value="done" title="Занятие проведено — списать {{ l.price }} ₽">✅ Был</button></form>
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><input type="hidden" name="charged" value="1"><button class="btn btn-small btn-ghost" name="status" value="missed" title="Не пришёл без предупреждения — занятие оплачивается">🚫 Пропуск</button></form>
+    {% endif %}
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><button class="btn btn-small btn-ghost" name="status" value="cancelled" title="Отменено заранее — не оплачивается">↩️ Отмена</button></form>
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}" data-confirm="Удалить занятие {{ l.starts_at[8:10] }}.{{ l.starts_at[5:7] }} в {{ l.starts_at[11:16] }}?">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><input type="hidden" name="status" value="delete"><button class="btn btn-small btn-ghost" title="Удалить занятие (например, поставлено по ошибке)">🗑</button></form>
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}" data-confirm="Удалить это и все следующие занятия {{ l.who or '' }} в этот день недели в {{ l.starts_at[11:16] }}?">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><input type="hidden" name="status" value="delete_series"><button class="linklike small danger" title="Удалить это занятие и все следующие из этой серии">удалить серию</button></form>
+    {% else %}
+    {% set s = statuses[l.status] %}<span class="pill lesson-{{ l.status }}">{{ s[0] }} {{ s[1] }}{% if l.status == 'missed' %}{{ ' · оплачивается' if l.charged else ' · без оплаты' }}{% endif %}</span>
+    <form method="post" action="/chem/teacher/lesson/{{ l.id }}">{{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}"><button class="linklike small" name="status" value="planned" title="Вернуть в «запланировано»">снять отметку</button></form>
+    {% endif %}
+  </span>
+</div>

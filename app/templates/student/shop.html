@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Магазин{% endblock %}
+{% block content %}
+<h1>{{ ico("shop", "💎", "ico-h1") }} Магазин наград</h1>
+<p class="muted">У тебя <b>{{ me.coins }} 💎</b>. Награды настоящие — их выдаёт преподаватель после запроса. Трофеи и ранг при покупке не уменьшаются.</p>
+<section class="card small">
+  <b>Как получить гемы 💎</b> — только за настоящую учёбу:
+  занятие проведено <b>+10</b> · домашка принята <b>+10</b> · проверка пройдена <b>+10</b> · 7 дней подряд с задачей дня <b>+5</b>.
+  Трофеи 🏆 копятся за всё остальное — задачи, тренажёры, русский, дропы — и открывают ранги, бойцов и пасс.
+</section>
+<div class="shop-grid">
+  {% for r in rewards %}
+  {% set can = me.coins >= r.cost %}
+  <div class="card reward {{ 'can' if can else 'cant' }}">
+    <div class="r-emoji">{{ r.emoji }}</div>
+    <b>{{ r.title }}</b>
+    <div class="r-cost">{{ r.cost }} 💎</div>
+    {% if user.role == 'student' %}
+    <form method="post" action="/shop/{{ r.id }}/buy" data-confirm="Потратить {{ r.cost }} 💎 на «{{ r.title }}»?">
+      {{ csrf_field(user) }}
+      <button class="btn btn-small" {% if not can %}disabled{% endif %}>{{ 'Получить' if can else 'Ещё ' ~ (r.cost - me.coins) ~ ' 💎' }}</button>
+    </form>
+    {% endif %}
+    {% if not can %}<div class="progress small"><i style="width: {{ (100 * me.coins / r.cost)|int if me.coins > 0 else 0 }}%"></i></div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% if purchases %}
+<h2>Мои запросы</h2>
+<ul class="feed">
+  {% for p in purchases %}
+  <li>{{ p.title }} — {{ p.cost }} 💎 ·
+    {% if p.status == 'requested' %}<span class="pill wait">ждёт</span>{% elif p.status == 'given' %}<span class="pill ok">выдано 🎉</span>{% else %}<span class="pill bad">отклонено</span>{% endif %}
+    <small class="muted">{{ p.created_at|dt }}</small></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

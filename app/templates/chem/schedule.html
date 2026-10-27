@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "chem/_macros.html" import when %}
+{% block title %}Расписание{% endblock %}
+{% block content %}
+{% set days_ru = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'] %}
+<h1>📅 Расписание</h1>
+<div class="row between">
+  <a class="btn btn-small btn-ghost" href="/chem/teacher/schedule?start={{ prev }}">← Неделя назад</a>
+  <span><b>{{ when(days[0].isoformat()) }} — {{ when(days[6].isoformat()) }}</b>{% if not (days[0].isoformat() <= today <= days[6].isoformat()) %} · <a href="/chem/teacher/schedule">к текущей неделе</a>{% endif %}</span>
+  <a class="btn btn-small btn-ghost" href="/chem/teacher/schedule?start={{ nxt }}">Неделя вперёд →</a>
+</div>
+
+{% if all_st %}
+<details class="card add-lesson-box"><summary class="btn btn-small btn-ghost">➕ Добавить занятие</summary>
+  {% set students_for_form, fixed_sid, back_to = all_st, None, '/chem/teacher/schedule?start=' ~ days[0].isoformat() %}
+  {% include "chem/_add_lesson.html" %}
+</details>
+{% endif %}
+
+{% set show_who, show_day, back_to = True, False, '/chem/teacher/schedule?start=' ~ days[0].isoformat() %}
+{% for d in days %}{% set key = d.isoformat() %}
+<section class="card schedule-day {{ 'today' if key == today }}">
+  <div class="eyebrow">{{ days_ru[loop.index0] }}, {{ when(key) }}{% if key == today %} · сегодня{% endif %}</div>
+  {% for l in by_day[key] %}{% include "chem/_lesson_row.html" %}{% else %}<p class="muted small">Нет занятий</p>{% endfor %}
+</section>
+{% endfor %}
+{% endblock %}

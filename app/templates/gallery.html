@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Галерея проектов{% endblock %}
+{% block content %}
+<h1>🌍 Проекты учеников</h1>
+<p class="muted">Программы, игры и рисунки, сделанные на курсе Python.</p>
+<div class="project-grid">
+  {% for p in projects %}
+  <a class="card project" href="/p/{{ p.slug }}">
+    {% if p.image_path %}<img src="/files/project/{{ p.id }}/image" alt="" class="project-img">{% else %}<div class="project-img placeholder">🐍</div>{% endif %}
+    <h3>{{ p.title }}</h3>
+    <small class="muted">автор: {{ p.author }}</small>
+    <p class="muted small">{{ p.description[:140] }}</p>
+  </a>
+  {% else %}
+  <p class="muted">Скоро здесь появятся проекты!</p>
+  {% endfor %}
+</div>
+{% endblock %}

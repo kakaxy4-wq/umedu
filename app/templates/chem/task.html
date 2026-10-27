@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ ex.title }} №{{ task.num }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/chem/map{{ '?exam=' ~ task.exam if user.role == 'teacher' }}">← Карта {{ ex.title }}</a></p>
+<header class="task-head">
+  <h1>{{ ex.title }} · задание {{ task.num }}</h1>
+  <div class="row">
+    <span class="pill">{{ title }}</span>
+    {% if generated %}<span class="pill">🎲 вариант</span>{% endif %}
+    <span class="pill">{{ pts }} балл{{ 'а' if pts in (2, 3, 4) else ('ов' if pts >= 5 else '') }}</span>
+    {% if best is not none and task.mode != 'long' %}<span class="pill {{ 'ok' if best >= pts else '' }}">лучший результат: {{ best }}/{{ pts }}</span>{% endif %}
+  </div>
+</header>
+
+<section class="card statement chem-task" id="chem-task" data-task="{{ task.id }}" data-mode="{{ task.mode }}" data-hw="{{ hw_id or '' }}">
+  <p class="chem-text">{{ task.text|chem }}</p>
+  {% if task.mode == 'long' %}
+  <p class="small muted">Это задание с развёрнутым ответом: реши на бумаге, потом сверь с образцом. Фото решения можно сдать
+    в домашнем задании — преподаватель поставит баллы по критериям ФИПИ.</p>
+  <button type="button" class="btn" data-chem-sample>📖 Показать образец решения</button>
+  <div class="chem-sample" hidden></div>
+  {% else %}
+  <form class="row chem-answer" data-chem-form>
+    <label>Ответ <input name="answer" autocomplete="off" inputmode="decimal" placeholder="{{ 'число' if task.mode == 'num' else 'цифры без пробелов' }}" required></label>
+    <button class="btn">Проверить</button>
+  </form>
+  <p class="small muted">{% if task.mode == 'set' %}Порядок цифр не важен.{% elif task.mode == 'seq' %}Цифры — в указанном порядке, без пробелов и запятых.{% else %}Дробную часть — через запятую.{% endif %}</p>
+  <div class="robot-result" data-chem-result hidden></div>
+  {% endif %}
+</section>
+
+{% if show_answer and task.mode != 'long' %}
+<section class="card solution-card">
+  <div class="eyebrow">Ответ: {{ answer|chem }}</div>
+  {% if why %}<p class="chem-text">{{ why|chem }}</p>{% endif %}
+</section>
+{% endif %}
+
+<div class="row">
+  {% if has_gen %}<a class="btn" href="/chem/variant?exam={{ task.exam }}&num={{ task.num }}">🎲 {{ 'Ещё вариант' if generated else 'Новый вариант этого номера' }}</a>{% endif %}
+  {% if hw_id %}<a class="btn btn-ghost" href="/chem/hw/{{ hw_id }}">← К домашнему заданию</a>
+  {% elif next_task %}<a class="btn btn-ghost" href="/chem/task/{{ next_task.id }}">Следующая задача: {{ ex.title }} №{{ next_task.num }} →</a>{% endif %}
+</div>
+{% endblock %}

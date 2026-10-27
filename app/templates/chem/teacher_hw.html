@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% from "chem/_macros.html" import when %}
+{% block title %}ДЗ на проверку{% endblock %}
+{% block content %}
+<h1>📬 ДЗ на проверку</h1>
+{% for h in wait %}
+<section class="card">
+  <div class="row between">
+    <div><b>{{ h.who }}</b> · <a href="/chem/hw/{{ h.id }}">{{ h.title|chem }}</a></div>
+    <small class="muted">сдано {{ when(h.submitted_at) }}</small>
+  </div>
+  {% set a = auto.get(h.id) %}
+  {% if a %}<p class="small">🧩 Автопроверка: решено <b>{{ a[3] }} из {{ a[2] }}</b> задач · <b>{{ a[0] }} из {{ a[1] }}</b> баллов · <a href="/chem/hw/{{ h.id }}">посмотреть задачи</a></p>{% endif %}
+  {% if h.answer %}<p class="hw-text">{{ h.answer|chem }}</p>{% endif %}
+  {% if h.file_path %}<p><a class="btn btn-small btn-ghost" href="/chem/hw/{{ h.id }}/file" target="_blank">📎 {{ h.file_name }}</a></p>{% endif %}
+  {% if files[h.id].student %}<div class="hw-files">{% for f in files[h.id].student %}<a href="/chem/hw-file/{{ f.id }}" target="_blank" class="hw-file">{% if f.file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')) %}<img src="/chem/hw-file/{{ f.id }}" alt="Решение {{ loop.index }}" loading="lazy">{% else %}📎 {{ f.file_name }}{% endif %}</a>{% endfor %}</div>{% endif %}
+  <form method="post" action="/chem/teacher/hw/{{ h.id }}/check" class="stack">
+    {{ csrf_field(user) }}
+    <div class="row">
+      <label>Баллы <input name="score" inputmode="numeric" style="max-width: 7em" value="{{ a[0] if a and not h.max_score else '' }}"></label>
+      <label>из <input name="max_score" inputmode="numeric" value="{{ h.max_score or (a[1] if a else '') }}" style="max-width: 7em"></label>
+    </div>
+    <label>Комментарий <textarea name="comment" rows="2" data-formula placeholder="Что хорошо, что исправить"></textarea></label>
+    <div class="row">
+      <button class="btn btn-small" name="action" value="accept">✅ Принять</button>
+      <button class="btn btn-small btn-ghost" name="action" value="return">🔧 Вернуть на доработку</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<p class="muted">Ничего не ждёт проверки 👍</p>
+{% endfor %}
+
+{% if given %}
+<h2>Задано и ещё не сдано</h2>
+<div class="table-scroll"><table class="table">
+  <tr><th>Ученик</th><th>Задание</th><th>Срок</th></tr>
+  {% for h in given %}<tr><td>{{ h.who }}</td><td><a href="/chem/hw/{{ h.id }}">{{ h.title }}</a></td><td>{{ when(h.due_at) if h.due_at else '—' }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

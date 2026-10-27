@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sid_field, csrf_field %}
+{% block title %}Проверки{% endblock %}
+{% block content %}
+<h1>📝 {{ "Входные тесты" if chem_site else "Проверки" }} — {{ student_name }}</h1>
+{% if chem_site %}<p class="muted">Входное тестирование открыто ученику сразу после регистрации; результат по темам виден здесь и в профиле ученика.</p>
+{% else %}<p class="muted">Входное тестирование открыто сразу. Срез открывай, когда мир пройден, итоговый — в конце года: в нём те же вопросы, что во входном, и результат покажет «было → стало» по темам. За прохождение ученик получает +30 🏆 (один раз), от баллов это не зависит.</p>{% endif %}
+<table class="table">
+  <tr><th>Проверка</th><th>Когда</th><th>Статус</th><th>Результат</th><th></th></tr>
+  {% for c in checks %}
+  {% set st = states.get(c.id) %}{% set res = results.get(c.id) %}
+  <tr>
+    <td><a href="/check/{{ c.id }}">{{ c.emoji }} {{ c.title }}</a> <small class="muted">· {{ c.questions|length }} вопр.</small></td>
+    <td><small class="muted">{% if c.when %}{{ c.when }}{% elif c.id == 'entry' %}в начале курса{% elif c.id == 'final' %}в конце года{% else %}после мира «{{ modules[c.after_module].title }}»{% endif %}</small></td>
+    <td>{% if res %}✅ сдано {{ res.finished_at|dt }}{% elif st and st.started_at %}✍️ проходит{% elif st and st.opened_at %}🔓 открыто{% else %}🔒{% endif %}</td>
+    <td>{% if res %}<a href="/check/{{ c.id }}"><b>{{ res.right_count }}/{{ res.total }}</b></a>{% if res.skipped %} <small class="muted">пропущено {{ res.skipped }}</small>{% endif %}{% endif %}</td>
+    <td class="actions">
+      {% if not (st and st.opened_at) %}
+      <form method="post" action="/teacher/check/{{ c.id }}/open">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-small">Открыть</button></form>
+      {% endif %}
+      {% if res %}
+      <form method="post" action="/teacher/check/{{ c.id }}/reset" data-confirm="Удалить результат и дать пройти заново? Трофеи повторно не начисляются.">{{ csrf_field(user) }}{{ sid_field(sid) }}<button class="btn btn-small btn-ghost">Пересдать</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% if everyone|length > 1 %}
+<h2>Все ученики</h2>
+<div class="table-scroll">
+<table class="table">
+  <tr><th>Ученик</th>{% for c in checks %}<th title="{{ c.title }}">{{ c.emoji }} {{ c.title.replace('Срез: мир ', 'Мир ').replace('Входное тестирование', 'Вход').replace('Итоговый тест', 'Итог').replace('Пробник ОГЭ: часть 1', 'ОГЭ') }}</th>{% endfor %}</tr>
+  {% for s in everyone %}
+  <tr class="{{ 'row-current' if s.id == sid }}"><td><a href="/teacher/checks?student={{ s.id }}">{{ s.display_name }}</a></td>
+    {% for c in checks %}{% set m = matrix.get((s.id, c.id)) %}
+    <td>{% if m %}{% set pct = (100 * m.right_count / m.total)|round|int %}<span class="score score-{{ 'hi' if pct >= 75 else ('mid' if pct >= 50 else 'lo') }}">{{ m.right_count }}/{{ m.total }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}

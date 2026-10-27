@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field, numpad %}
+{% block title %}{{ check.title }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/checks">Проверки</a>{% if user.role == 'teacher' %} · <a href="/teacher/checks">все результаты</a>{% endif %}</p>
+<h1>{{ check.emoji }} {{ check.title }}</h1>
+
+{% if mode == 'locked' %}
+<section class="card"><p>🔒 Эту проверку ещё не открыли. Преподаватель откроет её, когда придёт время.</p></section>
+
+{% elif mode == 'form' %}
+<p class="check-intro">{{ check.intro }}</p>
+{% if check.minutes and started_at %}
+<div class="check-timer" data-started="{{ started_at }}" data-minutes="{{ check.minutes }}">⏱ <b>{{ check.minutes }}:00</b> <span>осталось из {{ check.minutes }} минут</span></div>
+{% endif %}
+<form method="post" action="/check/{{ check.id }}/submit" class="check-form stack" data-check="{{ check.id }}" data-user="{{ user.id }}">
+  <p class="autosave muted small" aria-live="polite">💾 Ответы сохраняются на этом устройстве сами — можно закрыть страницу и вернуться.</p>
+  {{ csrf_field(user) }}
+  {% for part in check.parts %}
+  <div class="check-part">
+    {% if part.title %}
+    <div class="row between check-part-head">
+      <h2>{{ part.title }}</h2>
+      {% if part.skippable %}<button type="button" class="btn btn-small btn-ghost" data-skip-part>🤷 Пропустить часть</button>{% endif %}
+    </div>
+    {% if part.intro %}<p class="muted">{{ part.intro }}</p>{% endif %}
+    {% endif %}
+    {% for q in part.questions %}
+    <section class="card check-q" id="{{ q.id }}">
+      <div class="eyebrow">Вопрос {{ q.num }} из {{ check.questions|length }} · {{ q.topic }}</div>
+      <p class="check-text">{{ q.text|md }}</p>
+      {% if q.code %}<pre class="code-big">{{ q.code }}</pre>{% endif %}
+      {% if q.kind == 'choice' %}
+      <div class="check-options">
+        {% for o in q.options %}
+        <label class="check-option"><input type="radio" name="a_{{ q.id }}" value="{{ o }}"> <span>{{ o|md }}</span></label>
+        {% endfor %}
+      </div>
+      {% elif q.numeric %}
+      <label>Ответ <input name="a_{{ q.id }}" autocomplete="off" class="check-short num-answer" inputmode="none" data-numpad></label>
+      {{ numpad() }}
+      {% elif q.kind == 'output' %}
+      <label>Ответ (если строк несколько — каждую с новой строки)
+        <textarea name="a_{{ q.id }}" rows="2" spellcheck="false" autocapitalize="off" class="mono"></textarea></label>
+      {% else %}
+      <label>Ответ <input name="a_{{ q.id }}" autocomplete="off" class="check-short"></label>
+      {% endif %}
+      {% if q.skippable %}
+      <label class="check-skip"><input type="checkbox" name="s_{{ q.id }}" value="1"> 🤷 Пока не знаю</label>
+      {% endif %}
+    </section>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <div class="row"><button class="btn">✅ Сдать проверку</button><span class="muted">Сдать можно один раз — проверь ответы.</span></div>
+</form>
+
+{% elif mode == 'preview' %}
+<section class="card teacher-box">
+  <div class="eyebrow">🎛️ Для преподавателя — предпросмотр с ответами</div>
+  <p>{% if is_open %}Проверка открыта, ученик её ещё не сдал.{% else %}Проверка закрыта — открыть можно в разделе <a href="/teacher/checks">«Проверки»</a>.{% endif %}</p>
+</section>
+<p class="check-intro">{{ check.intro }}</p>
+{% for part in check.parts %}
+{% if part.title %}<h2>{{ part.title }}{% if part.skippable %} <small class="muted">(можно пропустить)</small>{% endif %}</h2>{% endif %}
+{% for q in part.questions %}
+<section class="card check-q">
+  <div class="eyebrow">Вопрос {{ q.num }} · {{ q.topic }}</div>
+  <p class="check-text">{{ q.text|md }}</p>
+  {% if q.code %}<pre class="code-big">{{ q.code }}</pre>{% endif %}
+  {% if q.kind == 'choice' %}<ul class="check-preview-opts">{% for o in q.options %}<li class="{{ 'ok' if o == q.answer }}">{{ o|md }}{% if o == q.answer %} ✅{% endif %}</li>{% endfor %}</ul>
+  {% else %}<p>Ответ: <code class="answer">{{ q.answer|chem if chem_site else q.answer }}</code></p>{% endif %}
+  {% if q.why %}<p class="why">{{ q.why|chem if chem_site else q.why }}</p>{% endif %}
+</section>
+{% endfor %}
+{% endfor %}
+
+{% else %}
+{% set r = report %}
+<span hidden data-clear-check="{{ check.id }}" data-user="{{ user.id if user else '' }}"></span>
+<section class="card hero-card check-score">
+  <div class="check-big">{{ r.right }} <small>из {{ r.total }}</small></div>
+  <div>
+    {% if r.before_right is defined %}<p>В начале года было <b>{{ r.before_right }}</b> — {% if r.right > r.before_right %}рост на {{ r.right - r.before_right }} 🚀{% elif r.right == r.before_right %}столько же{% else %}стало меньше — повод повторить темы{% endif %}</p>{% endif %}
+    {% if r.skipped %}<p class="muted">Пропущено: {{ r.skipped }} — значит, это ещё впереди.</p>{% endif %}
+    <p class="muted">Сдано {{ r.result.finished_at|dt }}{% if r.minutes %} · заняло {{ r.minutes }} мин{% endif %}</p>
+  </div>
+</section>
+
+<h2>По темам</h2>
+<table class="table check-topics">
+  <tr><th>Тема</th>{% if r.before_right is defined %}<th>Было</th>{% endif %}<th>Результат</th><th></th></tr>
+  {% for t in r.topics %}
+  <tr>
+    <td>{{ t.topic }}</td>
+    {% if r.before_right is defined %}<td>{% if t.before %}{{ t.before.right }}/{{ t.before.total }}{% endif %}</td>{% endif %}
+    <td>{{ t.right }}/{{ t.total }}{% if t.skipped %} <small class="muted">(пропущено {{ t.skipped }})</small>{% endif %}</td>
+    <td class="topic-bar"><div class="progress small"><i style="width: {{ (100 * t.right / t.total)|round|int }}%"></i></div></td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Разбор</h2>
+{% for it in r['items'] %}{% set q = it.q %}
+<section class="card check-q {{ 'q-ok' if it.ok else ('q-skip' if it.skipped else 'q-bad') }}">
+  <div class="eyebrow">Вопрос {{ q.num }} · {{ q.topic }} · {% if it.ok %}✅ верно{% elif it.skipped %}🤷 пропущен{% else %}❌ неверно{% endif %}</div>
+  <p class="check-text">{{ q.text|md }}</p>
+  {% if q.code %}<pre class="code-mini">{{ q.code }}</pre>{% endif %}
+  {% if not it.ok %}
+  <p>{% if not it.skipped %}Твой ответ: {% if it.given %}<code class="answer">{{ it.given }}</code>{% else %}<span class="muted">пусто</span>{% endif %}<br>{% endif %}
+     Правильно: <code class="answer">{{ q.answer|chem if chem_site else q.answer }}</code></p>
+  {% endif %}
+  {% if q.why %}<p class="why">{{ q.why|chem if chem_site else q.why }}</p>{% endif %}
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}

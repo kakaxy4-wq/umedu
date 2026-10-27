@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Решения задач{% endblock %}
+{% block content %}
+<h1>🧾 Решения задач — {{ student_name }}</h1>
+<p class="muted">Сколько попыток было на каждую задачу. Много неудачных попыток — повод разобрать тему на занятии.</p>
+<table class="table">
+  <tr><th>Урок</th><th>Задача</th><th>Попыток</th><th>Успешных</th><th>Последняя</th></tr>
+  {% for t in tasks %}
+  {% set r = by_task.get(t.id) %}
+  <tr class="{{ 'row-ok' if r and r.ok else '' }}">
+    <td>{{ t.lesson }}</td>
+    <td><a href="/teacher/attempts/{{ t.id }}">{{ t.title }}</a></td>
+    <td>{{ r.n if r else '—' }}</td>
+    <td>{% if r and r.ok %}✅ {{ r.ok }}{% elif r %}❌ 0{% else %}—{% endif %}</td>
+    <td>{{ r.last|dt if r else '' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

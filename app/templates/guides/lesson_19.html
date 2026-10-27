@@ -1,0 +1,54 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Начинаем делать настоящие игры! Окно, мячик и 60 кадров в секунду.</p>
+  <p>Ключевые темы: <b>`pygame`; Игровой цикл: события → обновление → отрисовка; FPS</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">`pip install pygame`. · 10</span><span style="flex: 20">Окно, заливка, `pygame.draw`. Игро · 20</span><span style="flex: 30">Мяч отскакивает от стен. Несколько · 30</span><span style="flex: 10">Итог. · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/19/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) `pip install pygame`.</td></tr><tr><td>2</td><td>(20 мин) Окно, заливка, `pygame.draw`. Игровой цикл, `clock.tick(60)`.</td></tr><tr><td>3</td><td>(30 мин) Мяч отскакивает от стен. Несколько мячей.</td></tr><tr><td>4</td><td>(10 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`pygame`</li><li>Игровой цикл: события → обновление → отрисовка</li><li>FPS</li></ul>
+  <p>Разбери пример «Прыгающий мяч» по строкам:</p><pre class="code-mini">import pygame
+pygame.init()
+screen = pygame.display.set_mode((800, 600))
+clock = pygame.time.Clock()
+x, y, dx, dy = 400, 300, 5, 4
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    x += dx
+    y += dy
+    if x &lt; 20 or x &gt; 780:
+        dx = -dx
+    if y &lt; 20 or y &gt; 580:
+        dy = -dy
+    screen.fill((20, 20, 40))
+    pygame.draw.circle(screen, (255, 200, 0), (x, y), 20)
+    pygame.display.flip()
+    clock.tick(60)
+pygame.quit()</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Цикл выполняется «на один раз» больше/меньше</td><td>границы range: правая не включается</td><td>проверь range(1, n + 1)</td></tr><tr><td>Программа «зависла»</td><td>условие while не меняется внутри</td><td>проверь, что счётчик/переменная меняются</td></tr><tr><td>Окно «не отвечает»</td><td>нет clock.tick(60) в цикле</td><td>добавь clock.tick(60)</td></tr><tr><td>Игра вылетает при закрытии</td><td>pygame.quit() не вызван</td><td>закрывай в обработке события QUIT</td></tr><tr><td>Персонаж улетает за экран</td><td>нет ограничения краёв</td><td>player.clamp_ip(screen.get_rect())</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `pygame`.</li><li>Объясни своими словами: Игровой цикл: события → обновление → отрисовка.</li><li>Объясни своими словами: FPS.</li>
+  </ol>
+  <p><b>Домашка:</b> 3 мяча разного цвета и размера (список мячей!), меняющие цвет при ударе о стену.</p>
+  <p><b>Со звёздочкой:</b> «Хранитель экрана» из 50 мячей.</p>
+  <p>Задачи на сайте под уроком 19 — сайт проверяет автоматически.</p>
+</section>

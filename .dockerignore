@@ -1,0 +1,6 @@
+.git
+.venv
+data
+app/static/vendor
+**/__pycache__
+.env

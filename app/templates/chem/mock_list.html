@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Пробник{% endblock %}
+{% block content %}
+<h1>⏱️ Пробный вариант {{ ex.title }}</h1>
+<p class="muted">Полный вариант: {{ ex.numbers|length }} {{ "задания" if ex.numbers|length % 10 in (2, 3, 4) and ex.numbers|length % 100 not in (12, 13, 14) else "заданий" }}, {{ ex.minutes }} минут, как на экзамене. Часть с кратким ответом
+  проверяется сразу, развёрнутую часть решаешь на бумаге, прикладываешь фото — баллы ставит преподаватель.
+  Ответы сохраняются по ходу работы: если закроешь вкладку, ничего не пропадёт.</p>
+{% if not busy %}
+<form method="post" action="/chem/mock/new">{{ csrf_field(user) }}<button class="btn btn-big">Начать новый пробник</button></form>
+{% endif %}
+<h2>Мои пробники</h2>
+{% for m in mocks %}
+<a class="card row between mock-row" href="/chem/mock/{{ m.id }}">
+  <span><b>{{ m.ex.title }}</b> · {{ m.created_at|dt }}{% if m.created_by == 'teacher' %} · <span class="pill">выдан преподавателем{% if m.due_at %} до {{ m.due_at|dt }}{% endif %}</span>{% endif %}</span>
+  <span>
+    {% if m.status == 'given' %}<span class="pill wait">не начат</span>
+    {% elif m.status == 'running' %}<span class="pill wait">идёт</span>
+    {% elif m.status == 'finished' %}<span class="pill">часть 1: {{ m.score }} · ждёт проверки</span>
+    {% else %}<span class="pill ok">{{ m.score }} из {{ m.ex.max }}</span>{% endif %}
+  </span>
+</a>
+{% else %}<p class="muted">Пока ни одного — начни первый, когда будет 3 свободных часа.</p>{% endfor %}
+{% endblock %}

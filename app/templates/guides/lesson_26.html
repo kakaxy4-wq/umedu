@@ -1,0 +1,34 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Меню, рекорды, звуки — и `.exe`, который можно отправить другу.</p>
+  <p>Ключевые темы: <b>Плейтест; `pyinstaller`</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 40">Меню, рекорды, звуки, баланс. · 40</span><span style="flex: 15">Плейтест: играем и записываем, что · 15</span><span style="flex: 15">`pyinstaller --onefile game.py`. И · 15</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/26/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(40 мин) Меню, рекорды, звуки, баланс.</td></tr><tr><td>2</td><td>(15 мин) Плейтест: играем и записываем, что улучшить.</td></tr><tr><td>3</td><td>(15 мин) `pyinstaller --onefile game.py`. Игра — в Портфолио.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Плейтест</li><li>`pyinstaller`</li></ul>
+  
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Окно «не отвечает»</td><td>нет clock.tick(60) в цикле</td><td>добавь clock.tick(60)</td></tr><tr><td>Игра вылетает при закрытии</td><td>pygame.quit() не вызван</td><td>закрывай в обработке события QUIT</td></tr><tr><td>Персонаж улетает за экран</td><td>нет ограничения краёв</td><td>player.clamp_ip(screen.get_rect())</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Плейтест.</li><li>Объясни своими словами: `pyinstaller`.</li>
+  </ol>
+  <p><b>Домашка:</b> Дай поиграть 2–3 людям, собери отзывы и исправь одну вещь.</p>
+  <p><b>Со звёздочкой:</b> Трейлер игры: запись экрана на 30 секунд.</p>
+  <p>Задачи на сайте под уроком 26 — сайт проверяет автоматически.</p>
+</section>

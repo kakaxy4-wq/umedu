@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Пасс сезона{% endblock %}
+{% block content %}
+{% set student = user.role == 'student' %}
+{% set banner = season_banner(ov.season.start.month) %}
+{% if banner %}<div class="season-banner" style="background-image: url({{ banner }})"><h1>{{ ico("pass", "🎟️", "ico-h1") }} Пасс сезона «{{ ov.season.title }}»{% if not student %} — {{ student_name }}{% endif %}</h1></div>
+{% else %}<h1>🎟️ Пасс сезона «{{ ov.season.title }}»{% if not student %} — {{ student_name }}{% endif %}</h1>{% endif %}
+
+<section class="card pass-head">
+  <div>
+    <div class="eyebrow">Ступень</div>
+    <div class="big">{{ ov.tier }}<small class="muted"> / 20</small></div>
+  </div>
+  <div style="flex: 1; min-width: 200px">
+    <div class="progress"><i style="width: {{ ov.progress }}%"></i></div>
+    <small class="muted">{% if ov.tier < 20 %}До ступени {{ ov.tier + 1 }} — {{ ov.to_next }} 🏆. {% endif %}Ступени дают трофеи, заработанные в этом месяце: уроки, задачи, задача дня, домашки, Робот, русский.</small>
+  </div>
+  <div class="center">
+    <div class="eyebrow">До конца сезона</div>
+    <b>{{ ov.season.days_left }} дн.</b>
+  </div>
+</section>
+
+{% if not ov.premium %}
+{% set done_n = ov.challenges|selectattr('done')|list|length %}
+<a class="card check-banner" href="#challenges">
+  <span class="check-emoji">⭐</span>
+  <span><b>Как открыть премиум-дорожку</b><br><small>Премиум не покупается — его <b>зарабатывают</b>: выполни {{ ov.premium_need }} испытания сезона из {{ ov.challenges|length }} (они ниже). Сейчас выполнено {{ done_n }}. Ещё его может открыть преподаватель — например, за хорошую неделю.</small></span>
+  <span class="btn btn-small">Испытания ↓</span>
+</a>
+{% endif %}
+
+<section class="card">
+  <div class="row between">
+    <div class="eyebrow">🎁 Награды</div>
+    {% if ov.premium %}<span class="pill ok">⭐ Премиум открыт</span>{% else %}<span class="pill">Премиум: испытания {{ ov.challenges|selectattr('done')|list|length }} из {{ ov.premium_need }}</span>{% endif %}
+  </div>
+  <div class="pass-wrap">
+    <div class="pass-rowlabels"><span>&nbsp;</span><span>Бесплатно</span><span>⭐ Премиум</span></div>
+    <div class="pass-track">
+      {% for r in ov.rows %}
+      <div class="pass-col {{ 'open' if r.open }}" id="t{{ r.n }}">
+        <div class="pass-n">{{ r.n }}</div>
+        {% for track, cell in (('free', r.free), ('premium', r.premium)) %}
+        {% set can = r.open and not cell.claimed and (track == 'free' or ov.premium) %}
+        <div class="pass-cell {{ 'prem' if track == 'premium' }} {{ 'got' if cell.claimed }} {{ 'ready' if can }} {{ 'locked' if not r.open or (track == 'premium' and not ov.premium) }}">
+          <span class="ico">{% if cell.kind == 'trophies' %}🏆{% elif cell.kind == 'drop' %}{% if chest_img('legendary') %}<img src="{{ chest_img('legendary') }}" alt="{{ T.drop }}" class="pass-chest">{% else %}⭐{% endif %}{% elif cell.kind == 'badge' %}{{ cell.value }}{% else %}🏷️{% endif %}</span>
+          <span>{{ cell.label if cell.kind != 'badge' else 'значок' }}</span>
+          {% if cell.claimed %}<span class="ok-text">✅</span>
+          {% elif can and student %}
+          <form method="post" action="/season/claim">{{ csrf_field(user) }}<input type="hidden" name="tier" value="{{ r.n }}"><input type="hidden" name="track" value="{{ track }}"><button class="btn">Забрать</button></form>
+          {% elif not r.open %}<span class="muted">🔒</span>
+          {% elif track == 'premium' and not ov.premium %}<span class="muted">⭐🔒</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <p class="small muted">Листай дорожку вбок →</p>
+</section>
+
+<div class="grid grid-2">
+  <section class="card pass-ch" id="challenges">
+    <div class="eyebrow">⚔️ Испытания сезона — {{ ov.premium_need }} из {{ ov.challenges|length }} открывают премиум</div>
+    <ul>
+      {% for c in ov.challenges %}
+      <li><span>{{ '✅' if c.done else c.emoji }}</span><span style="flex: 1">{{ c.title }}</span>
+        <span class="bar"><i style="width: {{ (100 * c.have / c.need)|round|int }}%"></i></span><small class="muted">{{ c.have }}/{{ c.need }}</small></li>
+      {% endfor %}
+    </ul>
+    {% if not student %}
+    <form method="post" action="/teacher/student/{{ sid }}/premium" class="row" style="margin-top: 10px">
+      {{ csrf_field(user) }}<input type="hidden" name="on" value="{{ '' if ov.manual_premium else '1' }}">
+      <button class="btn btn-small btn-ghost">{{ 'Убрать ручной премиум' if ov.manual_premium else '⭐ Открыть премиум вручную' }}</button>
+    </form>
+    <p class="small muted">Например, за хорошую четверть или выполненный план — без испытаний.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">⭐ {{ T.drops }}</div>
+    <p class="small">Падают за первое решение задачи или Робота (шанс {{ 35 }}%, до 3 в день) и лежат на ступенях пасса. Внутри — немного трофеев и <b>значок в коллекцию</b> (пока значки этой редкости не собраны):</p>
+    <div class="drop-odds">{% for name, chance, amount, emoji in rarities %}<span class="pill drop-pill">{% if chest_img(name) %}<img src="{{ chest_img(name) }}" alt="" class="drop-chest">{% else %}{{ emoji }}{% endif %} {{ name }} · {{ chance }}% · +{{ amount }} 🏆</span>{% endfor %}</div>
+  </section>
+</div>
+
+<section class="card" id="collection">
+  <div class="eyebrow">🏷️ Значки и титулы</div>
+  {% if coll.badges or coll.titles %}
+  <p class="small muted">Видны рядом с именем на главной и в рейтинге недели.</p>
+  {% for kind, items, current in (('badge', coll.badges, st.badge), ('title', coll.titles, st.title)) if items %}
+  <div class="coll-items" style="margin-bottom: 8px">
+    {% for v in [''] + items %}
+    {% if student %}
+    <form method="post" action="/season/equip">{{ csrf_field(user) }}<input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="value" value="{{ v }}"><button class="{{ 'on' if v == current }}">{{ v or 'без ' ~ ('значка' if kind == 'badge' else 'титула') }}</button></form>
+    {% else %}<span class="pill {{ 'ok' if v == current }}">{{ v or '—' }}</span>{% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="small muted">Пока пусто — значки выпадают из {{ T.drops_gen }}, а значки и титулы лежат на ступенях пасса.</p>
+  {% endif %}
+</section>
+{% endblock %}

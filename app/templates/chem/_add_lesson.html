@@ -1,0 +1,16 @@
+{% from "_macros.html" import csrf_field %}
+{# форма «добавить занятие»; нужны students_for_form или fixed_sid, today, back_to #}
+<form method="post" action="/chem/teacher/lessons" class="add-lesson">
+  {{ csrf_field(user) }}<input type="hidden" name="next" value="{{ back_to }}">
+  {% if fixed_sid %}<input type="hidden" name="student_id" value="{{ fixed_sid }}">
+  {% else %}
+  <label>Ученик <select name="student_id" required>{% for s in students_for_form %}<option value="{{ s.id }}">{{ s.display_name }}{% if s.grade %} · {{ s.grade }} кл.{% endif %}</option>{% endfor %}</select></label>
+  {% endif %}
+  <label>Дата <input type="date" name="day" value="{{ today }}" required></label>
+  <label>Время <input type="time" name="time" value="16:00" required></label>
+  <label>Цена, ₽ <input name="price" inputmode="numeric" placeholder="как у ученика"></label>
+  <label>Повторять <select name="weeks"><option value="1">один раз</option><option value="4">4 недели</option><option value="8">8 недель</option><option value="16">16 недель</option><option value="34">до конца года</option></select></label>
+  <label>Тема <input name="topic" maxlength="200" list="chem-topics" placeholder="выбери из списка или напиши свою"></label>
+  <datalist id="chem-topics">{% for t in topics_all or [] %}<option value="{{ t.title }}" label="{{ t.grade }} кл.{% if t.nums %} · №{{ t.nums|join(', ') }}{% endif %}">{% endfor %}</datalist>
+  <button class="btn btn-small">➕ Добавить</button>
+</form>

@@ -1,0 +1,43 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>Рисуем графики из данных или узнаём, как «учится» машина. Выбираешь сам!</p>
+  <p>Ключевые темы: <b>`matplotlib` (вариант A); Простой классификатор (вариант B); Как использовать ИИ с умом</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 5">Вариант A (60 мин): `matplotlib` — · 5</span><span style="flex: 5">Вариант B (60 мин): классификатор  · 5</span><span style="flex: 10">Почему важно понимать код, а не то · 10</span></div>
+  <p class="muted">Всего ~10 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/30/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">10 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>Вариант A (60 мин): `matplotlib` — график температуры из API, статистика оценок.</td></tr><tr><td>2</td><td>Вариант B (60 мин): классификатор «фрукт или овощ» по признакам своими руками, беседа про нейросети.</td></tr><tr><td>3</td><td>(10 мин) Почему важно понимать код, а не только копировать ответ ИИ. Домашнее задание: идеи финального проекта.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`matplotlib` (вариант A)</li><li>Простой классификатор (вариант B)</li><li>Как использовать ИИ с умом</li></ul>
+  <p>Разбери пример «Ближайший сосед» по строкам:</p><pre class="code-mini">import math
+# (сладость 0..10, хруст 0..10) -&gt; что это
+examples = [((9, 3), "фрукт"), ((8, 6), "фрукт"), ((2, 9), "овощ"), ((1, 7), "овощ")]
+
+def guess(sweet, crunch):
+    best = min(examples, key=lambda e: math.dist(e[0], (sweet, crunch)))
+    return best[1]
+
+print("Морковка (3, 9):", guess(3, 9))
+print("Банан (8, 1):", guess(8, 1))</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>self is not defined / TypeError</td><td>забыт self в методе</td><td>первый параметр каждого метода — self</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `matplotlib` (вариант A).</li><li>Объясни своими словами: Простой классификатор (вариант B).</li><li>Объясни своими словами: Как использовать ИИ с умом.</li>
+  </ol>
+  <p><b>Домашка:</b> Выбери 2–3 идеи финального проекта и коротко опиши каждую.</p>
+  <p><b>Со звёздочкой:</b> Добавь в классификатор третий класс — «ягода».</p>
+  <p>Задачи на сайте под уроком 30 — сайт проверяет автоматически.</p>
+</section>

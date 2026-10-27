@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Аналитика{% endblock %}
+{% block content %}
+<h1>📈 Аналитика</h1>
+<p class="muted">Кто занимается, где уходят с сайта и что не получается. Окно — последние {{ a.window }} дней, только активные ученики.</p>
+
+<div class="an-kpis">
+  <div class="card"><b>{{ a.summary.today }}</b><small>занимались сегодня</small></div>
+  <div class="card"><b>{{ a.summary.week }} <span class="muted">из {{ a.summary.students }}</span></b><small>за 7 дней</small></div>
+  <div class="card"><b>{{ a.summary.month }}</b><small>за {{ a.window }} дней</small></div>
+  <div class="card"><b>{{ a.summary.avg_days_week }}</b><small>дней в неделю в среднем</small></div>
+</div>
+
+<section class="card">
+  <h2>Учеников в день</h2>
+  <div class="an-chart" role="img" aria-label="Число занимавшихся учеников по дням">
+    {% for c in a.chart %}<div class="an-bar" title="{{ c.day }}: {{ c.students }}"><i style="height: {{ (100 * c.students / a.peak)|int }}%"></i><small>{{ c.day[8:10] }}</small></div>{% endfor %}
+  </div>
+</section>
+
+<div class="grid grid-2">
+<section class="card">
+  <h2>Воронка</h2>
+  <p class="muted small">Сколько учеников дошли до каждого шага — за всё время.</p>
+  {% for f in a.funnel %}
+  <div class="an-row"><span>{{ f.title }}</span><b>{{ f.count }}</b>
+    <div class="progress"><i style="width: {{ f.pct }}%"></i></div></div>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>Где уходят</h2>
+  <p class="muted small">Последняя открытая страница дня: на чём ученик закончил занятие.</p>
+  {% if a.exits %}
+  <table class="table small"><tr><th>Страница</th><th>Раздел</th><th>Доля</th></tr>
+    {% for e in a.exits %}<tr><td>{{ e.what }}</td><td class="muted">{{ e.section }}</td><td><b>{{ e.pct }}%</b> <small class="muted">({{ e.count }})</small></td></tr>{% endfor %}
+  </table>
+  {% else %}<p class="muted">Данных пока нет: просмотры страниц записываются с 27.10.2026.</p>{% endif %}
+</section>
+</div>
+
+<div class="grid grid-2">
+<section class="card">
+  <h2>Застревают на задачах</h2>
+  <p class="muted small">Пробовали, но так и не решили.</p>
+  {% if a.stuck %}
+  <table class="table small"><tr><th>Задача</th><th>Учеников</th><th>Неудачных попыток</th></tr>
+    {% for t in a.stuck %}<tr><td><a href="/teacher/attempts/{{ t.task.id }}">{{ t.task.title }}</a> <small class="muted">урок {{ t.task.lesson }}</small></td><td>{{ t.students }}</td><td>{{ t.fails }}</td></tr>{% endfor %}
+  </table>
+  {% else %}<p class="muted">Нерешённых задач нет 👍</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Слабые места</h2>
+  {% if a.oge %}<h3 class="small">ОГЭ, точность по номерам</h3>
+  <ul class="small">{% for o in a.oge %}<li>№{{ o.num }} — <b>{{ o.pct }}%</b> <span class="muted">из {{ o.n }} ответов</span></li>{% endfor %}</ul>{% endif %}
+  {% if a.ru %}<h3 class="small">Русский, точность по правилам</h3>
+  <ul class="small">{% for r in a.ru %}<li>{{ r.rule }} — <b>{{ r.pct }}%</b> <span class="muted">из {{ r.n }} ответов</span></li>{% endfor %}</ul>{% endif %}
+  {% if not a.oge and not a.ru %}<p class="muted">Нужно хотя бы 5 ответов по номеру или правилу.</p>{% endif %}
+</section>
+</div>
+
+{% if a.sections %}
+<section class="card">
+  <h2>Разделы за неделю</h2>
+  <table class="table small"><tr><th>Раздел</th><th>Действий</th><th>Учеников</th></tr>
+    {% for r in a.sections %}<tr><td>{{ r.section }}</td><td>{{ r.events }}</td><td>{{ r.students }}</td></tr>{% endfor %}
+  </table>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>По ученикам</h2>
+  <p class="muted small">Сверху — кто реже занимается.</p>
+  <div class="table-scroll"><table class="table small"><tr><th>Ученик</th><th>Дней за 7</th><th>Дней за {{ a.window }}</th><th>Задач за 7 дней</th><th>Последний день</th><th>Где остановился</th></tr>
+    {% for p in a.people %}<tr class="{{ 'an-idle' if not p.week }}"><td><a href="/teacher/student/{{ p.st.id }}">{{ p.st.display_name }}</a></td><td>{{ p.week }}</td><td>{{ p.month }}</td><td>{{ p.solved_week }}</td><td>{{ p.last_day or '—' }}</td><td class="muted">{{ p.last_page or '—' }}</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

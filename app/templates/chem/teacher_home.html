@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% from "chem/_macros.html" import money, when %}
+{% block title %}Пульт{% endblock %}
+{% block content %}
+<h1>🎛️ Пульт</h1>
+
+{% if overdue %}
+<section class="card alerts-card">
+  <div class="eyebrow">⚠️ Прошедшие занятия без отметки · {{ overdue|length }}</div>
+  {% set show_who, show_day, back_to = True, True, '/chem/teacher' %}
+  {% for l in overdue %}{% include "chem/_lesson_row.html" %}{% endfor %}
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="row between"><div class="eyebrow">📅 Ближайшие 7 дней</div><a class="small" href="/chem/teacher/schedule">Расписание по неделям →</a></div>
+  {% set show_who, show_day, back_to = True, False, '/chem/teacher' %}
+  {% set ns = namespace(day='') %}
+  {% for l in week %}
+    {% if l.starts_at[:10] != ns.day %}{% set ns.day = l.starts_at[:10] %}<div class="lesson-day">{{ 'Сегодня' if ns.day == today else when(ns.day) }}</div>{% endif %}
+    {% include "chem/_lesson_row.html" %}
+  {% else %}
+  <p class="muted">На неделю занятий нет.</p>
+  {% endfor %}
+  {% if roster %}
+  <details class="add-lesson-box"><summary class="btn btn-small btn-ghost">➕ Добавить занятие</summary>
+    {% set students_for_form, fixed_sid = roster|map(attribute='student')|list, None %}
+    {% include "chem/_add_lesson.html" %}
+  </details>
+  {% endif %}
+</section>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">💰 Долги</div>
+    {% if debtors %}
+    <ul class="clean-list">{% for d in debtors %}<li><a href="/chem/teacher/student/{{ d.student.id }}#money">{{ d.student.display_name }}</a>{% if not d.student.active %} <small class="muted">(в архиве)</small>{% endif %} — <b class="bad-text">{{ money(-d.balance) }}</b></li>{% endfor %}</ul>
+    {% else %}<p class="muted">Все занятия оплачены 👍</p>{% endif %}
+    <p class="small"><a href="/chem/teacher/money">Оплаты по месяцам →</a></p>
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">📬 ДЗ на проверку</div>
+    {% if hw_wait %}
+    <ul class="clean-list">{% for h in hw_wait %}<li><a href="/chem/hw/{{ h.id }}">{{ h.who }}: {{ h.title }}</a></li>{% endfor %}</ul>
+    <p class="small"><a href="/chem/teacher/hw">Проверить →</a></p>
+    {% else %}<p class="muted">Ничего не ждёт проверки.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card">
+  <div class="row between"><div class="eyebrow">👥 Ученики · {{ roster|length }}</div><a class="small" href="/teacher/students">Все и архив →</a></div>
+  {% if roster %}
+  <div class="table-scroll"><table class="table">
+    <tr><th>Ученик</th><th>Класс</th><th>Следующее занятие</th><th>Посещено</th><th>ДЗ</th><th>Баланс</th></tr>
+    {% for c in roster %}{% set st = c.student %}
+    <tr>
+      <td><a href="/chem/teacher/student/{{ st.id }}"><b>{{ st.display_name }}</b></a><br><small class="muted">{{ st.username }}</small></td>
+      <td>{{ st.grade or '—' }}</td>
+      <td>{{ when(c.next.starts_at) if c.next else '—' }}</td>
+      <td>{{ c.visits }}{% if c.missed %} <small class="muted">(пропусков {{ c.missed }})</small>{% endif %}</td>
+      <td>{% if c.hw_wait %}<span class="pill wait">📬 {{ c.hw_wait }}</span>{% endif %}{% if c.hw_open %} <small class="muted">задано {{ c.hw_open }}</small>{% endif %}</td>
+      <td class="{{ 'bad-text' if c.balance.balance < 0 }}">{{ money(c.balance.balance) }}</td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% else %}
+  <p class="muted">Учеников пока нет. Дай им код приглашения ниже — они зарегистрируются сами.</p>
+  {% endif %}
+</section>
+
+<section class="card" id="demo">
+  <div class="eyebrow">👀 Посмотреть глазами ученика</div>
+  {% if demo %}<p class="pill ok">Готово! Войди в другом окне браузера (или в режиме «инкогнито»): логин <b>тест</b>, пароль <b>тест</b>.</p>{% endif %}
+  <p class="small">Тестовый ученик: логин <b>тест</b>, пароль <b>тест</b>. Он видит то же, что настоящие ученики: входной тест, карту экзамена, задачи, ДЗ. Ему можно задавать ДЗ и ставить занятия — для пробы.</p>
+  <form method="post" action="/chem/teacher/demo" class="row">
+    {{ csrf_field(user) }}
+    <button class="btn btn-small" name="grade" value="9">{{ 'Сделать 9 класс' if demo_exists else 'Создать тестового ученика · 9 класс' }}</button>
+    <button class="btn btn-small btn-ghost" name="grade" value="11">{{ 'Сделать 11 класс' if demo_exists else '…или 11 класс' }}</button>
+  </form>
+</section>
+
+<section class="card" id="invite">
+  <div class="eyebrow">🔑 Регистрация учеников</div>
+  <p>Код приглашения: <b class="invite-code">{{ invite }}</b></p>
+  <p class="small">Ссылка для ученика: <code>{{ base_url }}/join?code={{ invite }}</code></p>
+  <p class="small muted">Ученик сам выбирает класс, ник, логин и пароль. Фамилия, телефон и почта не нужны.</p>
+  <form method="post" action="/chem/teacher/invite" data-confirm="Сделать новый код? Старый перестанет работать (уже зарегистрированных это не касается).">{{ csrf_field(user) }}<button class="btn btn-small btn-ghost">🔄 Новый код</button></form>
+</section>
+{% endblock %}

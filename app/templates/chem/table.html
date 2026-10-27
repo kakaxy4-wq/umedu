@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Таблица Менделеева{% endblock %}
+{% block content %}
+<h1>⚛️ Периодическая система</h1>
+<p class="muted small">Нажми на элемент — появятся подробности. На экзамене выдают короткопериодную таблицу; здесь — длиннопериодная, группы 1–18.</p>
+
+<section class="card pt-detail" data-pt-detail>
+  <div class="pt-big"><span data-f="z">8</span><b data-f="sym">O</b></div>
+  <figure class="pt-photo" data-photo hidden><img alt="" loading="lazy"><figcaption class="small muted"><span data-photo-note></span><a target="_blank" rel="noopener"></a></figcaption></figure>
+  <div>
+    <h2 data-f="name">Кислород</h2>
+    <p class="small">Атомная масса: <b data-f="mass">16</b> · период <b data-f="period">2</b> · группа <b data-f="group">16</b></p>
+    <p class="small">Семейство: <b data-f="cat">неметаллы</b> · при комнатной температуре: <b data-f="state">газ</b><span data-f="shells"> · электроны по слоям: 2, 6</span></p>
+    <p class="small"><span data-f="config">Электронная конфигурация: [He] 2s² 2p⁴</span><span data-f="en"> · электроотрицательность 3,44</span></p>
+    <p class="small pt-fact" data-f="fact">{{ "Самый распространённый элемент земной коры — почти половина её массы."|chem }}</p>
+  </div>
+</section>
+
+<div class="pt-scroll">
+  <div class="pt-grid">
+    {% for g in range(1, 19) %}<div class="pt-head" style="grid-row: 1; grid-column: {{ g + 1 }}">{{ g }}</div>{% endfor %}
+    {% for p in range(1, 8) %}<div class="pt-head" style="grid-row: {{ p + 1 }}; grid-column: 1">{{ p }}</div>{% endfor %}
+    <div class="pt-gap" style="grid-row: 7; grid-column: 4">La–Lu</div>
+    <div class="pt-gap" style="grid-row: 8; grid-column: 4">Ac–Lr</div>
+    {% for e in elements %}
+    <button type="button" class="pt-el cat-{{ e.cat }}" style="grid-row: {{ e.row + 1 + (1 if e.row > 7 else 0) }}; grid-column: {{ e.col + 1 }}"
+            data-z="{{ e.z }}" data-sym="{{ e.sym }}" data-name="{{ e.name }}" data-mass="{{ e.mass }}" data-period="{{ e.period }}"
+            data-group="{{ e.group }}" data-cat="{{ categories[e.cat] }}" data-shells="{{ e.shells|join(', ') if e.shells else '' }}"
+            data-state="{{ state_hints.get(e.state, e.state) }}" data-config="{{ e.config or '' }}" data-en="{{ ('%.2f' % e.en).replace('.', ',') if e.en else '' }}" data-fact="{{ e.fact }}"
+            data-photo="{{ e.photo }}" data-credit="{{ e.credit }}" data-credit-url="{{ e.credit_url }}" data-photo-note="{{ e.photo_note }}">
+      <small>{{ e.z }}</small><b>{{ e.sym }}</b><span>{{ e.mass }}</span>
+    </button>
+    {% endfor %}
+  </div>
+</div>
+
+<p class="small muted">Фото образцов — Wikimedia Commons, авторы и свободные лицензии указаны под каждым фото.</p>
+<div class="pt-legend">{% for key, title in categories.items() %}<span class="pt-chip cat-{{ key }}" title="{{ category_hints[key] }}">{{ title }}</span>{% endfor %}</div>
+
+<details class="card pt-help" open>
+  <summary><b>Что означают подписи</b></summary>
+  <p class="small"><b>В клетке:</b> вверху — порядковый номер (= заряд ядра = число протонов и электронов), крупно — символ,
+    внизу — относительная атомная масса. Строки — <b>периоды</b> (номер = число электронных слоёв), столбцы 1–18 — <b>группы</b>.</p>
+  <p class="small"><b>В карточке элемента:</b> «Семейство» — к какой группе похожих элементов он относится (цвет клетки, расшифровка ниже);
+    «при комнатной температуре» — в каком виде простое вещество при ~20 °C: газ, жидкость или твёрдое.
+    Электронная конфигурация — как электроны распределены по подуровням; электроотрицательность (по Полингу) — насколько
+    сильно атом тянет к себе электроны в связи: больше всех у фтора (3,98).</p>
+  <dl class="pt-cats">
+    {% for key, title in categories.items() %}<dt><span class="pt-chip cat-{{ key }}">{{ title }}</span></dt><dd class="small">{{ category_hints[key] }}</dd>{% endfor %}
+  </dl>
+</details>
+{% endblock %}

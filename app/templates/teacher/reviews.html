@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field, hw_status, codebox %}
+{% block title %}Проверка домашек{% endblock %}
+{% block content %}
+<h1>📬 Проверка домашних заданий</h1>
+{% for s in pending %}
+{% set l = lessons[s.lesson] %}
+<section class="card review" id="sub{{ s.id }}">
+  <div class="row between"><h3>👤 {{ s.who }} · урок {{ s.lesson }}: {{ l.title }}</h3><small class="muted">{{ s.created_at|dt }}</small></div>
+  <p class="muted">Задание: {{ l.homework|md }}</p>
+  {% if s.star %}<p>⭐ Ученик говорит, что сделал задание со звёздочкой: {{ l.star|md }}</p>{% endif %}
+  {% if s.comment %}<p class="teacher-comment">💬 {{ s.comment }}</p>{% endif %}
+  {% if s.code %}{{ codebox(s.code) }}{% endif %}
+  {% if s.file_name %}<p><a href="/files/sub/{{ s.id }}">📎 {{ s.file_name }}</a></p>{% endif %}
+  <form method="post" action="/teacher/review/{{ s.id }}" class="stack">
+    {{ csrf_field(user) }}
+    <label>Комментарий ученику<textarea name="comment" rows="2" placeholder="Что получилось здорово, что улучшить"></textarea></label>
+    <div class="row">
+      <label>🏆 за работу <input type="number" name="xp" value="10" min="0" max="100" class="num"></label>
+      {% if s.star %}<label class="check"><input type="checkbox" name="star_ok" value="1" checked> ⭐ засчитать (+5)</label>{% endif %}
+    </div>
+    <div class="row">
+      <button class="btn" name="action" value="approve">✅ Принять</button>
+      <button class="btn btn-ghost" name="action" value="return">🔧 Вернуть на доработку</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<div class="card center-card"><div class="big-emoji">🎉</div><p>Всё проверено!</p></div>
+{% endfor %}
+
+{% if done %}
+<h2>Проверенные</h2>
+<table class="table">
+  <tr><th>Ученик</th><th>Урок</th><th>Сдано</th><th>Статус</th><th>🏆</th><th>Комментарий</th></tr>
+  {% for s in done %}
+  <tr><td><a href="/teacher/student/{{ s.student_id }}">{{ s.who }}</a></td><td>{{ s.lesson }}</td><td>{{ s.created_at|dt }}</td><td>{{ hw_status(s.status) }}</td><td>{{ s.xp_awarded }}</td><td>{{ s.teacher_comment }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

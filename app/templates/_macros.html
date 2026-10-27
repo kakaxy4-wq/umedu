@@ -1,0 +1,73 @@
+{% macro codebox(code, mode='run', local=False, task=None, tests=None) -%}
+<div class="codebox" data-mode="{{ mode }}"{% if local %} data-local="1"{% endif %}{% if task %} data-task="{{ task }}" data-tests='{{ tests|tojson }}'{% endif %}>
+<textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Код на Python">{{ code }}</textarea>
+</div>
+{%- endmacro %}
+
+{% macro csrf_field(user) -%}
+<input type="hidden" name="csrf" value="{{ user.csrf }}">
+{%- endmacro %}
+
+{% macro numpad() -%}
+<div class="numpad" aria-label="Цифровая клавиатура">
+  {% for k in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '−', '0', ','] %}<button type="button" data-key="{{ k }}">{{ k }}</button>{% endfor %}
+  <button type="button" data-key="back" class="numpad-back" aria-label="Стереть">⌫</button>
+</div>
+{%- endmacro %}
+
+{% macro sid_field(sid) -%}
+{% if sid %}<input type="hidden" name="student_id" value="{{ sid }}">{% endif %}
+{%- endmacro %}
+
+{% macro level_bar(me, calm=False) -%}
+<div class="levelbar">
+  <div class="levelbar-top">
+    {% set bimg = None if calm or not me.heroes else brawler_img(me.heroes.py_got) %}
+    <span class="lvl-emoji">{% if bimg %}<img src="{{ bimg }}" alt="" class="lvl-img">{% elif rank_img(me.level.num) %}<img src="{{ rank_img(me.level.num) }}" alt="" class="lvl-img">{% else %}{{ me.level.emoji }}{% endif %}</span>
+    {% set rimg = rank_img(me.level.num) %}
+    {% if rimg and bimg %}<img src="{{ rimg }}" alt="" class="lvl-rank">{% endif %}
+    <span><b>{{ me.level.title }}</b><br><small>ранг {{ me.level.num }} из 10</small></span>
+    <span class="lvl-xp">🏆 {{ me.xp }}</span>
+  </div>
+  <div class="progress"><i style="width: {{ me.level.progress }}%"></i></div>
+  <small class="muted">{% if me.level.next %}До следующего ранга — {{ me.level.to_next }} 🏆{% else %}Максимальный ранг! 🌟{% endif %}</small>
+</div>
+{%- endmacro %}
+
+{% macro hw_status(status) -%}
+{% if status == 'approved' %}<span class="pill ok">✅ принято</span>
+{% elif status == 'pending' %}<span class="pill wait">⏳ на проверке</span>
+{% elif status == 'returned' %}<span class="pill bad">🔧 доработать</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro week_board(board, sid, limit=10) -%}
+<div class="board">
+  {% for r in board[:limit] %}
+  <div class="board-row {{ 'me' if r.id == sid }}">
+    <span class="board-place">{% if r.week > 0 and r.place <= 3 %}{{ ['🥇', '🥈', '🥉'][r.place - 1] }}{% else %}{{ r.place }}{% endif %}</span>
+    <span class="board-name">{% if r.badge %}{{ r.badge }} {% endif %}{{ r.name }}{% if r.id == sid %} <small>(ты)</small>{% endif %}{% if r.title %}<br><small class="board-title">{{ r.title }}</small>{% endif %}</span>
+    <b class="board-xp">+{{ r.week }} 🏆</b>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro oge_forecast(fc, more=True) -%}
+<section class="card fc-card">
+  <div class="eyebrow">🎯 Прогноз ОГЭ по информатике</div>
+  {% if fc.known %}
+  <div class="fc-row">
+    <div class="fc-big">{{ fc.points }}<small> из {{ fc.max }}</small></div>
+    <div class="fc-grade g{{ fc.grade }}">оценка «{{ fc.grade }}»</div>
+  </div>
+  <div class="progress"><i style="width: {{ (100 * fc.points / fc.max)|int }}%"></i></div>
+  <p class="small muted">По номерам, которые тренировались на сайте ({{ fc.known|length }} из 16){% if fc.unknown %}. Ещё до {{ fc.unknown_points }} баллов — в номерах {{ fc.unknown|join(', ') }}, их сайт пока не видел{% endif %}.{% if not fc.enough_data %} Данных мало — прогноз станет точнее после нескольких тренировок.{% endif %}</p>
+  {% else %}
+  <p class="muted">Прогноз появится после первых тренировок номеров ОГЭ.</p>
+  {% endif %}
+  {% if more and fc.next %}
+  <p class="small">Больше всего баллов даст: {% for n in fc.next %}<a class="pill" href="/oge/drill/{{ n }}">№{{ n }} 🎲</a> {% endfor %}</p>
+  {% endif %}
+</section>
+{%- endmacro %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}ОГЭ №{{ num }}: тренажёр{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/oge#n{{ num }}">ОГЭ по информатике</a></p>
+<header class="task-head">
+  <h1>🎯 №{{ num }}. {{ title }}</h1>
+  <div class="row">
+    <span class="pill">вариант {{ seed }}</span>
+    {% if st %}<span class="pill {{ 'ok' if st.mastered }}">{{ '🏅 освоено · ' if st.mastered }}верно {{ st.ok }} из {{ st.n }} за месяц</span>{% endif %}
+    <a class="pill" href="/oge/drill/{{ num }}">🎲 Другой вариант</a>
+  </div>
+</header>
+{% if user.role == 'teacher' %}<p class="pill wait">Режим просмотра: ответы преподавателя не записываются в статистику ученика</p>{% endif %}
+
+<section class="card statement oge-drill">
+  {% for p in text %}{% if p is none %}<pre class="oge-code">{{ variant.code }}</pre>{% else %}<p>{{ p }}</p>{% endif %}{% endfor %}
+  {% if variant.table %}
+  <div class="table-scroll"><table class="table oge-table">
+    <tr>{% for c in variant.table[0] %}<th>{{ c }}</th>{% endfor %}</tr>
+    {% for row in variant.table[1:] %}<tr>{% for c in row %}{% if loop.first and variant.table[0][0] == '' %}<th>{{ c }}</th>{% else %}<td>{{ c }}</td>{% endif %}{% endfor %}</tr>{% endfor %}
+  </table></div>
+  {% endif %}
+</section>
+
+{% if res %}
+<section class="card ru-result {{ 'ok' if res.ok else 'bad' }}">
+  <b>{{ '✅ Верно!' if res.ok else '❌ Неверно' }}{% if res.xp %} +{{ res.xp }} 🏆{% endif %}</b>
+  <p>Твой ответ: <b>{{ given or '—' }}</b>{% if not res.ok or num == 5 %} · {{ 'пример верного' if num == 5 else 'верный' }}: <b>{{ res.answer }}</b>{% endif %}</p>
+  <p class="small">{{ res.explain }}</p>
+  <div class="row">
+    <a class="btn" href="/oge/drill/{{ num }}">Следующий вариант →</a>
+    {% if not res.ok %}<a class="btn btn-ghost" href="/oge/drill/{{ num }}?seed={{ seed }}">Решить этот ещё раз</a>{% endif %}
+  </div>
+</section>
+{% else %}
+<form method="post" action="/oge/drill/{{ num }}" class="card row oge-answer">
+  {{ csrf_field(user) }}
+  <input type="hidden" name="seed" value="{{ seed }}">
+  <label>Ответ <input name="answer" autocomplete="off" autocapitalize="off" spellcheck="false" required autofocus></label>
+  <button class="btn">Проверить</button>
+</form>
+<p class="muted small">Трофеи — за вариант, решённый с первой попытки (+2, до 20 в день). Три таких подряд — номер освоен.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,53 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>У каждого врага свои координаты и здоровье. Классы делают код игры понятным.</p>
+  <p>Ключевые темы: <b>`class`, `__init__`, `self`; Методы `update` и `draw`; Наследование</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 15">Зачем классы. Класс `Enemy`. · 15</span><span style="flex: 30">Переписываем игру через классы. · 30</span><span style="flex: 15">Задачи на сайте про классы. · 15</span><span style="flex: 10">Итог. · 10</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/23/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(15 мин) Зачем классы. Класс `Enemy`.</td></tr><tr><td>2</td><td>(30 мин) Переписываем игру через классы.</td></tr><tr><td>3</td><td>(15 мин) Задачи на сайте про классы.</td></tr><tr><td>4</td><td>(10 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>`class`, `__init__`, `self`</li><li>Методы `update` и `draw`</li><li>Наследование</li></ul>
+  <p>Разбери пример «Бой двух бойцов» по строкам:</p><pre class="code-mini">import random
+
+class Brawler:
+    def __init__(self, name, hp, damage):
+        self.name = name
+        self.hp = hp
+        self.damage = damage
+
+    def attack(self, other):
+        hit = random.randint(self.damage // 2, self.damage)
+        other.hp = max(0, other.hp - hit)
+        print(f"{self.name} бьёт {other.name} на {hit}, у него осталось {other.hp}")
+
+a = Brawler("Питоша", 3000, 900)
+b = Brawler("Тёртл", 3600, 700)
+while a.hp &gt; 0 and b.hp &gt; 0:
+    a.attack(b)
+    if b.hp &gt; 0:
+        b.attack(a)
+print("Победил", a.name if a.hp &gt; 0 else b.name, "🏆")</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>Окно «не отвечает»</td><td>нет clock.tick(60) в цикле</td><td>добавь clock.tick(60)</td></tr><tr><td>Игра вылетает при закрытии</td><td>pygame.quit() не вызван</td><td>закрывай в обработке события QUIT</td></tr><tr><td>Персонаж улетает за экран</td><td>нет ограничения краёв</td><td>player.clamp_ip(screen.get_rect())</td></tr><tr><td>self is not defined / TypeError</td><td>забыт self в методе</td><td>первый параметр каждого метода — self</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: `class`, `__init__`, `self`.</li><li>Объясни своими словами: Методы `update` и `draw`.</li><li>Объясни своими словами: Наследование.</li>
+  </ol>
+  <p><b>Домашка:</b> Класс `Bonus` (замедление, доп. жизнь) — бонусы появляются случайно.</p>
+  <p><b>Со звёздочкой:</b> Разные типы врагов через наследование.</p>
+  <p>Задачи на сайте под уроком 23 — сайт проверяет автоматически.</p>
+</section>

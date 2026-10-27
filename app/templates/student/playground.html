@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox, csrf_field %}
+{% block title %}Песочница{% endblock %}
+{% block content %}
+<h1>🧪 Песочница</h1>
+<p class="muted">Пиши что угодно и запускай. Черепашка рисует прямо здесь, <code>input()</code> спрашивает в консоли. Ctrl+Enter — запуск, Ctrl+S — сохранить.</p>
+
+<div class="grid grid-play">
+  <section id="playground" data-id="{{ current.id if current else 0 }}">
+    <div class="row">
+      <input id="snippet-title" class="title-input" value="{{ current.title if current else 'Моя программа' }}" aria-label="Название">
+      <button class="btn" id="save-snippet">💾 Сохранить</button>
+    </div>
+    {{ codebox(code, mode='playground') }}
+  </section>
+  <aside class="card">
+    <div class="eyebrow">Начать с шаблона</div>
+    <ul class="plain-list">
+      {% for key, (title, _code) in starters.items() %}<li><a href="/playground?starter={{ key }}">{{ title }}</a></li>{% endfor %}
+    </ul>
+    <div class="eyebrow">Мои программы</div>
+    <ul class="plain-list">
+      {% for s in snippets %}
+      <li class="row between">
+        <a href="/playground?s={{ s.id }}" {% if current and current.id == s.id %}class="active"{% endif %}>{{ s.title }}</a>
+        <form method="post" action="/snippets/{{ s.id }}/delete" data-confirm="Удалить «{{ s.title }}»?">{{ csrf_field(user) }}<button class="linklike" title="Удалить">🗑</button></form>
+      </li>
+      {% else %}<li class="muted">Пока ничего. Сохрани первую!</li>{% endfor %}
+    </ul>
+  </aside>
+</div>
+{% endblock %}

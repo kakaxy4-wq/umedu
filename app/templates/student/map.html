@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import hw_status %}
+{% block title %}Карта курса{% endblock %}
+{% block content %}
+<h1>🗺️ Карта курса</h1>
+<p class="muted">34 занятия, 6 миров. Новые уроки открывает преподаватель на занятии.</p>
+{% for m in modules %}
+<section class="world world-{{ m.num }}">
+  <header class="world-head">
+    {% set wimg = world_img(m.num) %}
+    <span class="world-emoji">{% if wimg %}<img src="{{ wimg }}" alt="" class="world-img">{% else %}{{ m.emoji }}{% endif %}</span>
+    <div>
+      <div class="eyebrow">Мир {{ m.num }}</div>
+      <h2>{{ m.title }}</h2>
+      <small class="muted">Проект: {{ m.project }} · Награда: «{{ m.badge }}»</small>
+    </div>
+  </header>
+  <div class="lesson-grid">
+    {% for l in m["items"] %}
+    <a href="/lesson/{{ l.num }}" class="lesson-tile {% if l.done %}done{% elif l.current %}current{% elif not l.open %}locked{% endif %}">
+      <span class="tile-num">{{ l.num }}</span>
+      <span class="tile-emoji">{% if l.open %}{{ l.emoji }}{% else %}🔒{% endif %}</span>
+      <b>{{ l.title if l.open or user.role == 'teacher' else '???' }}</b>
+      <span class="tile-meta">
+        {% if l.tasks_total and l.open %}🧩 {{ l.tasks_solved }}/{{ l.tasks_total }}{% endif %}
+        {% if l.done %}✅{% endif %}
+        {{ hw_status(l.hw_status) }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

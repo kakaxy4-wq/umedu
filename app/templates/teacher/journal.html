@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Журнал{% endblock %}
+{% block content %}
+<h1>📜 Журнал трофеев — {{ student_name }}</h1>
+<table class="table">
+  <tr><th>Когда</th><th>🏆</th><th>За что</th><th>Тип</th></tr>
+  {% for e in events %}
+  <tr><td>{{ e.created_at|dt }}</td><td class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</td><td>{{ e.reason }}</td><td><small class="muted">{{ e.kind }}</small></td></tr>
+  {% else %}<tr><td colspan="4" class="muted">Пусто</td></tr>{% endfor %}
+</table>
+{% endblock %}

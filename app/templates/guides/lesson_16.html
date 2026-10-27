@@ -1,0 +1,40 @@
+<section class="card g-summary">
+  <div class="eyebrow">Цель урока</div>
+  <p>«Ключ → значение»: инвентарь, переводчик и взлом шифра Цезаря без перебора.</p>
+  <p>Ключевые темы: <b>Словари `{}`; `get`, `items()`; Частотный анализ</b>.</p>
+  <div class="g-timeline-bar"><span style="flex: 10">Разбор лотереи. · 10</span><span style="flex: 15">Словарь как инвентарь: `{"меч": 1, · 15</span><span style="flex: 25">Частотный анализ: самая частая бук · 25</span><span style="flex: 15">Переводчик «слово → эмодзи». Задач · 15</span><span style="flex: 5">Итог. · 5</span></div>
+  <p class="muted">Всего ~70 минут. Подготовь: проверенную домашку, открытый урок на компьютере ученика, <a href="/teacher/guide/16/cards" target="_blank" rel="noopener">карточки</a>.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><span class="g-time">70 мин</span><h2>1. План по шагам</h2></div>
+  <table class="table g-ops"><tr><th>Шаг</th><th>Что делаем</th></tr><tr><td>1</td><td>(10 мин) Разбор лотереи.</td></tr><tr><td>2</td><td>(15 мин) Словарь как инвентарь: `{"меч": 1, "зелье": 3}`.</td></tr><tr><td>3</td><td>(25 мин) Частотный анализ: самая частая буква в русском — «о» → взлом Цезаря.</td></tr><tr><td>4</td><td>(15 мин) Переводчик «слово → эмодзи». Задачи.</td></tr><tr><td>5</td><td>(5 мин) Итог.</td></tr></table>
+  <p class="g-ask"><b>Правило урока:</b> код пишет ученик, ты помогаешь вопросами. Наводящие вопросы вместо готовых ответов.</p>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>2. Ключевые темы</h2></div>
+  <ul class="g-list"><li>Словари `{}`</li><li>`get`, `items()`</li><li>Частотный анализ</li></ul>
+  <p>Разбери пример «Частота букв» по строкам:</p><pre class="code-mini">text = "кто рано встаёт тому бог подаёт"
+count = {}
+for ch in text:
+    if ch != " ":
+        count[ch] = count.get(ch, 0) + 1
+for ch, n in sorted(count.items(), key=lambda p: -p[1])[:5]:
+    print(ch, "█" * n)</pre>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>4. Типичные ошибки</h2></div>
+  <table class="table g-ops"><tr><th>Что видим</th><th>Причина</th><th>Что сказать</th></tr><tr><td>KeyError</td><td>ключа ещё нет в словаре</td><td>dict.get(key, значение по умолчанию)</td></tr><tr><td>UnicodeDecodeError при чтении файла</td><td>не указана кодировка</td><td>open(..., encoding="utf-8")</td></tr></table>
+</section>
+
+<section class="card g-block">
+  <div class="g-head"><h2>5. Итог и домашка</h2></div>
+  <ol class="g-list">
+    <li>Объясни своими словами: Словари `{}`.</li><li>Объясни своими словами: `get`, `items()`.</li><li>Объясни своими словами: Частотный анализ.</li>
+  </ol>
+  <p><b>Домашка:</b> Карточки для запоминания английских слов из школьной программы: случайный порядок, подсчёт правильных.</p>
+  <p><b>Со звёздочкой:</b> Слова, на которых ошибся, задаются ещё раз.</p>
+  <p>Задачи на сайте под уроком 16 — сайт проверяет автоматически.</p>
+</section>

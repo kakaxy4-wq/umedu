@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Русский язык{% endblock %}
+{% block content %}
+<h1>📖 Русский язык{% if user.role == 'teacher' %} — {{ student_name }}{% endif %}</h1>
+<p class="muted">Тренажёры для 8 класса: запятые в предложениях и трудные буквы. Каждая ошибка возвращается на повторение через день, потом через 3, 7 и 14 дней — пока не запомнится.</p>
+
+{% if entry_state and entry_state.opened_at and not entry_result %}
+<a class="card check-banner" href="/check/ru_entry">
+  <span class="check-emoji">📖</span>
+  <span><b>Начни с входного среза</b><br><small>{{ entry.questions|length }} вопросов — покажет, что потренировать · +30 🏆</small></span>
+  <span class="btn btn-small">Пройти →</span>
+</a>
+{% endif %}
+
+<div class="ru-tiles">
+  <a class="card ru-tile ru-review {{ 'has-due' if ov.due }}" href="/ru/review">
+    <span class="ru-tile-emoji">{{ ico("ru_review", "🔁") }}</span>
+    <b>Мои ошибки</b>
+    <small>{% if ov.due %}на сегодня — <b>{{ ov.due }}</b>{% elif ov.waiting %}сегодня всё повторено · ждут: {{ ov.waiting }}{% else %}ошибок пока нет 👍{% endif %}</small>
+  </a>
+  <a class="card ru-tile" href="/ru/commas">
+    <span class="ru-tile-emoji">{{ ico("ru_commas", "✍️") }}</span>
+    <b>Запятые</b>
+    <small>касайся места, где нужна запятая · +2 🏆</small>
+  </a>
+  <a class="card ru-tile" href="/ru/spell">
+    <span class="ru-tile-emoji">{{ ico("ru_arena", "⚡") }}</span>
+    <b>Арена букв</b>
+    <small>60 секунд: Н или НН, слитно или раздельно…</small>
+  </a>
+  <a class="card ru-tile" href="/ru/basis">
+    <span class="ru-tile-emoji">{{ ico("ru_basis", "🧩") }}</span>
+    <b>Грамматическая основа</b>
+    <small>найди подлежащее и сказуемое · +2 🏆</small>
+  </a>
+  <a class="card ru-tile" href="/ru/dict">
+    <span class="ru-tile-emoji">{{ ico("ru_dictation", "📝") }}</span>
+    <b>Диктант</b>
+    <small>буквы и запятые в одном тексте · до +6 🏆</small>
+  </a>
+  <a class="card ru-tile" href="/ru/rules">
+    <span class="ru-tile-emoji">{{ ico("ru_rules", "📒") }}</span>
+    <b>Правила</b>
+    <small>коротко и с примерами</small>
+  </a>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">За неделю</div>
+    <p class="ru-big">{{ ov.week_ok }} <small>верных из {{ ov.week_n }}</small></p>
+    <p class="muted small">Трофеи за русский сегодня: {{ ov.earned_today }} из {{ ov.cap }}.</p>
+  </section>
+  <section class="card">
+    <div class="eyebrow">Что подтянуть</div>
+    {% if ov.weak %}
+    <ul class="small-list">{% for r in ov.weak %}<li><a href="/ru/rules#{{ r.id }}">{{ r.title }}</a> — {{ r.stats.pct }}% верно</li>{% endfor %}</ul>
+    {% else %}<p class="muted">Позанимайся немного — и здесь появятся правила, где чаще ошибки.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

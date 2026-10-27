@@ -1,0 +1,24 @@
+{% if user.role == 'teacher' %}
+  <div class="nav-title">Преподаватель</div>
+  <a href="/chem/teacher" class="{{ 'active' if nav == '/chem/teacher' }}">🎛️ Пульт</a>
+  <a href="/chem/teacher/schedule" class="{{ 'active' if nav.startswith('/chem/teacher/schedule') }}">📅 Расписание</a>
+  <a href="/teacher/students" class="{{ 'active' if nav.startswith('/teacher/students') or nav.startswith('/chem/teacher/student/') }}">👥 Ученики</a>
+  <a href="/chem/teacher/hw" class="{{ 'active' if nav.startswith('/chem/teacher/hw') }}">📬 ДЗ на проверку {% if pending_chem %}<span class="badge">{{ pending_chem }}</span>{% endif %}</a>
+  <a href="/chem/teacher/money" class="{{ 'active' if nav.startswith('/chem/teacher/money') }}">💰 Оплаты</a>
+  <a href="/teacher/checks" class="{{ 'active' if nav.startswith('/teacher/checks') }}">📝 Входные тесты</a>
+  <a href="/chem/teacher/mocks" class="{{ 'active' if nav.startswith('/chem/teacher/mocks') or nav.startswith('/chem/mock') }}">⏱️ Пробники</a>
+  <a href="/chem/teacher/review" class="{{ 'active' if nav.startswith('/chem/teacher/review') }}">✅ Проверка задач</a>
+  <div class="nav-title">Химия</div>
+  <a href="/chem/map" class="{{ 'active' if nav.startswith('/chem/map') }}">🗺️ Карта экзамена</a>
+  <a href="/chem/lab" class="{{ 'active' if nav.startswith('/chem/lab') }}">🔬 Лаборатория</a>
+  <a href="/chem/table" class="{{ 'active' if nav.startswith('/chem/table') }}">⚛️ Таблица Менделеева</a>
+{% else %}
+  <a href="/chem" class="{{ 'active' if nav == '/chem' }}">🏠 Главная</a>
+  <a href="/chem/map" class="{{ 'active' if nav.startswith('/chem/map') or nav.startswith('/chem/task') }}">🗺️ Карта экзамена</a>
+  <a href="/chem/hw" class="{{ 'active' if nav.startswith('/chem/hw') }}">📚 Домашние задания</a>
+  <a href="/chem/mock" class="{{ 'active' if nav.startswith('/chem/mock') }}">⏱️ Пробник</a>
+  <a href="/checks" class="{{ 'active' if nav.startswith('/check') }}">📝 Тесты</a>
+  <a href="/chem/lab" class="{{ 'active' if nav.startswith('/chem/lab') }}">🔬 Лаборатория</a>
+  <a href="/chem/table" class="{{ 'active' if nav.startswith('/chem/table') }}">⚛️ Таблица Менделеева</a>
+  <a href="/chem/me" class="{{ 'active' if nav.startswith('/chem/me') }}">👤 Мой профиль</a>
+{% endif %}

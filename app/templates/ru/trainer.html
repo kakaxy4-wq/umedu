@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ {'comma': 'Запятые', 'spell': 'Арена букв', 'review': 'Мои ошибки', 'basis': 'Грамматическая основа', 'rule': rule_title, 'dict': 'Диктант'}[mode] }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/ru">Русский язык</a>{% if mode == 'rule' %} · <a href="/ru/rules#{{ rule }}">Правила</a>{% endif %}</p>
+{% if mode == 'comma' %}
+<h1>✍️ Запятые</h1>
+<p class="muted">Коснись промежутка между словами, где нужна запятая. Ещё раз — убрать. Бывает, что запятые не нужны совсем.</p>
+{% elif mode == 'spell' %}
+<h1>⚡ Арена букв</h1>
+<p class="muted">60 секунд: выбирай правильный вариант как можно быстрее. Ошибки разберём в конце.</p>
+{% elif mode == 'basis' %}
+<h1>🧩 Грамматическая основа</h1>
+<p class="muted">Касайся слов: один раз — <span class="ru-u-s">подлежащее</span>, второй — <span class="ru-u-p">сказуемое</span>, третий — снять. Бывает, что главный член один.</p>
+{% elif mode == 'dict' %}
+<h1>📝 Диктант: «{{ dict_title }}»</h1>
+<p class="muted">Вставь пропущенные буквы (касание по «?» перебирает варианты) и поставь запятые между словами, где они нужны. Проверка — в конце, как в настоящем диктанте.</p>
+{% elif mode == 'rule' %}
+<h1>🎯 {{ rule_title }}</h1>
+<details class="card ru-rule-hint"><summary>Правило</summary><p>{{ rule_text }}</p></details>
+{% else %}
+<h1>🔁 Мои ошибки</h1>
+<p class="muted">То, в чём ты ошибался. Верный ответ отправит задание на повторение через несколько дней, неверный — снова на завтра.</p>
+{% endif %}
+{% if user.role == 'teacher' %}<p class="pill wait">Режим просмотра: твои ответы не записываются в статистику ученика</p>{% endif %}
+
+<div class="ru-trainer" data-ru-mode="{{ mode }}"{% if mode == 'rule' %} data-ru-rule="{{ rule }}"{% endif %}>
+  <div class="ru-score muted small" aria-live="polite"></div>
+  {% if mode == 'dict' %}<script type="application/json" id="ru-dict">{{ dict_data|tojson }}</script>{% endif %}
+  {% if mode == 'spell' %}
+  <div class="ru-arena-start card center-card">
+    <div class="big-emoji">⚡</div>
+    <button type="button" class="btn" data-ru-start>Старт — 60 секунд</button>
+  </div>
+  <div class="ru-timer" hidden>⏱ <b>60</b></div>
+  {% endif %}
+  <section class="card ru-card" hidden>
+    <div class="ru-question"></div>
+    <div class="ru-options"></div>
+    <div class="row ru-actions">
+      <button type="button" class="btn" data-ru-check hidden>Проверить</button>
+      <button type="button" class="btn btn-alt" data-ru-next hidden>Дальше →</button>
+    </div>
+    <div class="ru-result" hidden></div>
+  </section>
+  <section class="card ru-summary" hidden></section>
+</div>
+{% endblock %}

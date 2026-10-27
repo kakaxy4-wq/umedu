@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox %}
+{% block title %}{{ project.title }}{% endblock %}
+{% block content %}
+<article class="public-project">
+  <div class="eyebrow">🐍 Проект на Python{% if student_name %} · автор: {{ student_name }}{% endif %}</div>
+  <h1>{{ project.title }}</h1>
+  {% if project.image_path %}<img src="/files/project/{{ project.id }}/image" alt="" class="cover">{% endif %}
+  {% if project.description %}<p class="lead pre-line">{{ project.description }}</p>{% endif %}
+  {% if project.code %}
+  <h2>Код — нажми «▶ Запустить»</h2>
+  {{ codebox(project.code) }}
+  {% endif %}
+  {% if project.file_name %}<p><a class="btn" href="/files/project/{{ project.id }}/file">📥 Скачать {{ project.file_name }}</a></p>{% endif %}
+  <p class="muted small"><a href="/gallery">Другие проекты →</a></p>
+</article>
+{% endblock %}

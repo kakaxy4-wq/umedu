@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Лаборатория{% endblock %}
+{% block content %}
+<h1>🔬 Лаборатория</h1>
+<p class="muted">Химия, которую можно покрутить руками. Каждый модуль привязан к номерам экзамена — сначала разберись, потом закрепи задачами на карте экзамена.</p>
+<div class="lab-grid">
+  {% for m in modules %}
+  {% if m.ready %}<a class="card lab-card" href="/chem/lab/{{ m.id }}">{% else %}<div class="card lab-card soon">{% endif %}
+    <div class="lab-emoji">{{ m.emoji }}</div>
+    <div>
+      <h3>{{ m.title }}</h3>
+      <p class="small">{{ m.about }}</p>
+      <span class="pill">{{ m.nums }}</span>{% if not m.ready %} <span class="pill">скоро</span>{% endif %}
+    </div>
+  {% if m.ready %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Атом изнутри{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/chem/lab">← Лаборатория</a></p>
+<h1>⚛️ Атом изнутри</h1>
+
+<div id="lab-atom" class="lab-atom" data-z="{{ z }}">
+  <script type="application/json" id="lab-elements">{{ elements|tojson }}</script>
+
+  <section class="card lab-controls">
+    <div class="row lab-pick">
+      <button type="button" class="btn btn-small btn-ghost" data-lab-prev title="Предыдущий элемент">←</button>
+      <select data-lab-el aria-label="Элемент"></select>
+      <button type="button" class="btn btn-small btn-ghost" data-lab-next title="Следующий элемент">→</button>
+      <span class="lab-charge" title="Заряд частицы: «+» — убрать электрон (катион), «−» — добавить (анион)">заряд
+        <button type="button" class="btn btn-small btn-ghost" data-lab-charge-minus title="Добавить электрон (анион)">−</button>
+        <b data-lab-charge-val>0</b>
+        <button type="button" class="btn btn-small btn-ghost" data-lab-charge-plus title="Убрать электрон (катион)">+</button>
+      </span>
+    </div>
+    <h2 data-lab-title></h2>
+    <p class="lab-config" data-lab-config></p>
+    <p class="small muted" data-lab-facts></p>
+  </section>
+
+  <div class="lab-split">
+    <section class="card lab-3d">
+      <div class="row between">
+        <div class="row">
+          <button type="button" class="btn btn-small" data-lab-view="orbits">Орбиты</button>
+          <button type="button" class="btn btn-small btn-ghost" data-lab-view="clouds">Облака орбиталей</button>
+        </div>
+        <small class="muted">крути мышью или пальцем</small>
+      </div>
+      <canvas class="lab-canvas" aria-label="Модель атома"></canvas>
+      <div class="lab-legend">
+        <div><b>Ядро</b>
+          <span><i class="dot red"></i> протон, заряд +1</span>
+          <span><i class="dot gray"></i> нейтрон, заряд 0</span></div>
+        <div data-legend="orbits"><b>Электроны</b>
+          <span><i class="dot blue"></i> спин ↑</span>
+          <span><i class="dot orange"></i> спин ↓</span>
+          <span><i class="ring"></i> орбита = электронный слой</span></div>
+        <div data-legend="clouds" hidden><b>Облака орбиталей внешнего слоя</b>
+          <span><i class="dot cs"></i> s</span><span><i class="dot cp"></i> p</span><span><i class="dot cd"></i> d</span>
+          <span>ярко — 2 электрона · бледно — 1 · прозрачно — пусто</span></div>
+        <p class="small muted">Наведи курсор (на телефоне — коснись) на частицу, чтобы увидеть подпись.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="eyebrow">Электронно-графическая формула</div>
+      <div class="eg" data-lab-diagram></div>
+      <div class="row" style="margin-top: 10px">
+        <button type="button" class="btn btn-small" data-lab-excite title="Распарить электроны внешнего слоя">⚡ Возбудить</button>
+        <button type="button" class="btn btn-small btn-ghost" data-lab-ground>↩ Основное состояние</button>
+      </div>
+      <p class="small" data-lab-note></p>
+      <hr>
+      <div class="row">
+        <button type="button" class="btn btn-small btn-alt" data-lab-game>🎮 Собери атом</button>
+        <button type="button" class="btn btn-small" data-lab-check hidden>✔ Проверить</button>
+      </div>
+      <p class="small" data-lab-game-msg></p>
+      <details class="small">
+        <summary>Правила заполнения</summary>
+        <ul>
+          <li><b>Принцип наименьшей энергии:</b> 1s → 2s → 2p → 3s → 3p → 4s → 3d → 4p …</li>
+          <li><b>Принцип Паули:</b> в одной орбитали (клетке) — не больше двух электронов, с противоположными спинами ↑↓.</li>
+          <li><b>Правило Хунда:</b> в подуровне сначала по одному электрону в каждую клетку, потом — пары.</li>
+          <li>Исключения: Cr (3d⁵4s¹) и Cu (3d¹⁰4s¹) — «провал» электрона.</li>
+          <li>У катиона электроны уходят с внешнего слоя: у Fe²⁺ сначала уходят 4s-электроны, а не 3d.</li>
+        </ul>
+      </details>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/lab.js?v={{ v }}"></script>{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Битва ботов{% endblock %}
+{% block content %}
+<h1>⚔️ Битва ботов{% if user.role == 'teacher' %} — {{ student_name }}{% endif %}</h1>
+<p class="muted">Напиши на Python мозг для бота: каждый ход он решает, куда шагнуть и когда стрелять. Победа — 7 кристаллов.
+  Бой идёт сам, без тебя — сработает только то, что ты запрограммировал.</p>
+
+{% if not is_open %}
+<section class="card center-card">
+  <div class="big-emoji">🔒</div>
+  <p>Битва ботов откроется с урока {{ lesson }}: понадобятся функции, условия и списки.</p>
+</section>
+{% else %}
+<div id="bots-app" class="bots-app" data-user="{{ user.id }}" data-boss="{{ current.id }}">
+  <section class="card bots-ladder">
+    <div class="eyebrow">🪜 Лестница боссов</div>
+    <div class="bots-bosses">
+      {% for b in ladder %}
+      <button type="button" class="bots-boss {{ 'beaten' if b.beaten }} {{ 'active' if b.id == current.id }}" data-boss="{{ b.id }}"
+              {% if not b.available %}disabled title="Сначала победи предыдущего"{% endif %} data-about="{{ b.about }}" data-emoji="{{ b.emoji }}">
+        <span class="be">{{ b.emoji if b.available else '🔒' }}</span>
+        <span><b>{{ b.name }}</b><br><small>{{ '✅ побеждён' if b.beaten else '+%d 🏆' % b.xp }}</small></span>
+      </button>
+      {% endfor %}
+    </div>
+    <p class="small" data-bots-about>{{ current.about }}</p>
+  </section>
+
+  <section class="card bots-arena">
+    <div class="bots-score"><span class="blue">🔵 Ты: <b data-score-blue>0</b> 💎</span><span data-turn class="muted small">ход 0</span><span class="red">🔴 <span data-boss-name>{{ current.name }}</span>: <b data-score-red>0</b> 💎</span></div>
+    <div class="bots-svg"></div>
+    <div class="row small muted bots-legend">
+      <span>🔵 твой бот</span><span>🔴 босс</span><span>💎 кристалл</span><span>▮ жизни</span>
+      <label class="robot-speed">скорость <input type="range" min="1" max="5" value="3" data-bots-speed></label>
+    </div>
+  </section>
+
+  <section class="card robot-code codebox" data-ready="1">
+    <div class="cb-bar">
+      <button type="button" class="btn btn-check" data-bots-fight>⚔️ В бой</button>
+      <button type="button" class="btn btn-ghost" data-bots-reset title="Вернуть заготовку">↺</button>
+      <span class="cb-status" data-bots-status></span>
+    </div>
+    <textarea data-bots-code spellcheck="false" autocapitalize="off">{{ code }}</textarea>
+    <div class="robot-result" data-bots-result hidden></div>
+    <script type="application/json" id="bots-starter">{{ starter|tojson }}</script>
+  </section>
+</div>
+{% endif %}
+
+<details class="card">
+  <summary><b>📒 Правила и помощники</b></summary>
+  <ul class="small">
+    <li>Поле 11×9, ходы одновременные. Сначала выстрелы, потом шаги, потом бот подбирает кристалл под собой.</li>
+    <li>Выстрел летит по прямой на 3 клетки, стены его останавливают. 3 попадания — бот роняет все кристаллы и 3 хода ждёт на базе.</li>
+    <li>3 хода без выстрелов и попаданий — +1 жизнь (максимум 3).</li>
+    <li>Кристаллы появляются у центра каждые 3 хода. Матч — 3 боя, побеждает тот, кто выиграл 2.</li>
+    <li>Если функция упала с ошибкой или вернула непонятное — бот в этот ход стоит.</li>
+  </ul>
+  <table class="table robot-help">
+    {% for name, what in help %}<tr><td><code>{{ name }}</code></td><td>{{ what }}</td></tr>{% endfor %}
+  </table>
+</details>
+{% endblock %}

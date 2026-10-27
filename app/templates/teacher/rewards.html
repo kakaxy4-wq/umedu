@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Награды{% endblock %}
+{% block content %}
+<h1>🎁 Награды</h1>
+
+{% set waiting = purchases|selectattr('status', 'equalto', 'requested')|list %}
+{% if waiting %}
+<h2>Ждут выдачи</h2>
+{% for p in waiting %}
+<div class="card row between">
+  <span>👤 <b>{{ p.who }}</b> — {{ p.title }} · {{ p.cost }} 💎 · {{ p.created_at|dt }}</span>
+  <form method="post" action="/teacher/purchase/{{ p.id }}" class="row">
+    {{ csrf_field(user) }}
+    <button class="btn btn-small" name="action" value="give">🎉 Выдано</button>
+    <button class="btn btn-small btn-ghost" name="action" value="decline">Отклонить (вернуть гемы)</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
+
+<h2>Каталог</h2>
+<table class="table">
+  <tr><th></th><th>Награда</th><th>Цена</th><th>Статус</th><th></th></tr>
+  {% for r in rewards %}
+  <tr class="{{ '' if r.active else 'muted' }}">
+    <td>{{ r.emoji }}</td><td>{{ r.title }}</td><td>{{ r.cost }} 💎</td><td>{{ 'в продаже' if r.active else 'скрыта' }}</td>
+    <td><form method="post" action="/teacher/rewards/{{ r.id }}/toggle">{{ csrf_field(user) }}<button class="btn btn-small btn-ghost">{{ 'Скрыть' if r.active else 'Вернуть' }}</button></form></td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Добавить награду</h2>
+<form method="post" action="/teacher/rewards" class="card row wrap">
+  {{ csrf_field(user) }}
+  <label>Эмодзи<input name="emoji" value="🎁" maxlength="8" class="num"></label>
+  <label class="grow">Название<input name="title" required placeholder="Поход на баскетбольный матч"></label>
+  <label>Цена 💎<input type="number" name="cost" value="300" min="1" class="num"></label>
+  <button class="btn">Добавить</button>
+</form>
+<p class="muted small">Ориентир: за неделю активной учёбы набирается 80–150 🏆. Награды за 150–300 — раз в 2–3 недели, крупные (1000+) — цель на четверть.</p>
+
+{% set history = purchases|rejectattr('status', 'equalto', 'requested')|list %}
+{% if history %}
+<h2>История</h2>
+<ul class="feed">{% for p in history %}<li>{{ p.who }}: {{ p.title }} — {{ p.cost }} 💎 · {{ 'выдано' if p.status == 'given' else 'отклонено' }} · <small>{{ p.resolved_at|dt }}</small></li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field, level_bar, hw_status, oge_forecast %}
+{% block title %}{{ ov.student.display_name }}{% endblock %}
+{% block content %}
+{% set st = ov.student %}{% set s = ov.stats %}
+<p class="crumbs"><a href="/teacher/students">Ученики</a></p>
+<h1>👤 {{ st.display_name }}{% if not st.active %} <span class="pill">в архиве</span>{% endif %}</h1>
+{% if 'python' in subj %}{{ oge_forecast(fc, False) }}{% endif %}
+<p class="muted">Логин <b>{{ st.username }}</b> · последний вход: {{ st.last_seen_at|ago }} · с нами с {{ st.created_at|dt(False) }}</p>
+
+<div class="row">
+  <a class="btn" href="/map">🧭 Открыть кабинет ученика</a>
+  <a class="btn btn-ghost" href="#subjects">📚 Предметы: {% for n in subj %}{{ subjects_all[n].emoji }}{% endfor %}</a>
+  <a class="btn btn-ghost" href="#level">🎚 {{ levels_all[level_id].title }}</a>
+  <a class="btn btn-ghost" href="/teacher/lessons">📅 Уроки</a>
+  <a class="btn btn-ghost" href="/teacher/checks?student={{ st.id }}">📝 Проверки</a>
+  <a class="btn btn-ghost" href="/teacher/solutions">🧾 Решения</a>
+  <a class="btn btn-ghost" href="/certificates">🎓 Сертификаты</a>
+</div>
+
+{% if alerts %}
+<section class="card alerts-card">
+  <div class="eyebrow">🚨 Требует внимания</div>
+  <ul class="alerts">{% for a in alerts %}<li class="alert-l{{ a.level }}"><span>{{ a.emoji }}</span><a href="{{ a.link }}">{{ a.text }}</a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<div class="grid grid-home">
+  <section class="card">{{ level_bar(s, calm) }}
+    <div class="mini-stats">
+      <div><b>{{ s.tasks_solved }}/{{ s.tasks_total }}</b><small>задач</small></div>
+      <div><b>{{ s.lessons_done }}</b><small>занятий</small></div>
+      <div><b>{{ s.streak }}</b><small>серия 🔥</small></div>
+    </div>
+    <p class="muted small">За эту неделю: +{{ ov.week }} 🏆 · гемов: {{ s.coins }} 💎</p>
+  </section>
+
+  <section class="card span2">
+    <div class="eyebrow">📝 О ученике — видишь только ты</div>
+    <form method="post" action="/teacher/student/{{ st.id }}/edit" class="stack">
+      {{ csrf_field(user) }}
+      <div class="row wrap">
+        <label class="grow">Имя на сайте<input name="display_name" value="{{ st.display_name }}" maxlength="40" required></label>
+        <label class="grow">Полное имя для сертификатов<input name="full_name" value="{{ st.full_name }}" maxlength="80" placeholder="Анна Смирнова"></label>
+      </div>
+      <label>Интересы, цели, что получается и что нет — пригодится, чтобы подбирать примеры
+        <textarea name="notes" rows="4" placeholder="{{ T.notes_hint }}">{{ st.notes }}</textarea></label>
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+  </section>
+</div>
+
+<h2>Уроки</h2>
+<div class="lesson-dots">
+  {% for l in lessons %}{% set ls = states.get(l.num) %}
+  <a href="/lesson/{{ l.num }}" class="ldot {% if l.done %}done{% elif l.open %}open{% endif %}" title="{{ l.num }}. {{ l.title }}{% if l.done %} — проведено {{ ls.done_at|dt(False) }}{% endif %}{% if l.hw_status %} · домашка: {{ {'approved': 'принята', 'pending': 'на проверке', 'returned': 'на доработке'}[l.hw_status] }}{% endif %}">
+    {{ l.num }}{% if l.hw_status == 'approved' %}<i>✓</i>{% elif l.hw_status == 'pending' %}<i>⏳</i>{% elif l.hw_status == 'returned' %}<i>🔧</i>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+<p class="muted small">Зелёные — проведены, фиолетовые — открыты. ✓ домашка принята, ⏳ ждёт проверки, 🔧 на доработке.</p>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="eyebrow">📝 Проверки</div>
+    {% for c, r in results %}
+    <p><a href="/check/{{ c.id }}">{{ c.emoji }} {{ c.title }}</a> — <b>{{ r.right_count }}/{{ r.total }}</b>{% if r.skipped %} <small class="muted">пропущено {{ r.skipped }}</small>{% endif %} <small class="muted">{{ r.finished_at|dt(False) }}</small></p>
+    {% else %}<p class="muted">Пока ни одной.</p>{% endfor %}
+  </section>
+  <section class="card">
+    <div class="eyebrow">📬 Домашки</div>
+    {% for sub in subs %}
+    <p>Урок {{ sub.lesson }} {{ hw_status(sub.status) }} <small class="muted">{{ sub.created_at|dt }}</small></p>
+    {% else %}<p class="muted">Пока не сдавал.</p>{% endfor %}
+  </section>
+  <section class="card">
+    <div class="eyebrow">📜 Последние трофеи</div>
+    <ul class="feed">{% for e in events %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% else %}<li class="muted">Пусто</li>{% endfor %}</ul>
+  </section>
+
+  <section class="card" id="parent">
+    {% if family_parents %}
+    <p class="small"><b>👪 Кабинет родителя:</b>
+      {% for p in family_parents %}<span class="family-parent">{{ p.display_name }} <small class="muted">({{ p.username }}, с {{ p.created_at|dt(False) }})</small>
+        <form method="post" action="/teacher/student/{{ st.id }}/parent-unlink" class="inline" data-confirm="Отвязать {{ p.display_name }} от ученика?">{{ csrf_field(user) }}<input type="hidden" name="parent_id" value="{{ p.id }}"><button class="btn btn-small btn-ghost">отвязать</button></form></span>{% endfor %}
+    </p>
+    {% endif %}
+    <div class="eyebrow">👪 Ссылка для родителей</div>
+    <p class="muted small">Страница без входа: посещаемость, домашки, проверки, ранг и сертификаты. Код, ответы и ваши заметки там не видны. Новая ссылка отменяет старую.</p>
+    {% if parent_url %}
+    <div class="copy-row"><input value="{{ parent_url }}" readonly aria-label="Ссылка для родителей"><button type="button" class="btn btn-small" data-copy="{{ parent_url }}">📋 Копировать</button></div>
+    <div class="row">
+      <a class="btn btn-small btn-ghost" href="{{ parent_url }}" target="_blank" rel="noopener">Посмотреть</a>
+      <form method="post" action="/teacher/student/{{ st.id }}/parent-link" data-confirm="Сделать новую ссылку? Старая перестанет работать.">{{ csrf_field(user) }}<input type="hidden" name="action" value="new"><button class="btn btn-small btn-ghost">🔄 Новая</button></form>
+      <form method="post" action="/teacher/student/{{ st.id }}/parent-link" data-confirm="Отключить ссылку для родителей?">{{ csrf_field(user) }}<input type="hidden" name="action" value="revoke"><button class="btn btn-small btn-ghost">⛔ Отключить</button></form>
+    </div>
+    {% elif st.active %}
+    <form method="post" action="/teacher/student/{{ st.id }}/parent-link">{{ csrf_field(user) }}<input type="hidden" name="action" value="new"><button class="btn btn-small">Создать ссылку</button></form>
+    {% else %}<p class="muted">Ученик в архиве — ссылка отключена.</p>{% endif %}
+  </section>
+
+  <section class="card" id="level">
+    <div class="eyebrow">🎚 Уровень и темп</div>
+    <form method="post" action="/teacher/student/{{ st.id }}/level" class="stack">
+      {{ csrf_field(user) }}
+      <div class="level-opts">
+        {% for k, l in levels_all.items() %}
+        <label class="check level-opt"><input type="radio" name="level" value="{{ k }}" {{ 'checked' if k == level_id }}>
+          <span>{{ l.emoji }} <b>{{ l.title }}</b> <small class="muted">· {{ l.ages }}</small></span></label>
+        {% endfor %}
+      </div>
+      <label>Возраст <input name="age" type="number" inputmode="numeric" min="6" max="25" value="{{ st.age or '' }}" style="max-width: 7em"></label>
+      <input type="hidden" name="calm_set" value="1">
+      <label class="check"><input type="checkbox" name="calm" value="1" {{ 'checked' if st.calm }}> 🧘 Спокойный вид: без бойцов и конфетти (ранги и трофеи остаются)</label>
+      <label class="check"><input type="checkbox" name="self_pace" value="1" {{ 'checked' if st.self_paced }}> 🚀 Самостоятельный темп: урок засчитывается, когда решено 60% его задач, и сразу открывается следующий (у уроков без задач — кнопка «Урок изучен»)</label>
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+    <p class="small"><b>Темп:</b> {{ levels_all[level_id].pace }}</p>
+    {% if rec %}
+    <div class="level-rec">
+      <b>Сайт предлагает: {{ levels_all[rec.level].emoji }} {{ levels_all[rec.level].title }}{% if rec.start > 1 %}, начать с урока {{ rec.start }}{% endif %}</b>
+      <ul class="small">{% for w in rec.why %}<li>{{ w }}</li>{% endfor %}</ul>
+      {% if rec.level != level_id or (rec.start > ov.upto) %}
+      <form method="post" action="/teacher/student/{{ st.id }}/level">
+        {{ csrf_field(user) }}<input type="hidden" name="level" value="{{ rec.level }}"><input type="hidden" name="age" value="{{ st.age or '' }}">
+        {% if rec.start > ov.upto %}<input type="hidden" name="start" value="{{ rec.start }}">{% endif %}
+        <button class="btn btn-small btn-ghost">Принять{% if rec.start > ov.upto %} и открыть уроки до {{ rec.start }}{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="small muted">Укажи возраст или дай пройти входное тестирование — сайт предложит уровень и урок, с которого начать.</p>
+    {% endif %}
+  </section>
+
+  <section class="card" id="subjects">
+    <div class="eyebrow">📚 Предметы</div>
+    <form method="post" action="/teacher/student/{{ st.id }}/subjects" class="stack">
+      {{ csrf_field(user) }}
+      <label class="check"><input type="checkbox" name="python" value="1" {{ 'checked' if 'python' in subj }}> 🐍 Python — курс с уроками</label>
+      <label class="check"><input type="checkbox" name="russian" value="1" {{ 'checked' if 'russian' in subj }}> 📖 Русский язык — тренажёры 8 класса</label>
+      <button class="btn btn-small">Сохранить</button>
+    </form>
+    <p class="muted small">При подключении русского ученику откроется входной срез по русскому.</p>
+  </section>
+
+  {% if ru %}
+  <section class="card" id="russian">
+    <div class="row between"><div class="eyebrow">📖 Русский язык</div><a class="small" href="/ru/rules">Все правила →</a></div>
+    <p class="small">За неделю: <b>{{ ru.week_ok }}</b> верных из {{ ru.week_n }} · ждут повторения: {{ ru.waiting }}{% if ru.due %} (на сегодня {{ ru.due }}){% endif %}</p>
+    {% if ru.struggling %}
+    <p class="small"><b>Трудные правила</b> (меньше 60% за месяц):</p>
+    <ul class="small-list">{% for r in ru.struggling %}<li>{{ r.title }} — {{ r.stats.pct }}% из {{ r.stats.n }} · <a href="/ru/practice/{{ r.id }}">задания</a></li>{% endfor %}</ul>
+    {% elif ru.weak %}
+    <p class="small">Слабее всего: {% for r in ru.weak %}{{ r.title }} ({{ r.stats.pct }}%){{ ', ' if not loop.last }}{% endfor %}</p>
+    {% endif %}
+    {% if ru.mistakes %}
+    <details><summary class="small">Последние ошибки · {{ ru.mistakes|length }}</summary>
+      <ul class="small-list ru-teacher-mistakes">{% for m in ru.mistakes %}
+        <li><b>{{ m.right }}</b><br><small class="muted">ответ: {{ m.given }} · {{ m.rule }} · {{ m.at|ago }}</small></li>
+      {% endfor %}</ul>
+    </details>
+    {% else %}<p class="muted small">Ошибок пока нет.</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="eyebrow">🔑 Доступ</div>
+    <form method="post" action="/teacher/student/{{ st.id }}/password" data-confirm="Сделать новый пароль? Старый перестанет работать, ученика разлогинит на всех устройствах.">
+      {{ csrf_field(user) }}<button class="btn btn-small">🔑 Новый пароль и карточка доступа</button>
+    </form>
+    <form method="post" action="/teacher/student/{{ st.id }}/archive" class="row" style="margin-top: 10px"
+          data-confirm="{{ 'Вернуть ученика из архива?' if not st.active else 'Отправить в архив? Ученик не сможет войти, ссылка для родителей отключится. Все данные сохранятся — можно вернуть.' }}">
+      {{ csrf_field(user) }}<input type="hidden" name="active" value="{{ 0 if st.active else 1 }}">
+      <button class="btn btn-small btn-ghost">{{ '📦 В архив' if st.active else '↩︎ Вернуть из архива' }}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

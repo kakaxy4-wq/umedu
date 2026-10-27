@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Правила русского{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/ru">Русский язык</a></p>
+<h1>📒 Правила</h1>
+<p class="muted">Коротко о том, что тренируем. Процент — сколько ответов верные за последний месяц. «Потренировать» — задания только на это правило.</p>
+<nav class="row ru-sections">{% for title, rules in ov.sections %}<a class="pill" href="#sec{{ loop.index }}">{{ title }}</a>{% endfor %}</nav>
+{% for title, rules in ov.sections %}
+<h2 id="sec{{ loop.index }}">{{ title }}</h2>
+<div class="ru-rules">
+  {% for r in rules %}
+  <section class="card ru-rule" id="{{ r.id }}">
+    <div class="row between">
+      <h3>{{ r.title }}</h3>
+      {% if r.stats %}<span class="score score-{{ 'hi' if r.stats.pct >= 85 else ('mid' if r.stats.pct >= 60 else 'lo') }}">{{ r.stats.pct }}% · {{ r.stats.n }}</span>{% endif %}
+    </div>
+    <p>{{ r.text }}</p>
+    <a class="btn btn-small btn-ghost" href="/ru/practice/{{ r.id }}">🎯 Потренировать</a>
+  </section>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

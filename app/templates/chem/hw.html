@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% from "chem/_macros.html" import hw_pill, when %}
+{% block title %}{{ hw.title }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="{{ '/chem/teacher/student/%d#hw' % sid if user.role == 'teacher' else '/chem/hw' }}">← Домашние задания</a></p>
+<h1>📚 {{ hw.title|chem }}</h1>
+<p>{{ hw_pill(hw) }}{% if hw.due_at %} <span class="muted">срок — {{ when(hw.due_at) }}</span>{% endif %}</p>
+{% if hw.text or files.teacher %}
+<section class="card">
+  {% if hw.text %}<div class="hw-text">{{ hw.text|chem }}</div>{% endif %}
+  {% if files.teacher %}
+  <div class="hw-files">
+    {% for f in files.teacher %}<a href="/chem/hw-file/{{ f.id }}" target="_blank" class="hw-file">{% if f.file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')) %}<img src="/chem/hw-file/{{ f.id }}" alt="Задание — фото {{ loop.index }}" loading="lazy">{% else %}📎 {{ f.file_name }}{% endif %}</a>{% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if tasks %}
+<section class="card">
+  <div class="eyebrow">🧩 Задачи с автопроверкой · решено {{ tasks|selectattr('best', 'ne', none)|selectattr('best', 'gt', 0)|list|length }} из {{ tasks|length }}</div>
+  <div class="hw-tasks">
+    {% for x in tasks %}
+    <a class="hw-task {{ 'ok' if x.best is not none and x.best >= x.points else ('half' if x.best else ('bad' if x.best == 0 else '')) }}"
+       href="/chem/task/{{ x.id }}?hw={{ hw.id }}">
+      <b>{{ loop.index }}</b><span>{{ 'ОГЭ' if x.exam == 'oge' else 'ЕГЭ' }} №{{ x.num }}{% if x.generated %} 🎲{% endif %}</span>
+      <small>{% if x.best is none %}не решено{% else %}{{ x.best }} из {{ x.points }}{% endif %}</small>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if hw.comment %}
+<section class="card {{ 'ok-card' if hw.status == 'checked' else 'hint-card' }}">
+  <div class="eyebrow">💬 Комментарий преподавателя</div>
+  <p class="hw-text">{{ hw.comment|chem }}</p>
+</section>
+{% endif %}
+
+{% if hw.answer or hw.file_path or files.student %}
+<section class="card">
+  <div class="eyebrow">Ответ{% if hw.submitted_at %} · сдано {{ when(hw.submitted_at) }}{% endif %}</div>
+  {% if hw.answer %}<p class="hw-text">{{ hw.answer|chem }}</p>{% endif %}
+  <div class="hw-files">
+    {% if hw.file_path %}<a class="hw-file" href="/chem/hw/{{ hw.id }}/file" target="_blank">📎 {{ hw.file_name }}</a>{% endif %}
+    {% for f in files.student %}<span class="hw-file-wrap"><a href="/chem/hw-file/{{ f.id }}" target="_blank" class="hw-file">{% if f.file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')) %}<img src="/chem/hw-file/{{ f.id }}" alt="Решение — фото {{ loop.index }}" loading="lazy">{% else %}📎 {{ f.file_name }}{% endif %}</a>{% if user.role == 'student' and hw.status != 'checked' %}<form method="post" action="/chem/hw-file/{{ f.id }}/delete" data-confirm="Убрать этот файл из ответа?">{{ csrf_field(user) }}<button class="linklike small danger">убрать</button></form>{% endif %}</span>{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if user.role == 'student' and hw.status != 'checked' %}
+<section class="card">
+  <div class="eyebrow">{{ 'Исправить и сдать снова' if hw.status == 'submitted' or hw.comment else 'Сдать' }}</div>
+  {% if err == 'empty' %}<p class="pill bad">Напиши ответ, приложи фото или нарисуй решение — пустое ДЗ не отправить.</p>{% endif %}
+  <form method="post" action="/chem/hw/{{ hw.id }}/submit" enctype="multipart/form-data" class="stack" data-draft="hw-{{ hw.id }}-{{ user.id }}"{% if tasks and not tasks|selectattr('best', 'ne', none)|selectattr('best', 'gt', 0)|list %} data-confirm="Ни одна задача ДЗ ещё не решена. Всё равно отправить преподавателю?"{% endif %}>
+    {{ csrf_field(user) }}
+    {% if tasks %}<p class="small muted">Решённые задачи выше учтутся сами. Здесь — пояснения, письменная часть или вопрос преподавателю (можно оставить пустым).</p>{% endif %}
+    <label>Ответ или пояснение <textarea name="answer" rows="5" data-formula>{{ hw.answer }}</textarea></label>
+    <label>Фото решения или рисунок <input type="file" name="files" accept="image/*,.pdf" multiple data-drawpad></label>
+    <button class="btn">Отправить преподавателю</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

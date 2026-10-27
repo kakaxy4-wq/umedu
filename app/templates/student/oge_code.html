@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import codebox %}
+{% block title %}ОГЭ №16 — тренажёр{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/oge#n16">← ОГЭ по информатике</a></div>
+<header class="task-head">
+  <h1>№16: программа</h1>
+  <div class="row">
+    <span class="pill">🎲 вариант {{ task.seed }}</span>
+    <span id="task-badge" class="pill {{ 'ok' if solved }}">{{ '✅ Решено' if solved else 'Не решено' }}</span>
+    {% if st %}<span class="pill">{{ '🏅 освоено · ' if st.mastered }}верно {{ st.ok }} из {{ st.n }}</span>{% endif %}
+  </div>
+</header>
+
+<section class="card statement">
+  {% for para in task.text.split("\n\n") %}<p>{{ para }}</p>{% endfor %}
+  <div class="examples-io">
+    {% for t in examples %}
+    <div class="io"><div><small>Ввод</small><pre>{{ t.stdin }}</pre></div><div><small>Вывод</small><pre>{{ t.stdout }}</pre></div></div>
+    {% endfor %}
+  </div>
+  <p class="muted small">«▶ Запустить» — попробовать, «✔ Проверить» — сдать: решение проверится ещё на четырёх скрытых тестах,
+    как на экзамене. Трофеи — за вариант, решённый с первой попытки.</p>
+</section>
+
+{{ codebox("", mode='task', task=task.id, tests=task.tests) }}
+
+<div class="row">
+  <button class="btn btn-ghost" id="show-hint">💡 Подсказка</button>
+  <span id="fails" data-n="0"></span>
+</div>
+<div class="card hint-card" id="hint" hidden>💡 {{ task.hint|md }}</div>
+
+<div class="card solution-card" id="solution" {% if not (solved or user.role == 'teacher') %}hidden{% endif %}>
+  <div class="eyebrow">📗 Эталонное решение{% if user.role == 'student' %} — сравни со своим{% endif %}</div>
+  <pre class="code-mini">{{ task.solution if (solved or user.role == 'teacher') else '' }}</pre>
+</div>
+
+<div class="row">
+  <a class="btn {{ '' if solved else 'btn-ghost' }}" id="next-task" href="/oge/code16">🎲 Новый вариант →</a>
+</div>
+{% endblock %}

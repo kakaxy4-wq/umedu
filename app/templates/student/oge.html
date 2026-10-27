@@ -25,6 +25,10 @@
       {% elif p.trial %}
       <div class="meta">в пробнике {{ p.trial[0] }}/{{ p.trial[1] }}</div>
       {% endif %}
+      {% if num == 16 %}
+      <p><a class="btn btn-small btn-ghost" href="/oge/code16">🎲 Тренажёр вариантов</a></p>
+      {% if p.drill %}<div class="meta">{{ '🏅 освоено · ' if p.drill.mastered }}тренажёр: верно {{ p.drill.ok }} из {{ p.drill.n }}</div>{% endif %}
+      {% endif %}
       {% if p.has_drill %}
       <p><a class="btn btn-small btn-ghost" href="/oge/drill/{{ num }}">🎲 Тренажёр вариантов</a></p>
       {% if p.drill %}<div class="meta">{{ '🏅 освоено · ' if p.drill.mastered }}тренажёр: верно {{ p.drill.ok }} из {{ p.drill.n }}</div>{% endif %}

@@ -9,7 +9,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import auth, certificates, config, family, game, season, students, subjects, theme, today
+from . import auth, certificates, config, family, game, oge_drill, season, students, subjects, theme, today
+from .content import oge16_gen
 from .db import get_db
 from .content.cheatsheet import CHEATSHEET
 from .content.checks import CHECKS, CHECK_BY_ID, SKIP, grade
@@ -147,11 +148,23 @@ def task_page(task_id: str, request: Request, conn=Depends(get_db), user=Depends
 @router.post("/api/task/{task_id}/attempt")
 async def task_attempt(task_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
     task = TASK_BY_ID.get(task_id)
-    if not task:
+    seed16 = oge16_gen.seed_of(task_id)
+    if not task and not seed16:
         raise HTTPException(404)
     data = await request.json()
     code = str(data.get("code", ""))[:100_000]
     passed = bool(data.get("passed"))
+    if seed16:                                     # вариант №16 из тренажёра — своя таблица и трофеи
+        v = oge16_gen.make(seed16)
+        result = {"first": False, "xp": 0, "notices": []}
+        if user["role"] == "student":
+            if v["lesson"] > game.unlocked_upto(conn, user["id"]):
+                raise HTTPException(404)
+            result.update(oge_drill.code_attempt(conn, user["id"], seed16, passed, code))
+            result["notices"] = game.pop_notices(conn, user["id"])
+        if passed:
+            result["solution"] = v["solution"]
+        return result
     result = {"first": False, "xp": 0, "notices": []}
     if user["role"] == "student":
         sid = user["id"]

@@ -417,7 +417,7 @@ def oge_progress(conn, sid):
     for num in OGE_NUMBERS:
         tasks = [t for t in OGE_TASKS if t["oge"] == num]
         out[num] = {"tasks": tasks, "solved": len([t for t in tasks if t["id"] in solved]), "trial": trial_topics.get(num),
-                    "drill": drill.get(num) if num in oge_gen.GENERATORS else None, "has_drill": num in oge_gen.GENERATORS}
+                    "drill": drill.get(num) if num in oge_gen.GENERATORS or num == 16 else None, "has_drill": num in oge_gen.GENERATORS}
     out[15]["robot"] = (len(robot_solved(conn, sid)), len(robot_content.TASKS))
     return out
 

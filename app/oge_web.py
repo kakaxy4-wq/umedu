@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from . import auth, forecast, game, oge_drill, season, students
-from .content import bots as bots_content, oge_gen, robot as robot_content
+from .content import bots as bots_content, oge16_gen, oge_gen, robot as robot_content
+from .content.lessons import LESSON_BY_NUM
 from .db import get_db
 from .content.oge import FIPI_DEMO_URL, FIPI_GUIDE_URL, OGE_NUMBERS
 from .main import _mock_items, back, is_teacher, need_sid, oge_progress, render, robot_solved
@@ -52,6 +53,21 @@ async def oge_mock_submit(request: Request, conn=Depends(get_db), user=Depends(a
     spent = (now - t) // 60 if 0 < now - t < 6 * 3600 else None
     return render(request, "student/oge_mock.html", conn, user, results=results, xp=xp, spent=spent,
                   score=sum(r["ok"] for r in results))
+
+
+@router.get("/oge/code16", response_class=HTMLResponse)
+def oge_code16(request: Request, seed: int = 0, conn=Depends(get_db), user=Depends(auth.current_user)):
+    """№16: бесконечные варианты задачи на программирование, проверка в браузере на скрытых тестах."""
+    sid = need_sid(conn, user)
+    if not 0 < seed < 10 ** 7:
+        return back("/oge/code16?seed=%d" % random.randrange(1, 10 ** 6))
+    if not is_teacher(user) and oge16_gen.LESSON > game.unlocked_upto(conn, sid):
+        return render(request, "student/locked.html", conn, user, lesson=LESSON_BY_NUM[oge16_gen.LESSON])
+    v = oge16_gen.make(seed)
+    solved = bool(conn.execute("SELECT 1 FROM oge_drill WHERE student_id = ? AND num = 16 AND seed = ? AND ok = 1",
+                               (sid, seed)).fetchone())
+    return render(request, "student/oge_code.html", conn, user, task=v, solved=solved,
+                  st=oge_drill.stats(conn, sid).get(16), examples=[t for t in v["tests"] if not t["hidden"]])
 
 
 @router.get("/oge/drill/{num}", response_class=HTMLResponse)

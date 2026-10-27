@@ -1607,3 +1607,54 @@ def test_student_invites_parent(client, monkeypatch):
     assert not connect().execute("SELECT 1 FROM parent_children WHERE parent_id = ?", (pid,)).fetchone()
     login(client, "teacher")
     assert client.get("/for-parents").status_code == 403
+
+
+def test_oge16_generator_contract():
+    """№16: эталон проходит все тесты варианта, вариант воспроизводится по сиду, 2 открытых теста и 4 скрытых."""
+    import builtins
+    import contextlib
+    import io
+    from app.content import oge16_gen
+
+    def run(code, stdin):
+        lines, out = iter(stdin.split("\n")), io.StringIO()
+        with contextlib.redirect_stdout(out):
+            exec(code, {"input": lambda *a: next(lines), "__builtins__": builtins})
+        return out.getvalue().strip()
+    texts = set()
+    for seed in range(1, 201):
+        v = oge16_gen.make(seed)
+        assert v == oge16_gen.make(seed) and oge16_gen.seed_of(v["id"]) == seed
+        assert [t["hidden"] for t in v["tests"]] == [False, False, True, True, True, True]
+        for t in v["tests"]:
+            assert run(v["solution"], t["stdin"]) == t["stdout"], (seed, t)
+        texts.add(v["text"])
+    assert len(texts) >= 100
+    assert oge16_gen.seed_of("oge16-x") is None and oge16_gen.seed_of("hello") is None
+
+
+def test_oge16_drill_flow(client):
+    from app.db import connect
+    login(client, "student")
+    assert "Урок 8 ещё закрыт" in client.get("/oge/code16?seed=5").text
+    assert client.post("/api/task/oge16-5/attempt", json={"passed": True},
+                       headers={"X-CSRF-Token": login(client, "student")}).status_code == 404
+    conn = connect()
+    with conn:
+        conn.execute("UPDATE users SET unlocked = 8 WHERE id = ?", (sid_of(),))
+    csrf = login(client, "student")
+    assert client.get("/oge/code16", follow_redirects=False).headers["location"].startswith("/oge/code16?seed=")
+    page = client.get("/oge/code16?seed=5").text
+    assert "№16" in page and 'data-task="oge16-5"' in page and "print(" not in page   # эталон скрыт до решения
+    before = stats()["xp"]
+    h = {"X-CSRF-Token": csrf}
+    r = client.post("/api/task/oge16-5/attempt", json={"code": "print(1)", "passed": False}, headers=h).json()
+    assert r["xp"] == 0 and "solution" not in r
+    r = client.post("/api/task/oge16-5/attempt", json={"code": "ok", "passed": True}, headers=h).json()
+    assert r["xp"] == 0 and "print(" in r["solution"]                  # не с первой попытки — без трофеев
+    r = client.post("/api/task/oge16-6/attempt", json={"code": "ok", "passed": True}, headers=h).json()
+    assert r["first"] and r["xp"] == 2 and stats()["xp"] == before + 2
+    assert "✅ Решено" in client.get("/oge/code16?seed=6").text
+    assert connect().execute("SELECT COUNT(*) FROM oge_drill WHERE num = 16").fetchone()[0] == 3
+    assert "/oge/code16" in client.get("/oge").text
+    assert client.post("/api/task/oge16-0/attempt", json={"passed": True}, headers=h).status_code == 404

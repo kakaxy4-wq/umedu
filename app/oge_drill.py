@@ -49,6 +49,21 @@ def answer(conn, sid, num, seed, given, record=True):
     return res
 
 
+def code_attempt(conn, sid, seed, passed, code):
+    """№16: решение проверено в браузере. Трофеи — за вариант, решённый с первой попытки, в общем дневном лимите."""
+    res = {"first": False, "xp": 0}
+    with conn:
+        tried = conn.execute("SELECT 1 FROM oge_drill WHERE student_id = ? AND num = 16 AND seed = ?", (sid, seed)).fetchone()
+        conn.execute("INSERT INTO oge_drill (student_id, num, seed, ok, answer, created_at) VALUES (?, 16, ?, ?, ?, ?)",
+                     (sid, seed, 1 if passed else 0, code[:100], game.now_iso()))
+        if passed and not tried:
+            xp = max(0, min(oge_gen.XP, oge_gen.DAILY_XP_CAP - _earned_today(conn, sid)))
+            if xp:
+                game.award(conn, sid, xp, "ОГЭ №16: тренажёр", "oge_drill", "16-%d" % seed, quiet=True)
+            res.update({"first": True, "xp": xp})
+    return res
+
+
 def stats(conn, sid):
     """По номеру: попыток и верных за 30 дней, освоен ли (последние три разных варианта — верно с первого раза)."""
     since = (config.today() - timedelta(days=30)).isoformat()

@@ -429,6 +429,8 @@ def achievements_page(request: Request, conn=Depends(get_db), user=Depends(auth.
 
 @router.get("/shop", response_class=HTMLResponse)
 def shop(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    if config.OPEN_SIGNUP:                 # подарки выдаёт преподаватель — на сайте без него магазина нет
+        raise HTTPException(404)
     sid = need_sid(conn, user)
     rewards = conn.execute("SELECT * FROM rewards WHERE active = 1 ORDER BY cost").fetchall()
     purchases = conn.execute("SELECT * FROM purchases WHERE student_id = ? ORDER BY id DESC LIMIT 20", (sid,)).fetchall()
@@ -437,6 +439,8 @@ def shop(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)
 
 @router.post("/shop/{rid}/buy")
 def buy(rid: int, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    if config.OPEN_SIGNUP:
+        raise HTTPException(404)
     if user["role"] != "student":
         return back("/shop")
     sid = user["id"]

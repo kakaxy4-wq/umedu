@@ -97,8 +97,12 @@ def signup(conn, name, grade, login, password, consent, ip="?"):
     if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").fetchone()[0] >= MAX_STUDENTS:
         return None, "Сейчас все места заняты — загляни через пару дней."
     sid = create_student(conn, login, name, password)
-    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ? WHERE id = ?",
-                 (grade, "%s · %s" % (CONSENT_VERSION, game.now_iso()), sid))
+    chosen = [s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"]
+    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ? WHERE id = ?",
+                 (grade, "%s · %s" % (CONSENT_VERSION, game.now_iso()), subjects.serialize(chosen), sid))
+    for cid in ["oge1"] + (["ru_entry"] if "russian" in chosen else []):
+        conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
+                     (sid, cid, game.now_iso()))
     _signups.setdefault(ip, []).append(time.time())
     game.add_notice(conn, sid, "👋", "Привет! Начни с плана на сегодня — 10–15 минут, в конце сундук.", big=True)
     game.tell_teacher(conn, sid, "🆕 Зарегистрировался сам: %s, %s" % (name, GRADES[grade]), "/teacher/students")

@@ -519,7 +519,21 @@ def self_pace_advance(conn, sid, num, by_button=False):
     mark_lesson_done(conn, sid, num, "Урок пройден сам:")
     if num < len(LESSONS):
         open_lesson(conn, sid, num + 1)
+    open_due_checks(conn, sid)
     return True
+
+
+def open_due_checks(conn, sid):
+    """Самостоятельный темп: срез мира — когда пройдены все его уроки, итоговый — после последнего мира.
+    Без преподавателя их некому открыть. Вызывать внутри `with conn:`."""
+    from .content.checks import CHECK_BY_ID
+    done = done_lessons(conn, sid)
+    finished = [m["num"] for m in MODULES if all(n in done for n in m["lessons"])]
+    due = ["w%d" % m for m in finished] + (["final"] if MODULES and MODULES[-1]["num"] in finished else [])
+    for cid in due:
+        if cid in CHECK_BY_ID and conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) "
+                                               "VALUES (?, ?, ?)", (sid, cid, now_iso())).rowcount:
+            add_notice(conn, sid, CHECK_BY_ID[cid]["emoji"], "Открыт «%s» — загляни в «Проверки»." % CHECK_BY_ID[cid]["title"])
 
 
 def lesson_list_with_state(conn, sid):

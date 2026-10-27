@@ -1658,3 +1658,35 @@ def test_oge16_drill_flow(client):
     assert connect().execute("SELECT COUNT(*) FROM oge_drill WHERE num = 16").fetchone()[0] == 3
     assert "/oge/code16" in client.get("/oge").text
     assert client.post("/api/task/oge16-0/attempt", json={"passed": True}, headers=h).status_code == 404
+
+
+def test_solo_student_needs_no_teacher(client, monkeypatch):
+    """Открытая регистрация: оба предмета, срезы открываются сами, нет сдачи домашки и магазина подарков."""
+    from app import config, game, students
+    from app.content.lessons import MODULES
+    from app.db import connect
+    monkeypatch.setattr(config, "SIGNUP", True)
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    monkeypatch.setattr(config, "SUBJECTS", ["python", "russian"])
+    students._signups.clear()
+    client.cookies.clear()
+    client.post("/join", data={"name": "Соло", "grade": 9, "login": "solo9", "password": "kot-luna-27", "consent": "1"})
+    sid = sid_of("solo9")
+    conn = connect()
+    row = conn.execute("SELECT subjects FROM users WHERE id = ?", (sid,)).fetchone()
+    assert "russian" in row[0] and "python" in row[0]
+    opened = {r[0] for r in conn.execute("SELECT id FROM check_state WHERE student_id = ?", (sid,))}
+    assert {"entry", "ru_entry", "oge1"} <= opened and "w1" not in opened
+    page = client.get("/checks").text
+    assert "откроется после мира 1" in page and "откроет преподаватель" not in page
+    assert "Сдать на проверку" not in client.get("/lesson/1").text
+    home = client.get("/").text
+    assert 'href="/shop"' not in home and 'href="/homework"' not in home
+    assert client.get("/shop").status_code == 404
+    # мир 1 пройден — срез открылся сам
+    with conn:
+        for n in MODULES[0]["lessons"]:
+            game.mark_lesson_done(conn, sid, n, "тест:")
+        game.open_due_checks(conn, sid)
+    assert conn.execute("SELECT 1 FROM check_state WHERE student_id = ? AND id = 'w1'", (sid,)).fetchone()
+    assert "final" not in {r[0] for r in conn.execute("SELECT id FROM check_state WHERE student_id = ?", (sid,))}

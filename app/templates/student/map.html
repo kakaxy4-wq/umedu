@@ -3,7 +3,7 @@
 {% block title %}Карта курса{% endblock %}
 {% block content %}
 <h1>🗺️ Карта курса</h1>
-<p class="muted">34 занятия, 6 миров. Новые уроки открывает преподаватель на занятии.</p>
+<p class="muted">34 занятия, 6 миров. {% if solo %}Следующий урок открывается сам, когда решена большая часть задач текущего.{% else %}Новые уроки открывает преподаватель на занятии.{% endif %}</p>
 {% for m in modules %}
 <section class="world world-{{ m.num }}">
   <header class="world-head">

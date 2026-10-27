@@ -90,7 +90,11 @@
   </div>
   {% endfor %}
 
-  {% if user.role == 'student' %}
+  {% if user.role == 'student' and open_signup %}
+  <p class="hw-howto small">✍️ Пиши код прямо здесь и запускай сколько угодно. Проверять домашку тут некому — урок засчитывается
+    по задачам. Удачную программу сохрани в <a href="/playground">Песочнице</a> или покажи в <a href="/portfolio">Портфолио</a>.</p>
+  {{ codebox('# Пиши код здесь\n') }}
+  {% elif user.role == 'student' %}
   {% if subs %}<details class="resubmit" {% if subs[0].status == 'returned' %}open{% endif %}><summary class="btn btn-ghost btn-small">📤 Сдать новую версию</summary>{% endif %}
   <form method="post" action="/lesson/{{ lesson.num }}/submit" enctype="multipart/form-data" id="hw-form" class="stack"
         data-confirm="Сдать домашку на проверку? Преподаватель увидит этот код и комментарий.">

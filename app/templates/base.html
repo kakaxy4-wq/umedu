@@ -49,7 +49,7 @@
   <div class="hud">
     <a href="/achievements" class="hud-item" title="Ранг: {{ me.level.title }}">{{ me.level.emoji }} <b>{{ me.level.title }}</b></a>
     <a href="/achievements" class="hud-item" title="Трофеи">🏆 <b>{{ me.xp }}</b></a>
-    <a href="/shop" class="hud-item" title="Гемы — тратятся в магазине">💎 <b>{{ me.coins }}</b></a>
+    {% if not open_signup %}<a href="/shop" class="hud-item" title="Гемы — тратятся в магазине">💎 <b>{{ me.coins }}</b></a>{% endif %}
     <a href="/daily" class="hud-item {% if me.streak %}hot{% endif %}" title="Дней подряд с задачей дня">🔥 <b>{{ me.streak }}</b></a>
   </div>
   {% endif %}
@@ -58,11 +58,11 @@
   {% if chem_site %}{% include "chem/_nav.html" %}{% else %}
   {# Меню блоками по предметам: Python и русский не перемешиваются, награды — отдельно. #}
   {% set py_links = [
-    ("/map", "🗺️", "Карта курса"), ("/homework", "📬", "Домашка"), ("/daily", "☀️", "Задача дня"), ("/oge", "🎯", "ОГЭ"),
+    ("/map", "🗺️", "Карта курса")] + ([] if open_signup else [("/homework", "📬", "Домашка")]) + [ ("/daily", "☀️", "Задача дня"), ("/oge", "🎯", "ОГЭ"),
     ("/trainer", "🏀", "Арена"), ("/bots", "⚔️", "Битва ботов"), ("/playground", "🧪", "Песочница"), ("/cheatsheet", "📒", "Шпаргалка")] %}
   {% set prize_links = [
     ("/achievements", "🏅", "Награды и рейтинг" if calm else "Бойцы и награды"), ("/season", "🎟️", "Пасс сезона"),
-    ("/shop", "💎", "Магазин подарков"), ("/certificates", "🎓", "Сертификаты")] %}
+    ("/shop", "💎", "Магазин подарков"), ("/certificates", "🎓", "Сертификаты")] | rejectattr(0, "in", ["/shop"] if open_signup else []) | list %}
   {% set more_links = [("/checks", "📝", "Проверки"), ("/portfolio", "🗂️", "Портфолио")] %}
   {% set ru_links = [
     ("/ru", "🏠", "Обзор"), ("/ru/review", "🔁", "Мои ошибки"), ("/ru/commas", "✍️", "Запятые"), ("/ru/spell", "⚡", "Арена букв"),

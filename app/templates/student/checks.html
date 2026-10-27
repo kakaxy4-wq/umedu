@@ -16,6 +16,7 @@
     </span>
     {% if res %}<span class="pill ok">✅ {{ res.right_count }} из {{ res.total }}</span>
     {% elif open %}<span class="pill wait">Можно пройти →</span>
+    {% elif solo and c.after_module %}<span class="pill">откроется после мира {{ c.after_module }}</span>
     {% else %}<span class="pill">откроет преподаватель</span>{% endif %}
   </a>
   {% endfor %}

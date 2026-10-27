@@ -252,6 +252,7 @@ def render(request, name, conn, user=None, **ctx):
         ctx["subject"] = students.get_student(conn, sid) if sid else None
         ctx.setdefault("me", game.stats(conn, sid) if sid else None)
         ctx["student_name"] = ctx["subject"]["display_name"] if ctx["subject"] else ""
+        ctx["solo"] = bool(ctx["subject"] and ctx["subject"].get("self_paced"))
         ctx["subj"] = subjects.of(ctx["subject"]) if ctx["subject"] else []
         ctx["subjects_all"] = subjects.SUBJECTS
         ctx["lvl"] = levels.LEVELS[levels.of(ctx["subject"])] if ctx["subject"] else None

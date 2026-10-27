@@ -1528,3 +1528,43 @@ def test_events_and_analytics(client, monkeypatch):
     assert "Аналитика" in page and "Миша" in page and "Где уходят" in page and t1[0]["title"] in page
     login_as(client, "student")
     assert client.get("/teacher/analytics").status_code == 403
+
+
+def test_open_signup(client, monkeypatch):
+    """CQ_SIGNUP=open: ученик регистрируется сам, без кода; темп самостоятельный, согласие записано."""
+    from app import config, students
+    from app.db import connect
+    from app.family import CONSENT_VERSION
+    assert client.get("/join").status_code == 404                     # по умолчанию регистрации нет
+    monkeypatch.setattr(config, "SIGNUP", True)
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    students._signups.clear()
+    client.cookies.clear()
+    assert "Зарегистрироваться бесплатно" in client.get("/login").text
+    page = client.get("/join").text
+    assert 'name="consent"' in page and "/privacy" in page and "код приглашения" not in page.lower()
+    form = {"name": "Аня", "grade": 9, "login": "anya9", "password": "kot-luna-27", "consent": "1"}
+    r = client.post("/join", data=dict(form, consent=""))
+    assert "Отметь согласие" in r.text and not connect().execute("SELECT 1 FROM users WHERE username = 'anya9'").fetchone()
+    assert "Не получилось" in client.post("/join", data=dict(form, website="http://spam")).text
+    assert "занят" in client.post("/join", data=dict(form, login="student")).text
+    assert "Выбери класс" in client.post("/join", data=dict(form, grade=5)).text
+    r = client.post("/join", data=form, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/"
+    row = connect().execute("SELECT * FROM users WHERE username = 'anya9'").fetchone()
+    assert row["self_paced"] == 1 and row["grade"] == 9 and row["consent"].startswith(CONSENT_VERSION + " · ")
+    assert connect().execute("SELECT 1 FROM lesson_state WHERE student_id = ? AND num = 1", (row["id"],)).fetchone()
+    assert "Аня" in client.get("/").text                                # сразу вошёл в свой кабинет
+    # ограничение с одного адреса
+    for i in range(students.SIGNUPS_PER_HOUR - 1):
+        client.cookies.clear()
+        assert client.post("/join", data=dict(form, login="bot%d" % i), follow_redirects=False).status_code == 303
+    client.cookies.clear()
+    assert "много регистраций" in client.post("/join", data=dict(form, login="bot99")).text
+    # лимит мест
+    students._signups.clear()
+    monkeypatch.setattr(students, "MAX_STUDENTS", 1)
+    assert "места заняты" in client.post("/join", data=dict(form, login="late")).text
+    # преподаватель видит, что ученик пришёл сам
+    login(client, "teacher")
+    assert "Зарегистрировался на сайте сам" in client.get("/teacher/student/%d" % row["id"]).text

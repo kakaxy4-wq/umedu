@@ -241,6 +241,7 @@ def render(request, name, conn, user=None, **ctx):
         "brand": config.BRAND_EMOJI,
         "game_full": config.GAME == "full",
         "signup": config.SIGNUP,
+        "open_signup": config.OPEN_SIGNUP,
         "public_site": theme.THEME == "public",
         "source_url": config.SOURCE_URL,
         "logo": theme.LOGO,
@@ -466,12 +467,14 @@ from .ru_web import router as russian_router  # noqa: E402
 from .portfolio_web import router as portfolio_router  # noqa: E402
 from .family_web import router as family_router  # noqa: E402
 from .teacher_web import router as teacher_router  # noqa: E402
+from .signup_web import router as signup_router  # noqa: E402
 app.include_router(student_router)
 app.include_router(oge_router)
 app.include_router(russian_router)
 app.include_router(portfolio_router)
 app.include_router(family_router)
 app.include_router(teacher_router)
+app.include_router(signup_router)
 from .chem_web import router as chem_router  # noqa: E402 — после всех общих функций, которыми он пользуется
 
 app.include_router(chem_router)

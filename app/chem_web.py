@@ -67,38 +67,6 @@ def _csv_cell(v):
     return "'" + v if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
 
 
-# ------------------------------------------------------------------ регистрация
-@router.get("/join", response_class=HTMLResponse)
-def join_page(request: Request, code: str = "", conn=Depends(get_db)):
-    if not config.SIGNUP:
-        raise HTTPException(404)
-    return render(request, "chem/join.html", conn, None, code=code, grades=chem.GRADES,
-                  suggested=students.generate_password(), form={})
-
-
-@router.post("/join", response_class=HTMLResponse)
-def join(request: Request, code: str = Form(""), name: str = Form(""), grade: int = Form(0), login: str = Form(""),
-         password: str = Form(""), conn=Depends(get_db)):
-    if not config.SIGNUP:
-        raise HTTPException(404)
-    ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
-    if auth.too_many_fails(ip):
-        return render(request, "chem/join.html", conn, None, code=code, grades=chem.GRADES, suggested=password,
-                      form={"name": name, "grade": grade, "login": login},
-                      error="Слишком много попыток. Подожди 15 минут.")
-    with conn:
-        sid, error = chem.signup(conn, code, name, grade, login, password)
-    if error:
-        if "код" in error:
-            auth.register_fail(ip)
-        return render(request, "chem/join.html", conn, None, code=code, grades=chem.GRADES, suggested=password,
-                      form={"name": name, "grade": grade, "login": login}, error=error)
-    token = auth.create_session(conn, sid)
-    resp = back("/chem?welcome=1")
-    auth.set_cookie(resp, token)
-    return resp
-
-
 # ------------------------------------------------------------------ ученик
 @router.get("/chem", response_class=HTMLResponse)
 def chem_home(request: Request, welcome: int = 0, conn=Depends(get_db), user=Depends(auth.current_user)):

@@ -440,6 +440,7 @@ USER_COLUMNS = [
     ("title", "TEXT NOT NULL DEFAULT ''"),
     ("grade", "INTEGER"),
     ("price", "INTEGER NOT NULL DEFAULT 0"),
+    ("consent", "TEXT NOT NULL DEFAULT ''"),  # «редакция политики · когда» — при открытой регистрации
 ]
 
 # Цены — в гемах 💎 (10 за занятие, 10 за домашку): пицца ≈ месяц занятий, новая игра ≈ четверть.

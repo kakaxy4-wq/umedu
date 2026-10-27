@@ -916,6 +916,7 @@ button.ru-bword:hover { background: var(--bg2); }
 .grade-pick legend { font-weight: 600; font-size: .93rem; padding: 0 4px; }
 .join-card { text-align: left; }
 .join-card h1, .join-card .login-hero { text-align: center; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }  /* поле-ловушка для ботов */
 .parent-head { margin-top: 0; }
 
 .exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }

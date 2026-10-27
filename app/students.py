@@ -1,6 +1,7 @@
 """Ученики: создание, доступы, архив, ссылка для родителей, рейтинг недели, «кому нужна помощь»."""
 import re
 import secrets
+import time
 from datetime import datetime, timedelta
 
 from . import auth, config, game, russian, subjects
@@ -62,6 +63,46 @@ def create_student(conn, username, display_name, password, full_name="", grade=N
     conn.execute("INSERT OR IGNORE INTO lesson_state (student_id, num, opened_at) VALUES (?, 1, ?)", (sid, now))
     conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, 'entry', ?)", (sid, now))
     return sid
+
+
+# ------------------------------------------------------------------ открытая регистрация (CQ_SIGNUP=open)
+GRADES = {7: "7 и младше", 8: "8 класс", 9: "9 класс", 10: "10 и старше"}
+SIGNUPS_PER_HOUR = 5                      # с одного адреса — от ботов и «мультиаккаунтов»
+_signups = {}                             # ip -> [время регистрации]
+
+
+def signup_limited(ip):
+    now = time.time()
+    _signups[ip] = [t for t in _signups.get(ip, []) if now - t < 3600]
+    return len(_signups[ip]) >= SIGNUPS_PER_HOUR
+
+
+def signup(conn, name, grade, login, password, consent, ip="?"):
+    """Ученик регистрируется сам: самостоятельный темп, отметка согласия. Возвращает (id, None) или (None, ошибка).
+    Вызывать внутри `with conn:`."""
+    from .family import CONSENT_VERSION
+    name, login = name.strip()[:40], login.strip().lower()
+    if not name:
+        return None, "Напиши имя или ник — так к тебе будут обращаться."
+    if grade not in GRADES:
+        return None, "Выбери класс."
+    if not valid_login(login):
+        return None, "Логин — латинские буквы, цифры, точка, дефис или _, от 2 до 32 символов."
+    if conn.execute("SELECT 1 FROM users WHERE username = ?", (login,)).fetchone():
+        return None, "Такой логин уже занят — придумай другой."
+    if len(password) < 6:
+        return None, "Пароль — хотя бы 6 символов. Можно взять предложенный: его легко запомнить."
+    if not consent:
+        return None, "Отметь согласие на обработку данных — без него зарегистрироваться нельзя."
+    if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").fetchone()[0] >= MAX_STUDENTS:
+        return None, "Сейчас все места заняты — загляни через пару дней."
+    sid = create_student(conn, login, name, password)
+    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ? WHERE id = ?",
+                 (grade, "%s · %s" % (CONSENT_VERSION, game.now_iso()), sid))
+    _signups.setdefault(ip, []).append(time.time())
+    game.add_notice(conn, sid, "👋", "Привет! Начни с плана на сегодня — 10–15 минут, в конце сундук.", big=True)
+    game.tell_teacher(conn, sid, "🆕 Зарегистрировался сам: %s, %s" % (name, GRADES[grade]), "/teacher/students")
+    return sid, None
 
 
 def get_student(conn, sid, include_archived=True):

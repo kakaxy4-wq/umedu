@@ -42,8 +42,11 @@ SITE_NAME = os.environ.get("CQ_SITE_NAME", "ХимЛаб" if CHEM_SITE else "К�
 GAME = os.environ.get("CQ_GAME", "light" if CHEM_SITE else "full")
 BRAND_EMOJI = os.environ.get("CQ_BRAND_EMOJI", "🧪" if CHEM_SITE else "🐍")
 MAX_STUDENTS = int(os.environ.get("CQ_MAX_STUDENTS", "60" if CHEM_SITE else "30"))
-# самостоятельная регистрация учеников по коду-приглашению преподавателя
-SIGNUP = os.environ.get("CQ_SIGNUP", "1" if CHEM_SITE else "0") == "1"
+# самостоятельная регистрация учеников: 0 — нет; 1 — по коду-приглашению преподавателя (ХимЛаб);
+# open — без кода, ученик занимается сам (публичный сайт с Python и русским)
+SIGNUP_MODE = os.environ.get("CQ_SIGNUP", "1" if CHEM_SITE else "0").strip().lower()
+SIGNUP = SIGNUP_MODE in ("1", "open")
+OPEN_SIGNUP = SIGNUP_MODE == "open" and not CHEM_SITE
 TRAINER_DAILY_XP_CAP = int(os.environ.get("CQ_TRAINER_DAILY_XP_CAP", "30"))
 
 try:

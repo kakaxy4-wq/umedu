@@ -12,7 +12,8 @@
     <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
     <button class="btn btn-big">Войти</button>
   </form>
-  {% if signup %}<p class="small">Первый раз? <a href="/join">Регистрация по коду преподавателя →</a></p>{% endif %}
+  {% if open_signup %}<p class="small">Первый раз? <a href="/join">Зарегистрироваться бесплатно →</a></p>
+  {% elif signup and chem_site %}<p class="small">Первый раз? <a href="/join">Регистрация по коду преподавателя →</a></p>{% endif %}
   {% if public_site %}<p class="muted small"><a href="/welcome">Что это за платформа →</a></p>{% endif %}
   {% if source_url %}<p class="muted small"><a href="{{ source_url }}" target="_blank" rel="noopener">Исходный код сайта</a> — открыт под AGPL-3.0</p>{% endif %}
   {% if not chem_site %}<p class="muted small"><a href="/gallery">Посмотреть публичное портфолио →</a></p>{% endif %}

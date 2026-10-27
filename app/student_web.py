@@ -9,7 +9,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import auth, certificates, config, game, season, students, subjects, theme, today
+from . import auth, certificates, config, family, game, season, students, subjects, theme, today
 from .db import get_db
 from .content.cheatsheet import CHEATSHEET
 from .content.checks import CHECKS, CHECK_BY_ID, SKIP, grade
@@ -448,3 +448,32 @@ def cheatsheet(request: Request, conn=Depends(get_db), user=Depends(auth.current
     sections = [s for s in CHEATSHEET if s["lesson"] <= upto]
     locked = len(CHEATSHEET) - len(sections)
     return render(request, "student/cheatsheet.html", conn, user, sections=sections, locked=locked)
+
+
+# ------------------------------------------------------------------ ученик сам зовёт родителя (открытая регистрация)
+def _for_parents_only(user):
+    if not config.OPEN_SIGNUP:
+        raise HTTPException(404)
+    return only_student(user)
+
+
+@router.get("/for-parents", response_class=HTMLResponse)
+def for_parents(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    sid = _for_parents_only(user)
+    token = students.get_student(conn, sid)["parent_token"]
+    url = (config.BASE_URL or str(request.base_url).rstrip("/")) + "/parent/" + token if token else ""
+    return render(request, "student/for_parents.html", conn, user, url=url, parents=family.parents_of(conn, sid))
+
+
+@router.post("/for-parents")
+def for_parents_action(action: str = Form("new"), parent_id: int = Form(0), conn=Depends(get_db),
+                       user=Depends(auth.check_csrf)):
+    sid = _for_parents_only(user)
+    with conn:
+        if action == "revoke":
+            conn.execute("UPDATE users SET parent_token = NULL WHERE id = ?", (sid,))
+        elif action == "unlink":
+            family.unlink(conn, parent_id, sid)
+        else:
+            students.new_parent_token(conn, sid)  # новая ссылка — старая сразу перестаёт работать
+    return back("/for-parents")

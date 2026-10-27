@@ -1568,3 +1568,37 @@ def test_open_signup(client, monkeypatch):
     # преподаватель видит, что ученик пришёл сам
     login(client, "teacher")
     assert "Зарегистрировался на сайте сам" in client.get("/teacher/student/%d" % row["id"]).text
+
+
+def test_student_invites_parent(client, monkeypatch):
+    """Открытая регистрация: ученик сам выдаёт ссылку для родителей, может её сменить, отключить и отвязать кабинет."""
+    from app import config
+    from app.db import connect
+    assert login(client, "student")
+    assert client.get("/for-parents").status_code == 404                # на семейном сайте ссылку даёт преподаватель
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    csrf = login(client, "student")
+    assert "/for-parents" in client.get("/").text
+    assert "Получить ссылку" in client.get("/for-parents").text
+    client.post("/for-parents", data={"csrf": csrf, "action": "new"})
+    token = connect().execute("SELECT parent_token FROM users WHERE username = 'student'").fetchone()[0]
+    assert token and "/parent/" + token in client.get("/for-parents").text
+    client.cookies.clear()
+    assert client.get("/parent/" + token).status_code == 200
+    csrf = login(client, "student")
+    assert client.post("/for-parents", data={"action": "revoke"}).status_code in (400, 403)   # без csrf — нельзя
+    client.post("/for-parents", data={"csrf": csrf, "action": "revoke"})
+    assert connect().execute("SELECT parent_token FROM users WHERE username = 'student'").fetchone()[0] is None
+    # привязанный родитель: карточка-приглашение пропадает, ученик может отвязать
+    from app import family
+    conn = connect()
+    with conn:
+        pid, _ = family.signup(conn, "Мама", "mama1", "mama-pass-123", True)
+        family.link(conn, pid, sid_of())
+    page = client.get("/").text
+    assert "parent-invite" not in page
+    assert "Мама" in client.get("/for-parents").text
+    client.post("/for-parents", data={"csrf": csrf, "action": "unlink", "parent_id": pid})
+    assert not connect().execute("SELECT 1 FROM parent_children WHERE parent_id = ?", (pid,)).fetchone()
+    login(client, "teacher")
+    assert client.get("/for-parents").status_code == 403

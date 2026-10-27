@@ -28,6 +28,14 @@
 {% endif %}
 
 <div class="grid grid-home">
+
+  {% if invite_parent %}
+  <a class="card span2 parent-invite" href="/for-parents">
+    <div class="eyebrow">👪 Для родителей</div>
+    <p>Дай родителю ссылку — он увидит твои занятия и прогноз балла ОГЭ. Смотреть сможет, менять — нет.</p>
+    <span class="btn btn-small">Получить ссылку →</span>
+  </a>
+  {% endif %}
   <section class="card span2 hero-card">
     {% if current %}
     <div class="eyebrow">Сейчас изучаем · урок {{ current.num }}</div>

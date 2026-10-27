@@ -389,7 +389,9 @@ def home(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)
                   daily=daily, daily_item=daily_item, recent=recent, returned=returned,
                   next_lesson_at=students.get_student(conn, sid)["next_lesson_at"], next_ach=next_ach,
                   trainer_best=game.trainer_best(conn, sid), pending_check=pending_check(conn, sid),
-                  board=board if len(board) > 1 else [])
+                  board=board if len(board) > 1 else [],
+                  invite_parent=config.OPEN_SIGNUP and not conn.execute(
+                      "SELECT 1 FROM parent_children WHERE student_id = ?", (sid,)).fetchone())
 
 
 # ------------------------------------------------------------------ проверки: входной тест, срезы, итоговый

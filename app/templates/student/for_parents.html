@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Для родителей{% endblock %}
+{% block content %}
+<section class="card for-parents">
+  <h1>👪 Для родителей</h1>
+  <p>По ссылке родитель видит твои занятия, домашки и прогноз балла ОГЭ — и может завести свой кабинет, чтобы заходить
+    без ссылки. Менять что-то за тебя он не сможет.</p>
+  {% if url %}
+  <div class="copy-row"><input value="{{ url }}" readonly aria-label="Ссылка для родителей"><button type="button" class="btn btn-small" data-copy="{{ url }}">📋 Копировать</button></div>
+  <div class="row">
+    <form method="post" action="/for-parents" data-confirm="Сделать новую ссылку? Старая перестанет работать.">{{ csrf_field(user) }}<input type="hidden" name="action" value="new"><button class="btn btn-small btn-ghost">🔄 Новая ссылка</button></form>
+    <form method="post" action="/for-parents" data-confirm="Отключить ссылку?">{{ csrf_field(user) }}<input type="hidden" name="action" value="revoke"><button class="btn btn-small btn-ghost">⛔ Отключить</button></form>
+  </div>
+  <p class="small muted">Отправь ссылку только родителю: кто её знает, видит твой прогресс. Если она попала не туда — сделай новую.</p>
+  {% else %}
+  <form method="post" action="/for-parents">{{ csrf_field(user) }}<input type="hidden" name="action" value="new"><button class="btn">Получить ссылку</button></form>
+  {% endif %}
+
+  {% if parents %}
+  <h2>Кабинеты родителей</h2>
+  <ul class="plain">
+    {% for p in parents %}
+    <li>{{ p.display_name }} <span class="muted small">· с {{ p.created_at[:10] }}</span>
+      <form method="post" action="/for-parents" class="inline" data-confirm="Отвязать этот кабинет? Он перестанет видеть твой прогресс.">{{ csrf_field(user) }}<input type="hidden" name="action" value="unlink"><input type="hidden" name="parent_id" value="{{ p.id }}"><button class="btn btn-small btn-ghost">Отвязать</button></form></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

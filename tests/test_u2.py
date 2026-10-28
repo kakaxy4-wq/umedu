@@ -142,3 +142,24 @@ def test_forecast_history_and_chart(client, monkeypatch):  # noqa: F811
     assert [h["day"] for h in hist] == sorted(h["day"] for h in hist) and len(hist) == 2
     page = client.get("/u2/progress").text
     assert "<polyline" in page and "u2-chart-band" in page
+
+
+def test_schedule_prefills_exam_date(client, monkeypatch):  # noqa: F811
+    """Расписание 2027 покрывает все экзамены каталога; на выборе дата подставлена, сохранённая — побеждает."""
+    from datetime import date
+    from app import exam_model as em
+    from app.u2_web import SCHEDULE, _dates
+    for exam_id in em.all_ids():
+        ds = _dates(exam_id)
+        assert ds and ds == sorted(ds), exam_id
+        lo, hi = SCHEDULE["periods"][em.load(exam_id)["exam"]]["main"]
+        assert all(lo <= d <= hi for d in ds), exam_id                     # внутри основного периода
+        assert all(date.fromisoformat(d).weekday() != 6 for d in ds), exam_id   # не воскресенье
+    assert set(SCHEDULE["dates"]) == {i.rsplit("-", 1)[0] for i in em.all_ids()}
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    start = client.get("/u2/start").text
+    assert 'value="2027-06-02"' in start and "проекту расписания 2027" in start and "скажут в школе" in start
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-06-28"})
+    start = client.get("/u2/start").text
+    assert 'value="2027-06-28"' in start and 'value="2027-06-02"' not in start

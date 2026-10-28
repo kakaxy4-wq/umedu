@@ -3,8 +3,10 @@
 Раздел /u2 включается флагом CQ_UMEDU2=1; без него все адреса раздела отвечают 404, действующий сайт не меняется.
 Данные — app/knowledge.py (знания по номерам, прогноз, план) поверх app/exam_model.py (номера и шкалы).
 """
+import json
 import random
 from datetime import date
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -184,21 +186,38 @@ def u2_me_minutes(minutes: int = Form(...), conn=Depends(get_db), user=Depends(a
 
 
 # ------------------------------------------------------------------ выбор экзамена и стартовая самооценка
+# даты экзаменов ближайшего года (app/content/schedule-*.json); ключ — id экзамена без года модели: «oge-inf»
+SCHEDULE = json.loads((Path(__file__).parent / "content" / "schedule-2027.json").read_text(encoding="utf-8"))
+MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября",
+          "декабря")
+
+
+def _dates(exam_id):
+    return SCHEDULE["dates"].get(exam_id.rsplit("-", 1)[0], [])
+
+
+def _ru_day(d):
+    d = date.fromisoformat(d)
+    return f"{d.day} {MONTHS[d.month - 1]}"
+
+
 def _catalog():
     out = []
     for exam_id in em.all_ids():
         ex = em.load(exam_id)
         out.append({"id": exam_id, "exam": ex["exam"], "subject": ex["subject"], "title": f'{ex["exam"]} · {ex["subject"]}',
                     "kind": _kind(ex), "range": _goal_range(ex),
-                    "min": ex["scale"].get("min_university")})
+                    "min": ex["scale"].get("min_university"), "dates": _dates(exam_id),
+                    "days": ", ".join(_ru_day(d) for d in _dates(exam_id)),
+                    "note": SCHEDULE.get("notes", {}).get(exam_id.rsplit("-", 1)[0])})
     return sorted(out, key=lambda e: (e["exam"] != "ОГЭ", e["subject"]))
 
 
 @router.get("/start", response_class=HTMLResponse)
 def u2_start(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
-    mine = {e["exam_id"] for e in kn.exams_of(conn, sid)}
-    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine)
+    mine = {e["exam_id"]: e for e in kn.exams_of(conn, sid)}
+    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine, schedule=SCHEDULE)
 
 
 @router.post("/start")

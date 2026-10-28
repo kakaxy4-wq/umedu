@@ -3,6 +3,8 @@
 {% block content %}
 <h1 class="u2-h1">Какой экзамен сдаёшь?</h1>
 <p class="u2-hint">Цель можно поменять в любой момент. Короткая диагностика для точного прогноза — следующий шаг.</p>
+<p class="u2-hint">Даты — {{ 'по проекту расписания' if schedule.status == 'project' else 'по расписанию' }} {{ schedule.year }} года{% if schedule.status == 'project' %}, могут измениться{% endif %}.
+  <a href="{{ schedule.source }}" target="_blank" rel="noopener">Источник</a>.</p>
 {% for exam, group in catalog|groupby('exam')|sort(attribute='grouper', reverse=true) %}
 <h2 class="u2-h2">{{ exam }} · {{ '9 класс' if exam == 'ОГЭ' else '11 класс' }}</h2>
 {% for e in group %}
@@ -17,9 +19,10 @@
     {% else %}
     <label>Цель, баллов <input type="number" name="goal" min="0" max="100" value="{{ [e.min or 0, 70]|max }}" required></label>
     {% endif %}
-    <label>Дата экзамена <input type="date" name="exam_date"></label>
+    <label>Дата экзамена <input type="date" name="exam_date" value="{{ mine[e.id].exam_date if e.id in mine and mine[e.id].exam_date else (e.dates[0] if e.dates else '') }}"></label>
     <button class="u2-btn">{{ 'Сохранить' if e.id in mine else 'Выбрать' }}</button>
   </div>
+  {% if e.dates|length > 1 or e.note %}<p class="u2-hint">{{ e.note or 'Дни: ' ~ e.days ~ ' — какой из них, скажут в школе' }}.</p>{% endif %}
 </form>
 {% endfor %}
 {% endfor %}

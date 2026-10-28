@@ -170,7 +170,7 @@ def test_math_generators_selfcheck():
     условие без «-5» вместо «−5»; одна пара (номер, сид) — один и тот же вариант."""
     from app.content import inf_gen
     from app.content import math_gen as mg
-    for bank in (mg.OGE, mg.EGE_PROFILE, inf_gen.EGE):
+    for bank in (mg.OGE, mg.EGE_PROFILE, mg.EGE_BASE, inf_gen.EGE):
         for num in bank.GENERATORS:
             for seed in range(1, 150):
                 v = bank.make(num, seed)
@@ -180,6 +180,10 @@ def test_math_generators_selfcheck():
             assert bank.make(num, 5) == bank.make(num, 5)
     assert mg.OGE.check(mg.OGE.make(10, 3), mg.OGE.make(10, 3)["answer"].replace(",", "."))   # точка тоже годится
     assert mg.fmt(mg.F(-11, 4)) == "-2,75" and not mg.finite(mg.F(1, 3))
+    v = mg.EGE_BASE.make(19, 4)                                 # №19: подходит любое число с нужными свойствами
+    rule = v["accept"]
+    others = [x for x in range(100, 1000) if x % rule["k"] == 0 and sum(map(int, str(x))) == rule["s"]]
+    assert all(mg.EGE_BASE.check(v, str(x)) for x in others) and not mg.EGE_BASE.check(v, "1000")
 
 
 def test_math_trainer(client, monkeypatch):  # noqa: F811

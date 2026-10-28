@@ -511,8 +511,59 @@ class Bank:
 
     @staticmethod
     def check(v, given):
-        a, b = _num(given), _num(v["answer"])
-        return a is not None and a == b
+        a = _num(given)
+        if a is None:
+            return False
+        if "accept" in v:                     # верных ответов несколько — проверяем условие, а не эталон
+            return _accepts(v["accept"], a)
+        return a == _num(v["answer"])
+
+
+def _accepts(rule, a):
+    if rule["kind"] == "digits":              # трёхзначное, кратное k, сумма цифр s
+        if a.denominator != 1 or not 100 <= a <= 999:
+            return False
+        x = int(a)
+        return x % rule["k"] == 0 and sum(map(int, str(x))) == rule["s"]
+    raise ValueError(rule["kind"])
+
+
+# ================================================================== ЕГЭ, базовый уровень
+def b15(r):
+    kind = r.choice(["up", "down", "find"])
+    price = r.choice(range(200, 5001, 50))
+    p = r.choice([5, 10, 15, 20, 25, 30, 40, 50])
+    if kind == "up":
+        new = F(price) * (100 + p) / 100
+        return {"text": "Тетрадь в магазине стоила %d руб. В сентябре цена выросла на %d%%. Сколько рублей стала стоить "
+                        "тетрадь после повышения цены?" % (price, p), "answer": fmt(new),
+                "explain": "%d · (1 + %d/100) = %d · %s = %s." % (price, p, price, fmt(F(100 + p, 100)), fmt(new))}
+    if kind == "down":
+        new = F(price) * (100 - p) / 100
+        return {"text": "Куртка стоила %d руб. На распродаже цену снизили на %d%%. Сколько рублей стала стоить куртка?"
+                        % (price, p), "answer": fmt(new),
+                "explain": "%d · (1 − %d/100) = %d · %s = %s." % (price, p, price, fmt(F(100 - p, 100)), fmt(new))}
+    new = F(price) * (100 - p) / 100
+    return {"text": "Футболка стоила %d руб. После снижения цены она стала стоить %s руб. На сколько процентов была "
+                    "снижена цена футболки?" % (price, fmt(new)), "answer": str(p),
+            "explain": "Снижение %s руб.; %s : %d · 100%% = %d%%." % (fmt(price - new), fmt(price - new), price, p)}
+
+
+def b19(r):
+    while True:
+        k, s = r.choice([3, 4, 5, 6, 9, 11, 12, 15, 25]), r.randint(5, 24)
+        ok = [x for x in range(100, 1000) if x % k == 0 and sum(map(int, str(x))) == s]
+        if ok:
+            break
+    return {"text": "Приведите пример трёхзначного натурального числа, которое делится на %d и сумма цифр которого "
+                    "равна %d. В ответе укажите какое-нибудь одно такое число." % (k, s),
+            "answer": str(ok[0]), "accept": {"kind": "digits", "k": k, "s": s},
+            "explain": "Подходит, например, %d: %d : %d = %d, сумма цифр %s = %d. Всего таких чисел — %d."
+                       % (ok[0], ok[0], k, ok[0] // k, " + ".join(str(ok[0])), s, len(ok))}
+
+
+def b20(r):
+    return o14(r) if r.random() < 0.5 else p10(r)
 
 
 OGE = Bank("oge-math", {6: o6, 7: o7, 8: o8, 9: o9, 10: o10, 12: o12, 13: o13, 14: o14, 15: o15, 16: o16, 17: o17,
@@ -526,3 +577,16 @@ EGE_PROFILE = Bank("ege-math-profile", {1: p1, 2: p2, 3: p3, 4: p4, 5: p5, 6: p6
                     5: "Вероятности сложных событий", 6: "Простейшие уравнения", 7: "Вычисления и преобразования",
                     8: "Производная и первообразная", 9: "Задача с прикладным содержанием", 10: "Текстовая задача",
                     11: "Графики функций", 12: "Наибольшее и наименьшее значение функции"})
+
+
+def b17(r):
+    return p6(r) if r.random() < 0.5 else o9(r)
+
+
+def b_geo(r):
+    return r.choice([o15, o16, o17])(r)
+
+
+# названия номеров базового уровня — в модели экзамена (спецификация ФИПИ 2026)
+EGE_BASE = Bank("ege-math-base", {1: o6, 4: o12, 5: o10, 10: b_geo, 11: p3, 12: b_geo, 13: p3, 14: o6, 15: b15, 16: o8,
+                                  17: b17, 19: b19, 20: b20}, {})

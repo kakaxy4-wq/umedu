@@ -1,0 +1,20 @@
+{% extends "u2/base.html" %}
+{% block title %}Прогресс{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Прогресс</h1>
+{% for c in cards %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ c.title }}</h2><span class="u2-chip">попыток: {{ c.attempts }}</span></div>
+  <div class="u2-band" role="img" aria-label="Прогноз первичного балла от {{ c.fc.low }} до {{ c.fc.high }} из {{ c.exam.max_points }}">
+    <span class="u2-band-fill" style="left: {{ c.fc.low / c.exam.max_points * 100 }}%; width: {{ (c.fc.high - c.fc.low) / c.exam.max_points * 100 }}%"></span>
+    <span class="u2-band-mid" style="left: {{ c.fc.primary / c.exam.max_points * 100 }}%"></span>
+  </div>
+  <p class="u2-hint">Первичный балл: {{ c.fc.low }}–{{ c.fc.high }} из {{ c.exam.max_points }}. График по неделям появится, когда накопится история.</p>
+  {% for g in c.groups %}
+  <div class="u2-bar"><span>{{ g.name }}</span><i style="--p: {{ g.p }}"></i><b>{{ (g.p * 100)|round|int }}%</b></div>
+  {% endfor %}
+</section>
+{% else %}
+<p>Экзамен ещё не выбран. <a href="/u2/start">Выбрать</a></p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "u2/base.html" %}
+{% block title %}Выбор экзамена{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Какой экзамен сдаёшь?</h1>
+<p class="u2-hint">Цель можно поменять в любой момент. Короткая диагностика для точного прогноза — следующий шаг.</p>
+{% for e in catalog %}
+<form method="post" action="/u2/start" class="u2-card u2-pick">
+  <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  <input type="hidden" name="exam_id" value="{{ e.id }}">
+  <div class="u2-card-head"><h2>{{ e.title }}</h2>{% if e.id in mine %}<span class="u2-chip">выбран</span>{% endif %}</div>
+  <div class="u2-pick-row">
+    {% if e.kind == 'grade' %}
+    <label>Цель
+      <select name="goal">{% for g in [3, 4, 5] %}<option value="{{ g }}"{% if g == 4 %} selected{% endif %}>«{{ g }}»</option>{% endfor %}</select></label>
+    {% else %}
+    <label>Цель, баллов <input type="number" name="goal" min="0" max="100" value="{{ [e.min or 0, 70]|max }}" required></label>
+    {% endif %}
+    <label>Дата экзамена <input type="date" name="exam_date"></label>
+    <button class="u2-btn">{{ 'Сохранить' if e.id in mine else 'Выбрать' }}</button>
+  </div>
+</form>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "u2/base.html" %}
+{% from "u2/_fc.html" import forecast %}
+{% block title %}{{ c.title }}{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/subjects">← Предметы</a>
+<h1 class="u2-h1">{{ c.title }}</h1>
+<section class="u2-card">{{ forecast(c) }}</section>
+{% for g in c.groups %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ g.name }}</h2><span class="u2-chip">{{ (g.p * 100)|round|int }}%</span></div>
+  <div class="u2-cells">
+    {% for t in tasks if t.n in g.tasks %}
+    <div class="u2-cell" style="--p: {{ t.p }}" title="№{{ t.n }}: решишь с вероятностью {{ (t.p * 100)|round|int }}%, попыток {{ t.n_try }}">
+      <b>{{ t.n }}</b><small>{{ t.points }} б.</small></div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+<p class="u2-hint">Источник шкалы: {{ c.exam.source }}.</p>
+{% endblock %}

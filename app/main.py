@@ -474,6 +474,7 @@ from .portfolio_web import router as portfolio_router  # noqa: E402
 from .family_web import router as family_router  # noqa: E402
 from .teacher_web import router as teacher_router  # noqa: E402
 from .signup_web import router as signup_router  # noqa: E402
+from .u2_web import router as u2_router  # noqa: E402
 app.include_router(student_router)
 app.include_router(oge_router)
 app.include_router(russian_router)
@@ -481,6 +482,7 @@ app.include_router(portfolio_router)
 app.include_router(family_router)
 app.include_router(teacher_router)
 app.include_router(signup_router)
+app.include_router(u2_router)
 from .chem_web import router as chem_router  # noqa: E402 — после всех общих функций, которыми он пользуется
 
 app.include_router(chem_router)

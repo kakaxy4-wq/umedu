@@ -1,0 +1,24 @@
+{% extends "u2/base.html" %}
+{% from "u2/_fc.html" import forecast %}
+{% block title %}Сегодня{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Сегодня · {{ total }} минут</h1>
+{% for p in plans %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ p.card.title }}</h2><span class="u2-chip">{{ p.minutes }} мин</span></div>
+  <ol class="u2-plan">
+    {% for it in p.steps %}
+    <li><span class="u2-num">№{{ it.n }}</span><span class="u2-why">{{ it.why }}</span><span class="u2-min">{{ it.minutes }} мин</span></li>
+    {% endfor %}
+  </ol>
+  <p class="u2-hint">Тренажёр по номерам подключим следующим шагом.</p>
+</section>
+{% endfor %}
+<h2 class="u2-h2">Прогноз</h2>
+{% for c in cards %}
+<a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">
+  <div class="u2-card-head"><h2>{{ c.title }}</h2>{% if c.days is not none %}<span class="u2-chip">{{ c.days }} дн. до экзамена</span>{% endif %}</div>
+  {{ forecast(c) }}
+</a>
+{% endfor %}
+{% endblock %}

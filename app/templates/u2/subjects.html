@@ -1,0 +1,15 @@
+{% extends "u2/base.html" %}
+{% from "u2/_fc.html" import forecast %}
+{% block title %}Предметы{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Предметы</h1>
+{% for c in cards %}
+<a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">
+  <div class="u2-card-head"><h2>{{ c.title }}</h2></div>
+  {{ forecast(c) }}
+</a>
+{% else %}
+<p>Экзамен ещё не выбран.</p>
+{% endfor %}
+<a class="u2-btn ghost" href="/u2/start">+ Добавить экзамен</a>
+{% endblock %}

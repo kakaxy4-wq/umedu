@@ -1,0 +1,111 @@
+/* umedu 2.0 — ультрамарин + лайм. Шрифты те же, что в app.css (scripts/fetch_vendor.sh); формулы — только Golos */
+@font-face { font-family: "Golos Text"; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url("/static/vendor/fonts/golos-text-cyrillic-wght-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Golos Text"; font-style: normal; font-weight: 400 900; font-display: swap;
+  src: url("/static/vendor/fonts/golos-text-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Unbounded"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url("/static/vendor/fonts/unbounded-cyrillic-wght-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Unbounded"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url("/static/vendor/fonts/unbounded-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+:root {
+  --ultra: #3A2BFF; --lime: #C6FF1A; --ink: #14112A;
+  --bg: #F6F5FB; --card: #FFFFFF; --line: #E4E2F0; --text: #14112A; --muted: #6B6688; --link: #3A2BFF;
+  --weak: #FF5A4E; --mid: #FFB020; --good: #19B36B;
+  --head: "Unbounded", system-ui, sans-serif; --body: "Golos Text", system-ui, sans-serif;
+  --mono: "Kibernetyk Mono", "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0920; --card: #17143A; --line: #2E2966; --text: #F2F1FA; --muted: #A9A4C8; --link: #8D85FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0920; --card: #17143A; --line: #2E2966; --text: #F2F1FA; --muted: #A9A4C8; --link: #8D85FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 var(--body); }
+a { color: var(--link); }
+h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
+
+.u2-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+  background: var(--ultra); color: #fff; }
+.u2-logo { display: flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; font: 700 18px var(--head); }
+.u2-logo img { width: 26px; height: 26px; }
+.u2-who { font-size: 14px; opacity: .85; }
+
+.u2-main { max-width: 720px; margin: 0 auto; padding: 16px 16px 96px; }
+.u2-h1 { font-size: 24px; margin: 8px 0 16px; }
+.u2-h2 { font: 700 18px var(--head); margin: 24px 0 12px; }
+.u2-back { display: inline-block; margin-top: 4px; font-size: 14px; text-decoration: none; }
+.u2-hint { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+
+.u2-card { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: 16px; margin-bottom: 12px; color: inherit; text-decoration: none; }
+.u2-card h2 { font-size: 16px; }
+.u2-link:hover { border-color: var(--ultra); }
+.u2-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.u2-chip { flex: none; font: 600 12px var(--mono); padding: 3px 10px; border-radius: 99px; background: var(--lime); color: var(--ink); }
+
+.u2-fc-main { display: flex; align-items: center; gap: 12px; }
+.u2-big { font: 800 36px var(--head); }
+.u2-grade { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; font: 800 28px var(--head);
+  background: var(--ultra); color: #fff; }
+.u2-grade.g2 { background: var(--weak); }
+.u2-grade.g5 { background: var(--lime); color: var(--ink); }
+.u2-fc-band { color: var(--muted); font-size: 14px; }
+.u2-goal { margin-top: 8px; font-size: 14px; }
+.u2-ok { color: var(--good); }
+
+.u2-plan { list-style: none; margin: 0; padding: 0; }
+.u2-plan li { display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.u2-plan li:first-child { border-top: 0; }
+.u2-num { font: 700 15px var(--head); }
+.u2-why { color: var(--muted); font-size: 14px; }
+.u2-min { font: 600 13px var(--mono); }
+
+.u2-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.u2-cell { display: flex; flex-direction: column; align-items: center; padding: 6px 0; border-radius: 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--good) calc(var(--p) * 70%), color-mix(in srgb, var(--weak) 22%, var(--card))); }
+.u2-cell b { font: 700 15px var(--head); }
+.u2-cell small { font: 11px var(--mono); color: var(--muted); }
+
+.u2-band { position: relative; height: 14px; border-radius: 99px; background: var(--line); margin: 8px 0; }
+.u2-band-fill { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: var(--ultra); opacity: .45; }
+.u2-band-mid { position: absolute; top: -3px; bottom: -3px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--ultra); }
+.u2-bar { display: grid; grid-template-columns: minmax(0, 9em) 1fr 3em; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; }
+.u2-bar i { height: 8px; border-radius: 99px;
+  background: linear-gradient(90deg, var(--ultra) calc(var(--p) * 100%), var(--line) 0); }
+.u2-bar b { font: 600 13px var(--mono); text-align: right; }
+
+.u2-row { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.u2-btn { display: inline-block; margin-top: 12px; padding: 10px 18px; border: 0; border-radius: 12px; cursor: pointer;
+  background: var(--ultra); color: #fff; font: 600 15px var(--body); text-decoration: none; }
+.u2-btn.ghost { background: transparent; color: var(--link); border: 1px solid var(--line); }
+.u2-seg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.u2-seg button { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+  color: var(--text); font: 14px var(--body); cursor: pointer; }
+.u2-seg button[aria-pressed="true"] { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+
+.u2-pick-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.u2-pick-row label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.u2-pick-row input, .u2-pick-row select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: 15px var(--body); }
+.u2-pick-row .u2-btn { margin-top: 0; }
+
+.u2-tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center;
+  background: var(--card); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+.u2-tab { flex: 1; max-width: 160px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0;
+  color: var(--muted); text-decoration: none; font-size: 12px; }
+.u2-dot { width: 22px; height: 6px; border-radius: 99px; background: var(--line); }
+.u2-tab.on { color: var(--text); font-weight: 600; }
+.u2-tab.on .u2-dot { background: var(--ultra); }

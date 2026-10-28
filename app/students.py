@@ -77,8 +77,9 @@ def signup_limited(ip):
     return len(_signups[ip]) >= SIGNUPS_PER_HOUR
 
 
-def signup(conn, name, grade, login, password, consent, ip="?"):
-    """Ученик регистрируется сам: самостоятельный темп, отметка согласия. Возвращает (id, None) или (None, ошибка).
+def signup(conn, name, grade, login, password, consent, ip="?", age14=False, parent_id=None):
+    """Ученик регистрируется сам (с 14 лет, согласие даёт сам) или его заводит родитель из своего кабинета
+    (parent_id — согласие дал родитель). Самостоятельный темп, отметка согласия. Возвращает (id, None) или (None, ошибка).
     Вызывать внутри `with conn:`."""
     from .family import CONSENT_VERSION
     name, login = name.strip()[:40], login.strip().lower()
@@ -92,6 +93,8 @@ def signup(conn, name, grade, login, password, consent, ip="?"):
         return None, "Такой логин уже занят — придумай другой."
     if len(password) < 6:
         return None, "Пароль — хотя бы 6 символов. Можно взять предложенный: его легко запомнить."
+    if not parent_id and not age14:
+        return None, "Самому зарегистрироваться можно с 14 лет. Если тебе меньше — пусть родитель заведёт тебе аккаунт."
     if not consent:
         return None, "Отметь согласие на обработку данных — без него зарегистрироваться нельзя."
     if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").fetchone()[0] >= MAX_STUDENTS:
@@ -99,13 +102,15 @@ def signup(conn, name, grade, login, password, consent, ip="?"):
     sid = create_student(conn, login, name, password)
     chosen = [s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"]
     conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ? WHERE id = ?",
-                 (grade, "%s · %s" % (CONSENT_VERSION, game.now_iso()), subjects.serialize(chosen), sid))
+                 (grade, "%s · %s%s" % (CONSENT_VERSION, game.now_iso(), " · родитель #%d" % parent_id if parent_id else ""),
+                  subjects.serialize(chosen), sid))
     for cid in ["oge1"] + (["ru_entry"] if "russian" in chosen else []):
         conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
                      (sid, cid, game.now_iso()))
     _signups.setdefault(ip, []).append(time.time())
     game.add_notice(conn, sid, "👋", "Привет! Начни с плана на сегодня — 10–15 минут, в конце сундук.", big=True)
-    game.tell_teacher(conn, sid, "🆕 Зарегистрировался сам: %s, %s" % (name, GRADES[grade]), "/teacher/students")
+    game.tell_teacher(conn, sid, "🆕 %s: %s, %s" % ("Завёл родитель" if parent_id else "Зарегистрировался сам", name,
+                                                  GRADES[grade]), "/teacher/students")
     return sid, None
 
 

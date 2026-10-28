@@ -22,9 +22,12 @@
       <input name="password" value="{{ suggested }}" required minlength="6" autocomplete="new-password" autocapitalize="off"></label>
     <p class="small muted">Мы предложили пароль из двух слов и числа — его легко запомнить. Можно придумать свой. Запиши логин и пароль!</p>
     <label class="hp" aria-hidden="true">Сайт<input name="website" tabindex="-1" autocomplete="off"></label>
+    <label class="check"><input type="checkbox" name="age14" value="1" required {{ 'checked' if form.age14 }}>
+      <span>Мне 14 лет или больше.</span></label>
     <label class="check"><input type="checkbox" name="consent" value="1" required {{ 'checked' if form.consent }}>
-      <span>Согласен(на) на обработку данных по <a href="/privacy" target="_blank">политике</a>. Мне 14 лет или больше —
-      или родитель (законный представитель) знает о регистрации и согласен.</span></label>
+      <span>Даю <a href="/consent" target="_blank" rel="noopener">согласие на обработку моих персональных данных</a>.</span></label>
+    <p class="small muted">Тебе меньше 14? Регистрацию проходит родитель: <a href="/family/new-child">аккаунт для ребёнка</a>.
+      Подробнее — в <a href="/privacy" target="_blank" rel="noopener">политике</a>.</p>
     <button class="btn btn-big">Начать</button>
   </form>
   <p class="small"><a href="/login">Уже есть аккаунт — войти</a></p>

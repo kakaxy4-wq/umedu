@@ -1,0 +1,138 @@
+{
+  "id": "oge-rus-2026",
+  "exam": "ОГЭ",
+  "subject": "Русский язык",
+  "year": 2026,
+  "duration_min": 235,
+  "source": "Методические рекомендации ФИПИ ОГЭ 2026 (структура, 37 баллов); шкала и условия — письмо Рособрнадзора от 25.02.2026 № 02-20",
+  "verified": {
+    "structure": true,
+    "scale": true,
+    "criteria_split": false
+  },
+  "max_points": 37,
+  "profile_min": 28,
+  "parts": [
+    {
+      "name": "Часть 1 · сжатое изложение",
+      "answer": "extended",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 6,
+          "answer": "extended"
+        }
+      ]
+    },
+    {
+      "name": "Часть 2 · краткий ответ",
+      "answer": "short",
+      "tasks": [
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "short"
+        }
+      ]
+    },
+    {
+      "name": "Часть 3 · сочинение",
+      "answer": "extended",
+      "tasks": [
+        {
+          "n": 13,
+          "points": 7,
+          "answer": "extended"
+        }
+      ]
+    }
+  ],
+  "criteria": [
+    {
+      "id": "ГК",
+      "name": "Грамотность (ГК1–ГК4)",
+      "points": 11
+    },
+    {
+      "id": "ФК",
+      "name": "Фактическая точность речи (ФК1)",
+      "points": 2
+    }
+  ],
+  "scale": {
+    "kind": "grade",
+    "from": {
+      "3": 15,
+      "4": 26,
+      "5": 33
+    }
+  },
+  "conditions": [
+    {
+      "grade": 4,
+      "tasks": [
+        "ГК"
+      ],
+      "min_points": 6,
+      "text": "Для «4» — не меньше 6 баллов за грамотность (ГК1–ГК4)"
+    },
+    {
+      "grade": 5,
+      "tasks": [
+        "ГК"
+      ],
+      "min_points": 9,
+      "text": "Для «5» — не меньше 9 баллов за грамотность (ГК1–ГК4)"
+    }
+  ]
+}

@@ -20,8 +20,9 @@ def test_exam_file_contract(exam_id):
     else:
         need = [sc["from"][g] for g in ("3", "4", "5")]
         assert 0 < need[0] < need[1] < need[2] <= ex["max_points"], "пороги отметок растут"
+    keys = set(em.points(ex))
     for c in ex.get("conditions", []):
-        assert set(c["tasks"]) <= set(nums) and c["min_points"] > 0
+        assert set(c["tasks"]) <= keys and c["min_points"] > 0
     for g in ex.get("groups", []):
         assert set(g["tasks"]) <= set(nums)
 
@@ -46,6 +47,23 @@ def test_oge_math_geometry_rule():
     with_geo = {**algebra_only, 15: 1, 16: 1}
     assert em.result(ex, with_geo) == {"primary": 16, "grade": 4}
     assert em.result(ex, {n: 1 for n in range(1, 8)}) == {"primary": 7, "grade": 2}
+
+
+def test_oge_rus_literacy_rule():
+    ex = em.load("oge-rus-2026")
+    base = {1: 6, **{n: 1 for n in range(2, 13)}, 13: 7, "ФК": 2}          # 26 баллов без грамотности
+    assert em.result(ex, {**base, "ГК": 9}) == {"primary": 35, "grade": 5}
+    assert em.result(ex, {**base, "ГК": 8}) == {"primary": 34, "grade": 4}    # 33+, но ГК < 9 → «4»
+    assert em.result(ex, {**base, "ГК": 5})["grade"] == 3                     # ГК < 6 → «3»
+    assert em.result(ex, {n: 1 for n in range(2, 13)})["grade"] == 2          # 11 баллов — ниже порога 15
+
+
+def test_ege_minimums_match_scale():
+    """Пороги «аттестат» и «вуз» — реальные значения шкалы (их достигает какой-то первичный балл)."""
+    for exam_id in em.all_ids():
+        sc = em.load(exam_id)["scale"]
+        if sc["kind"] == "test":
+            assert sc["min_certificate"] in sc["table"] and sc["min_university"] >= sc["min_certificate"]
 
 
 def test_ege_profile_scale_and_caps():

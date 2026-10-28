@@ -1,0 +1,135 @@
+{
+  "id": "ege-math-base-2026",
+  "exam": "ЕГЭ",
+  "subject": "Математика · база",
+  "year": 2026,
+  "duration_min": 180,
+  "source": "ФИПИ ЕГЭ 2026: 21 задание по 1 баллу; шкала в отметку — Рособрнадзор 2026 (по lenta.ru 17.04.2026)",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 21,
+  "parts": [
+    {
+      "name": "Краткий ответ",
+      "answer": "short",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 15,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 21,
+          "points": 1,
+          "answer": "short"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "grade",
+    "from": {
+      "3": 7,
+      "4": 12,
+      "5": 17
+    }
+  },
+  "conditions": []
+}

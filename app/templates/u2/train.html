@@ -31,7 +31,7 @@
   <h2>Записано: {{ res.score }} из {{ res.max }}</h2>
   {% endif %}
   <p class="u2-delta">Прогноз: {% if c.kind == 'grade' %}«{{ delta.from }}» → «{{ delta.to }}»{% else %}{{ delta.from }} → {{ delta.to }}{% endif %}
-    · первичный {{ '+' if delta.primary >= 0 }}{{ delta.primary }}</p>
+    · первичный {{ '+' if delta.primary >= 0 }}{{ delta.primary|string|replace('.', ',')|replace('-', '−') }}</p>
   <div class="u2-actions">
     {% if next_key is not none %}<a class="u2-btn" href="/u2/train/{{ c.id }}/{{ next_key }}">Дальше по плану: №{{ next_key }}</a>{% endif %}
     <a class="u2-btn ghost" href="/u2/train/{{ c.id }}/{{ t.key }}">{{ 'Ещё вариант' if generated else 'Ещё раз этот номер' }}</a>

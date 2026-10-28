@@ -18,7 +18,7 @@ PRIOR = 0.3                   # p номера, по которому ничег
 HALF_LIFE_DAYS = 30
 ALPHA_MIN, ALPHA_FIRST = 0.15, 0.5
 LEARN_RATE = 0.25             # какую долю разрыва (1 − p) закрывает одна тренировка номера
-MINUTES = {"extended": 15, "file": 20, "program": 15}   # остальные типы ответа — 3 минуты на вариант
+MINUTES = {"extended": 15, "file": 20, "program": 15, "essay": 30, "experiment": 20}   # остальные — 3 минуты
 Z80 = 1.28
 
 

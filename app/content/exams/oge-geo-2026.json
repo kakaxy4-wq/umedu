@@ -1,0 +1,179 @@
+{
+  "id": "oge-geo-2026",
+  "exam": "ОГЭ",
+  "subject": "География",
+  "year": 2026,
+  "duration_min": 150,
+  "source": "Спецификация ФИПИ ОГЭ 2026 (система оценивания, обобщённый план варианта); шкала и порог профильных классов — письмо Рособрнадзора от 25.02.2026 № 02-20, приложение 1, раздел 6, таблица 7",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 31,
+  "parts": [
+    {
+      "name": "Работа",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 12,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 15,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 21,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 22,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 23,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 24,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 25,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 26,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 27,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 28,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 29,
+          "points": 1,
+          "answer": "extended"
+        },
+        {
+          "n": 30,
+          "points": 1,
+          "answer": "extended"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "grade",
+    "from": {
+      "3": 12,
+      "4": 19,
+      "5": 26
+    }
+  },
+  "profile_min": 23
+}

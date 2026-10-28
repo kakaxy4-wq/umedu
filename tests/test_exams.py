@@ -83,3 +83,26 @@ def _spread(ex, total):
             out[n] = take
         total -= take
     return out
+
+
+# письмо Рособрнадзора от 25.02.2026 № 02-20, приложение 1: максимум, пороги «3»/«4»/«5», профильный класс
+OGE_LETTER_2026 = {
+    "oge-phys-2026": (39, 10, 20, 30, 26), "oge-bio-2026": (47, 13, 26, 38, 33), "oge-geo-2026": (31, 12, 19, 26, 23),
+    "oge-soc-2026": (37, 14, 24, 32, 29), "oge-hist-2026": (37, 11, 21, 30, 26), "oge-lit-2026": (40, 16, 25, 33, 27),
+    "oge-eng-2026": (68, 29, 46, 58, 55), "oge-inf-2026": (21, 5, 11, 17, 15),
+}
+
+
+@pytest.mark.parametrize("exam_id", sorted(OGE_LETTER_2026))
+def test_oge_scales_match_letter(exam_id):
+    ex = em.load(exam_id)
+    mx, g3, g4, g5, prof = OGE_LETTER_2026[exam_id]
+    assert (ex["max_points"], ex["scale"]["from"]["3"], ex["scale"]["from"]["4"], ex["scale"]["from"]["5"]) == (mx, g3, g4, g5)
+    assert ex["profile_min"] == prof
+
+
+def test_oge_eng_oral_part():
+    ex = em.load("oge-eng-2026")
+    written = sum(t["points"] for t in em.tasks(ex))
+    oral = sum(c["points"] for c in ex["criteria"])
+    assert (written, oral) == (53, 15)                                    # спецификация ФИПИ 2026, раздел 11

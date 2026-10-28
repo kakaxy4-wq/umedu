@@ -1,0 +1,149 @@
+{
+  "id": "oge-soc-2026",
+  "exam": "ОГЭ",
+  "subject": "Обществознание",
+  "year": 2026,
+  "duration_min": 180,
+  "source": "Спецификация ФИПИ ОГЭ 2026 (система оценивания, обобщённый план варианта); шкала и порог профильных классов — письмо Рособрнадзора от 25.02.2026 № 02-20, приложение 1, раздел 7, таблица 8",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 37,
+  "parts": [
+    {
+      "name": "Работа",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 5,
+          "points": 3,
+          "answer": "extended"
+        },
+        {
+          "n": 6,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 12,
+          "points": 4,
+          "answer": "extended"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 15,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 21,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 22,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 23,
+          "points": 3,
+          "answer": "extended"
+        },
+        {
+          "n": 24,
+          "points": 2,
+          "answer": "extended"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "grade",
+    "from": {
+      "3": 14,
+      "4": 24,
+      "5": 32
+    }
+  },
+  "profile_min": 29
+}

@@ -88,13 +88,13 @@ def test_diag_seeds_start_without_attempts(client, monkeypatch):  # noqa: F811
     assert r.headers["location"] == "/u2/diag/oge-math-2026"                 # новый экзамен — сначала самооценка
     page = client.get("/u2/diag/oge-math-2026").text
     assert "Геометрия" in page and 'name="s2"' in page
-    client.post("/u2/train/oge-math-2026/15", data={"csrf": csrf, "score": 1})  # по №15 уже есть попытка
+    client.post("/u2/train/oge-math-2026/18", data={"csrf": csrf, "score": 1})  # по №18 уже есть попытка
     # практика — «почти всегда», алгебра — пропущена, геометрия — «не умею»
     client.post("/u2/diag/oge-math-2026", data={"csrf": csrf, "s0": 3, "s2": 0})
     states = kn.load_states(connect(), sid_of(), "oge-math-2026")
     assert states[1]["p"] == 0.85 and states[1]["n"] == 0
     assert 6 not in states                                                    # пропущенный раздел не тронут
-    assert states[16]["p"] == 0.1 and states[15]["n"] == 1 and states[15]["p"] > 0.1   # попытку не затирает
+    assert states[16]["p"] == 0.1 and states[18]["n"] == 1 and states[18]["p"] > 0.1   # попытку не затирает
     r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 5}, follow_redirects=False)
     assert r.headers["location"] == "/u2/today"                              # смена цели — без повторной оценки
 
@@ -163,3 +163,38 @@ def test_schedule_prefills_exam_date(client, monkeypatch):  # noqa: F811
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-06-28"})
     start = client.get("/u2/start").text
     assert 'value="2027-06-28"' in start and 'value="2027-06-02"' not in start
+
+
+def test_math_generators_selfcheck():
+    """Каждый вариант по математике: эталон проходит свою проверку, ответ — конечная десятичная дробь или цифры,
+    условие без «-5» вместо «−5»; одна пара (номер, сид) — один и тот же вариант."""
+    from app.content import math_gen as mg
+    for bank in (mg.OGE, mg.EGE_PROFILE):
+        for num in bank.GENERATORS:
+            for seed in range(1, 150):
+                v = bank.make(num, seed)
+                assert bank.check(v, v["answer"]) and not bank.check(v, v["answer"] + "1"), (bank.prefix, num, seed)
+                assert mg._num(v["answer"]) is not None
+                assert " -" not in v["text"] + v["explain"], (bank.prefix, num, seed)
+            assert bank.make(num, 5) == bank.make(num, 5)
+    assert mg.OGE.check(mg.OGE.make(10, 3), mg.OGE.make(10, 3)["answer"].replace(",", "."))   # точка тоже годится
+    assert mg.fmt(mg.F(-11, 4)) == "-2,75" and not mg.finite(mg.F(1, 3))
+
+
+def test_math_trainer(client, monkeypatch):  # noqa: F811
+    from app import knowledge as kn
+    from app.content import math_gen as mg
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    assert "seed=" in client.get("/u2/train/oge-math-2026/9", follow_redirects=False).headers["location"]
+    page = client.get("/u2/train/oge-math-2026/9?seed=11").text
+    assert 'name="answer"' in page and "Уравнения" in page
+    v = mg.OGE.make(9, 11)
+    res = client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 11, "answer": "999999"}).text
+    assert "Неверно" in res and v["answer"].replace("-", "−") in res.replace("-", "−")
+    assert kn.load_states(connect(), sid_of(), "oge-math-2026")[9]["n"] == 1
+    page = client.get("/u2/train/oge-math-2026/18").text                     # клетчатая бумага — самопроверка
+    assert 'name="score"' in page

@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from . import auth, config, oge_drill
 from . import exam_model as em
 from . import knowledge as kn
-from .content import oge_gen
+from .content import math_gen, oge_gen
 from .content.oge import OGE_NUMBERS
 from .db import get_db
 from .main import back, need_sid, only_student, render
@@ -33,8 +33,9 @@ REVIEW_AFTER_DAYS = 14        # номер, к которому не возвр�
 REVIEW_MIN_P = 0.6
 FIPI_BANK = {"ОГЭ": "https://fipi.ru/oge/otkrytyy-bank-zadaniy-oge", "ЕГЭ": "https://fipi.ru/ege/otkrytyy-bank-zadaniy-ege"}
 # номера, для которых сайт сам выдаёт варианты и проверяет ответ; остальные — самопроверка по банку ФИПИ
-GENERATED = {"oge-inf-2026": set(oge_gen.GENERATORS)}
-TITLES = {"oge-inf-2026": {n: t[0] for n, t in OGE_NUMBERS.items()}}
+BANKS = {"oge-math-2026": math_gen.OGE, "ege-math-profile-2026": math_gen.EGE_PROFILE}
+GENERATED = {"oge-inf-2026": set(oge_gen.GENERATORS), **{e: set(b.GENERATORS) for e, b in BANKS.items()}}
+TITLES = {"oge-inf-2026": {n: t[0] for n, t in OGE_NUMBERS.items()}, **{e: b.TITLES for e, b in BANKS.items()}}
 TABS = [("today", "Сегодня"), ("subjects", "Предметы"), ("progress", "Прогресс"), ("me", "Я")]
 
 
@@ -344,9 +345,14 @@ def u2_train(exam_id: str, raw: str, request: Request, seed: int = 0, conn=Depen
     if ctx["generated"]:
         if not 0 < seed < 10 ** 7:
             return back(f"/u2/train/{exam_id}/{key}?seed={random.randrange(1, 10 ** 6)}")
-        v = oge_gen.make(key, seed)
+        v = _variant(exam_id, key, seed)
         ctx.update(seed=seed, variant=oge_gen.public(v), text=oge_drill.rich(v["text"]))
     return _page(request, conn, user, "today", "u2/train.html", res=None, **ctx)
+
+
+def _variant(exam_id, key, seed):
+    bank = BANKS.get(exam_id)
+    return bank.make(key, seed) if bank else oge_gen.make(key, seed)
 
 
 @router.post("/train/{exam_id}/{raw}", response_class=HTMLResponse)
@@ -361,7 +367,11 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
     if key in GENERATED.get(exam_id, ()):
         if not 0 < seed < 10 ** 7:
             raise HTTPException(400)
-        res = oge_drill.answer(conn, sid, key, seed, answer[:100])      # заодно — статистика и трофеи старого тренажёра
+        if exam_id in BANKS:
+            v = BANKS[exam_id].make(key, seed)
+            res = {"ok": BANKS[exam_id].check(v, answer[:100]), "answer": v["answer"], "explain": v["explain"], "xp": 0}
+        else:
+            res = oge_drill.answer(conn, sid, key, seed, answer[:100])  # заодно — статистика и трофеи старого тренажёра
         got = 1.0 if res["ok"] else 0.0
     else:
         mx = em.points(exam)[key]
@@ -374,7 +384,7 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         kn.log_forecast(conn, sid, exam_id, today)
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:
-        v = oge_gen.make(key, seed)
+        v = _variant(exam_id, key, seed)
         ctx.update(seed=seed, variant=oge_gen.public(v), text=oge_drill.rich(v["text"]), given=answer[:100])
     after = ctx["c"]
     k = after["kind"]

@@ -18,107 +18,128 @@
         {
           "n": 1,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Вычисления"
         },
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Текстовая задача"
         },
         {
           "n": 3,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Таблицы и диаграммы"
         },
         {
           "n": 4,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Расчёт по формуле"
         },
         {
           "n": 5,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Вероятность"
         },
         {
           "n": 6,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Выбор по таблице"
         },
         {
           "n": 7,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Функции и производная по графику"
         },
         {
           "n": 8,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Логика"
         },
         {
           "n": 9,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Планиметрия: размеры"
         },
         {
           "n": 10,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Планиметрия"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Стереометрия"
         },
         {
           "n": 12,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Планиметрия"
         },
         {
           "n": 13,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Стереометрия"
         },
         {
           "n": 14,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Вычисления"
         },
         {
           "n": 15,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Проценты и текстовые задачи"
         },
         {
           "n": 16,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Преобразование выражений"
         },
         {
           "n": 17,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Уравнения"
         },
         {
           "n": 18,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Неравенства"
         },
         {
           "n": 19,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Числа и их свойства"
         },
         {
           "n": 20,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Текстовая задача"
         },
         {
           "n": 21,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Задача на смекалку"
         }
       ]
     }

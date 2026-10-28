@@ -20,7 +20,8 @@
         {
           "n": 1,
           "points": 6,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Сжатое изложение"
         }
       ]
     },
@@ -31,57 +32,68 @@
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Синтаксический анализ"
         },
         {
           "n": 3,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Синтаксический анализ"
         },
         {
           "n": 4,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Пунктуационный анализ"
         },
         {
           "n": 5,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Пунктуационный анализ"
         },
         {
           "n": 6,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Орфографический анализ"
         },
         {
           "n": 7,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Орфографический анализ"
         },
         {
           "n": 8,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Морфологические нормы"
         },
         {
           "n": 9,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Синонимия словосочетаний"
         },
         {
           "n": 10,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Смысловой анализ текста"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Выразительные средства"
         },
         {
           "n": 12,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Лексический анализ"
         }
       ]
     },
@@ -92,7 +104,8 @@
         {
           "n": 13,
           "points": 7,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Сочинение"
         }
       ]
     }

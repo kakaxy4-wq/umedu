@@ -17,152 +17,182 @@
         {
           "n": 1,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Географические объекты"
         },
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Положение объектов"
         },
         {
           "n": 3,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Сравнение объектов"
         },
         {
           "n": 4,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Источники информации"
         },
         {
           "n": 5,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Понятия и термины"
         },
         {
           "n": 6,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Работа с картой"
         },
         {
           "n": 7,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Работа с картой"
         },
         {
           "n": 8,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Явления и процессы"
         },
         {
           "n": 9,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Статистика и данные"
         },
         {
           "n": 10,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Карта погоды"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Представление информации"
         },
         {
           "n": 12,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Природа и хозяйство"
         },
         {
           "n": 13,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Население и хозяйство"
         },
         {
           "n": 14,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Устойчивое развитие"
         },
         {
           "n": 15,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Природопользование"
         },
         {
           "n": 16,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Взаимосвязи явлений"
         },
         {
           "n": 17,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Сравнение объектов"
         },
         {
           "n": 18,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Явления в повседневной жизни"
         },
         {
           "n": 19,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Источники информации"
         },
         {
           "n": 20,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Явления в повседневной жизни"
         },
         {
           "n": 21,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Положение объектов"
         },
         {
           "n": 22,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Понятия и термины"
         },
         {
           "n": 23,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Источники информации"
         },
         {
           "n": 24,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Понятия и термины"
         },
         {
           "n": 25,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Сравнение регионов"
         },
         {
           "n": 26,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Закономерности развития общества"
         },
         {
           "n": 27,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Регионы России"
         },
         {
           "n": 28,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Положение объектов"
         },
         {
           "n": 29,
           "points": 1,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "География России"
         },
         {
           "n": 30,
           "points": 1,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Человек и окружающая среда"
         }
       ]
     }

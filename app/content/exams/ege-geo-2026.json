@@ -17,107 +17,128 @@
         {
           "n": 1,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Карта"
         },
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Атмосфера и климат"
         },
         {
           "n": 3,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Агроклиматические ресурсы"
         },
         {
           "n": 4,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Гидросфера и рельеф"
         },
         {
           "n": 5,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Тектоника и рельеф"
         },
         {
           "n": 6,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Расселение в России"
         },
         {
           "n": 7,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Структура хозяйства"
         },
         {
           "n": 8,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Воспроизводство населения"
         },
         {
           "n": 9,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Мировая торговля и транспорт"
         },
         {
           "n": 10,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Население и хозяйство России"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Карта и климат"
         },
         {
           "n": 12,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Демография и урбанизация"
         },
         {
           "n": 13,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Геологическая история"
         },
         {
           "n": 14,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Карта"
         },
         {
           "n": 15,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Ресурсообеспеченность"
         },
         {
           "n": 16,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Численность населения России"
         },
         {
           "n": 17,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Страны мира"
         },
         {
           "n": 18,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Районы России"
         },
         {
           "n": 19,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Городское и сельское расселение"
         },
         {
           "n": 20,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Городское и сельское расселение"
         },
         {
           "n": 21,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Общество и природа"
         }
       ]
     },
@@ -127,42 +148,50 @@
         {
           "n": 22,
           "points": 1,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Мировое хозяйство"
         },
         {
           "n": 23,
           "points": 1,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Регионы и страны"
         },
         {
           "n": 24,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Качество жизни"
         },
         {
           "n": 25,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Сельское хозяйство мира"
         },
         {
           "n": 26,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Россия в мире"
         },
         {
           "n": 27,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Россия в мире"
         },
         {
           "n": 28,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Карта"
         },
         {
           "n": 29,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Глобальные проблемы"
         }
       ]
     }

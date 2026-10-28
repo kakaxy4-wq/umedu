@@ -131,3 +131,16 @@ def test_ege_scale_anchors_match_rosobrnadzor(exam_id):
     table = em.load(exam_id)["scale"]["table"]
     for primary, test in EGE_ANCHORS_2026[exam_id]:
         assert table[primary] == test, (primary, table[primary], test)
+
+
+def test_task_titles_and_minutes():
+    """Темы номеров — из обобщённого плана спецификаций ФИПИ 2026: короткие, у экзамена либо у всех номеров, либо ни
+    у одного. Минуты ЕГЭ по информатике из спецификации в сумме дают длительность экзамена."""
+    for exam_id in em.all_ids():
+        ex = em.load(exam_id)
+        tasks = em.tasks(ex)
+        titled = [t for t in tasks if t.get("title")]
+        assert len(titled) in (0, len(tasks)), exam_id
+        assert all(len(t["title"]) <= 40 for t in titled), exam_id
+    inf = em.load("ege-inf-2026")
+    assert sum(t["minutes"] for t in em.tasks(inf)) == inf["duration_min"] == 235

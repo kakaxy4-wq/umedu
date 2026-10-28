@@ -17,102 +17,122 @@
         {
           "n": 1,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Кинематика"
         },
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Динамика"
         },
         {
           "n": 3,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Законы сохранения"
         },
         {
           "n": 4,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Статика, колебания и волны"
         },
         {
           "n": 5,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Механика: анализ процессов"
         },
         {
           "n": 6,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Механика: изменение величин"
         },
         {
           "n": 7,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "МКТ"
         },
         {
           "n": 8,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Термодинамика"
         },
         {
           "n": 9,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Термодинамика: анализ процессов"
         },
         {
           "n": 10,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Термодинамика: изменение величин"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Постоянный ток"
         },
         {
           "n": 12,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Электромагнитная индукция"
         },
         {
           "n": 13,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Оптика"
         },
         {
           "n": 14,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Электродинамика: анализ процессов"
         },
         {
           "n": 15,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Электродинамика: изменение величин"
         },
         {
           "n": 16,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Ядерная физика"
         },
         {
           "n": 17,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Квантовая физика: изменение величин"
         },
         {
           "n": 18,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Смысл величин и законов"
         },
         {
           "n": 19,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Показания приборов"
         },
         {
           "n": 20,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Планирование эксперимента"
         }
       ]
     },
@@ -122,32 +142,38 @@
         {
           "n": 21,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Качественная задача"
         },
         {
           "n": 22,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Расчётная задача"
         },
         {
           "n": 23,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Расчётная задача"
         },
         {
           "n": 24,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Расчётная задача"
         },
         {
           "n": 25,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Расчётная задача"
         },
         {
           "n": 26,
           "points": 4,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Задача с обоснованием модели"
         }
       ]
     }

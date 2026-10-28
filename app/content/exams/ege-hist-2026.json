@@ -17,62 +17,74 @@
         {
           "n": 1,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Даты"
         },
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Последовательность событий"
         },
         {
           "n": 3,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Факты и процессы"
         },
         {
           "n": 4,
           "points": 3,
-          "answer": "short"
+          "answer": "short",
+          "title": "Таблица"
         },
         {
           "n": 5,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Исторические деятели"
         },
         {
           "n": 6,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Письменный источник"
         },
         {
           "n": 7,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "История культуры"
         },
         {
           "n": 8,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Великая Отечественная: изображения"
         },
         {
           "n": 9,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Историческая карта"
         },
         {
           "n": 10,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Историческая карта"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Карта и текст"
         },
         {
           "n": 12,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Карта: выбор"
         }
       ]
     },
@@ -82,47 +94,56 @@
         {
           "n": 13,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Атрибуция источника"
         },
         {
           "n": 14,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Поиск в источнике"
         },
         {
           "n": 15,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Изображения"
         },
         {
           "n": 16,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Изображения"
         },
         {
           "n": 17,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Великая Отечественная: источники"
         },
         {
           "n": 18,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Причины и следствия"
         },
         {
           "n": 19,
           "points": 2,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Исторические понятия"
         },
         {
           "n": 20,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Сравнение событий"
         },
         {
           "n": 21,
           "points": 3,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Аргументация"
         }
       ]
     }

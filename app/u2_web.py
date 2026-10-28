@@ -317,7 +317,7 @@ def _task_info(exam, key):
                 "group": group}
     task = next(t for t in em.tasks(exam) if t["n"] == key)
     part = next(p["name"] for p in exam["parts"] if task in p["tasks"])
-    return {"key": key, "label": f"№{key}", "title": TITLES.get(exam["id"], {}).get(key) or group or part,
+    return {"key": key, "label": f"№{key}", "title": task.get("title") or TITLES.get(exam["id"], {}).get(key) or group or part,
             "points": task["points"], "group": group or part}
 
 

@@ -18,132 +18,158 @@
         {
           "n": 1,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Связь предложений в тексте"
         },
         {
           "n": 2,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Лексическое значение слова"
         },
         {
           "n": 3,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Стилистика"
         },
         {
           "n": 4,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Ударения"
         },
         {
           "n": 5,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Паронимы"
         },
         {
           "n": 6,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Лексические нормы"
         },
         {
           "n": 7,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Морфологические нормы"
         },
         {
           "n": 8,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Синтаксические нормы"
         },
         {
           "n": 9,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Корни"
         },
         {
           "n": 10,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Приставки, ъ и ь"
         },
         {
           "n": 11,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Суффиксы"
         },
         {
           "n": 12,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Окончания глаголов, суффиксы причастий"
         },
         {
           "n": 13,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "НЕ и НИ"
         },
         {
           "n": 14,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Слитно, дефис, раздельно"
         },
         {
           "n": 15,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Н и НН"
         },
         {
           "n": 16,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Однородные члены, ССП"
         },
         {
           "n": 17,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Обособление"
         },
         {
           "n": 18,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Вводные слова, обращения"
         },
         {
           "n": 19,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Сложное предложение"
         },
         {
           "n": 20,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Разные виды связи"
         },
         {
           "n": 21,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Пунктуационный анализ"
         },
         {
           "n": 22,
           "points": 2,
-          "answer": "short"
+          "answer": "short",
+          "title": "Средства выразительности"
         },
         {
           "n": 23,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Смысл текста"
         },
         {
           "n": 24,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Информация в тексте"
         },
         {
           "n": 25,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Лексика текста"
         },
         {
           "n": 26,
           "points": 1,
-          "answer": "short"
+          "answer": "short",
+          "title": "Связь предложений в тексте"
         }
       ]
     },
@@ -154,7 +180,8 @@
         {
           "n": 27,
           "points": 22,
-          "answer": "extended"
+          "answer": "extended",
+          "title": "Сочинение"
         }
       ]
     }

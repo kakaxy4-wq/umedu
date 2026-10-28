@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 from app import exam_model as em
 from app import knowledge as kn
+from test_app import client  # noqa: F401 — общая фикстура с тестовой базой
 
 D = date(2026, 10, 28)
 
@@ -63,3 +64,29 @@ def test_split_minutes():
     out = kn.split_minutes({"а": 5, "б": -3}, 30)
     assert out == {"а": 30, "б": 0}
     assert sum(kn.split_minutes({"а": 1, "б": 1, "в": 1}, 30).values()) <= 30
+
+
+def test_storage_roundtrip(client):  # noqa: F811
+    import pytest
+    from app.db import connect
+    conn = connect()
+    sid = conn.execute("SELECT id FROM users WHERE role = 'student' LIMIT 1").fetchone()[0]
+    with conn:
+        kn.enroll(conn, sid, "oge-math-2026", goal=4)
+        kn.enroll(conn, sid, "oge-math-2026", goal=5)                      # повторная запись обновляет цель
+        kn.record(conn, sid, "oge-math-2026", 4, 1, D)
+        st = kn.record(conn, sid, "oge-math-2026", 4, 1, D)
+        kn.enroll(conn, sid, "oge-rus-2026")
+        kn.record(conn, sid, "oge-rus-2026", "ГК", 0.5, D)
+    assert [e["goal"] for e in kn.exams_of(conn, sid)] == [5, None]
+    states = kn.load_states(conn, sid, "oge-math-2026")
+    assert states == {4: st} and st["n"] == 2
+    assert kn.load_states(conn, sid, "oge-rus-2026")["ГК"]["n"] == 1
+    with pytest.raises(KeyError):
+        kn.record(conn, sid, "oge-math-2026", 99, 1, D)
+    with pytest.raises(FileNotFoundError):
+        kn.enroll(conn, sid, "no-such-exam")
+    with conn:
+        conn.execute("DELETE FROM users WHERE id = ?", (sid,))
+    assert kn.load_states(conn, sid, "oge-math-2026") == {} and kn.exams_of(conn, sid) == []
+    conn.close()

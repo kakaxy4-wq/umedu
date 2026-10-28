@@ -120,3 +120,34 @@ def split_minutes(gaps, minutes):
             break
         out[k] += 5
     return out
+
+
+# --- хранение (таблицы exam_enroll, skill_state в app/db.py) ---
+
+def enroll(conn, sid, exam_id, goal=None, exam_date=None):
+    em.load(exam_id)                                   # неизвестный экзамен — ошибка сразу, а не мусор в базе
+    conn.execute("INSERT INTO exam_enroll (student_id, exam_id, goal, exam_date, created_at) VALUES (?, ?, ?, ?, ?) "
+                 "ON CONFLICT(student_id, exam_id) DO UPDATE SET goal = excluded.goal, exam_date = excluded.exam_date",
+                 (sid, exam_id, goal, exam_date, date.today().isoformat()))
+
+
+def exams_of(conn, sid):
+    return [dict(r) for r in conn.execute("SELECT exam_id, goal, exam_date FROM exam_enroll WHERE student_id = ? "
+                                          "ORDER BY created_at, exam_id", (sid,))]
+
+
+def load_states(conn, sid, exam_id):
+    rows = conn.execute("SELECT task_key, p, n, last FROM skill_state WHERE student_id = ? AND exam_id = ?", (sid, exam_id))
+    return {(int(k) if k.isdigit() else k): {"p": p, "n": n, "last": last} for k, p, n, last in rows}
+
+
+def record(conn, sid, exam_id, key, score, today=None):
+    """Записывает попытку по номеру (или критерию) и возвращает новое состояние."""
+    exam = em.load(exam_id)
+    if key not in em.points(exam):
+        raise KeyError(f"{exam_id}: нет номера {key!r}")
+    st = update(load_states(conn, sid, exam_id).get(key), score, today)
+    conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) VALUES (?, ?, ?, ?, ?, ?) "
+                 "ON CONFLICT(student_id, exam_id, task_key) DO UPDATE SET p = excluded.p, n = excluded.n, last = excluded.last",
+                 (sid, exam_id, str(key), st["p"], st["n"], st["last"]))
+    return st

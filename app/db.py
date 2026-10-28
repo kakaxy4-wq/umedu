@@ -399,6 +399,44 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_time ON events(created_at);
 CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_id, created_at);
+
+-- umedu 2.0: экзамены ученика и знания по номерам (app/knowledge.py, app/exam_model.py)
+CREATE TABLE IF NOT EXISTS exam_enroll (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    goal INTEGER,                      -- отметка (ОГЭ, база) или тестовый балл (ЕГЭ)
+    exam_date TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (student_id, exam_id)
+);
+CREATE TABLE IF NOT EXISTS skill_state (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    task_key TEXT NOT NULL,            -- номер задания или критерий («ГК»)
+    p REAL NOT NULL,
+    n INTEGER NOT NULL,
+    last TEXT,
+    PRIMARY KEY (student_id, exam_id, task_key)
+);
+-- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
+CREATE TABLE IF NOT EXISTS org (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS class (
+    id INTEGER PRIMARY KEY,
+    org_id INTEGER REFERENCES org(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    teacher_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS class_member (
+    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TEXT NOT NULL,
+    PRIMARY KEY (class_id, student_id)
+);
 """
 
 # Таблицы, которые в v1 были «общими на одного ученика» и в v2 получили student_id.

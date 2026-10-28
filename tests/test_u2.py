@@ -168,9 +168,9 @@ def test_schedule_prefills_exam_date(client, monkeypatch):  # noqa: F811
 def test_math_generators_selfcheck():
     """Каждый вариант по математике: эталон проходит свою проверку, ответ — конечная десятичная дробь или цифры,
     условие без «-5» вместо «−5»; одна пара (номер, сид) — один и тот же вариант."""
-    from app.content import inf_gen
+    from app.content import inf_gen, phys_gen
     from app.content import math_gen as mg
-    for bank in (mg.OGE, mg.EGE_PROFILE, mg.EGE_BASE, inf_gen.EGE):
+    for bank in (mg.OGE, mg.EGE_PROFILE, mg.EGE_BASE, inf_gen.EGE, phys_gen.OGE, phys_gen.EGE):
         for num in bank.GENERATORS:
             for seed in range(1, 150):
                 v = bank.make(num, seed)

@@ -1,0 +1,39 @@
+{
+  "id": "oge-math-2026",
+  "exam": "ОГЭ",
+  "subject": "Математика",
+  "year": 2026,
+  "duration_min": 235,
+  "source": "Демоверсия и спецификация ФИПИ ОГЭ 2026; шкала — рекомендация ФИПИ, регион может изменить",
+  "verified": {"structure": true, "scale": false},
+  "max_points": 31,
+  "groups": [
+    {"name": "Практические задачи", "tasks": [1, 2, 3, 4, 5]},
+    {"name": "Алгебра", "tasks": [6, 7, 8, 9, 10, 11, 12, 13, 14, 20, 21, 22]},
+    {"name": "Геометрия", "tasks": [15, 16, 17, 18, 19, 23, 24, 25]}
+  ],
+  "parts": [
+    {"name": "Часть 1", "answer": "short", "tasks": [
+      {"n": 1, "points": 1, "answer": "number"}, {"n": 2, "points": 1, "answer": "number"},
+      {"n": 3, "points": 1, "answer": "number"}, {"n": 4, "points": 1, "answer": "number"},
+      {"n": 5, "points": 1, "answer": "number"}, {"n": 6, "points": 1, "answer": "number"},
+      {"n": 7, "points": 1, "answer": "digits"}, {"n": 8, "points": 1, "answer": "number"},
+      {"n": 9, "points": 1, "answer": "number"}, {"n": 10, "points": 1, "answer": "number"},
+      {"n": 11, "points": 1, "answer": "digits"}, {"n": 12, "points": 1, "answer": "number"},
+      {"n": 13, "points": 1, "answer": "digits"}, {"n": 14, "points": 1, "answer": "number"},
+      {"n": 15, "points": 1, "answer": "number"}, {"n": 16, "points": 1, "answer": "number"},
+      {"n": 17, "points": 1, "answer": "number"}, {"n": 18, "points": 1, "answer": "number"},
+      {"n": 19, "points": 1, "answer": "digits"}
+    ]},
+    {"name": "Часть 2", "answer": "extended", "tasks": [
+      {"n": 20, "points": 2, "answer": "extended"}, {"n": 21, "points": 2, "answer": "extended"},
+      {"n": 22, "points": 2, "answer": "extended"}, {"n": 23, "points": 2, "answer": "extended"},
+      {"n": 24, "points": 2, "answer": "extended"}, {"n": 25, "points": 2, "answer": "extended"}
+    ]}
+  ],
+  "scale": {"kind": "grade", "from": {"3": 8, "4": 15, "5": 22}},
+  "conditions": [
+    {"grade": 3, "tasks": [15, 16, 17, 18, 19, 23, 24, 25], "min_points": 2,
+     "text": "Не меньше 2 баллов за геометрию (15–19, 23–25)"}
+  ]
+}

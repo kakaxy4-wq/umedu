@@ -1,0 +1,26 @@
+{
+  "id": "oge-inf-2026",
+  "exam": "ОГЭ",
+  "subject": "Информатика",
+  "year": 2026,
+  "duration_min": 150,
+  "source": "Демоверсия ФИПИ ОГЭ 2026; шкала — рекомендация ФИПИ (совпадает с app/forecast.py)",
+  "verified": {"structure": true, "scale": true},
+  "max_points": 21,
+  "parts": [
+    {"name": "Часть 1", "answer": "short", "tasks": [
+      {"n": 1, "points": 1, "answer": "number"}, {"n": 2, "points": 1, "answer": "string"},
+      {"n": 3, "points": 1, "answer": "number"}, {"n": 4, "points": 1, "answer": "number"},
+      {"n": 5, "points": 1, "answer": "digits"}, {"n": 6, "points": 1, "answer": "number"},
+      {"n": 7, "points": 1, "answer": "sequence"}, {"n": 8, "points": 1, "answer": "number"},
+      {"n": 9, "points": 1, "answer": "number"}, {"n": 10, "points": 1, "answer": "number"}
+    ]},
+    {"name": "Часть 2", "answer": "computer", "tasks": [
+      {"n": 11, "points": 1, "answer": "string"}, {"n": 12, "points": 1, "answer": "number"},
+      {"n": 13, "points": 2, "answer": "file"}, {"n": 14, "points": 3, "answer": "file"},
+      {"n": 15, "points": 2, "answer": "program"}, {"n": 16, "points": 2, "answer": "program"}
+    ]}
+  ],
+  "scale": {"kind": "grade", "from": {"3": 5, "4": 11, "5": 17}},
+  "conditions": []
+}

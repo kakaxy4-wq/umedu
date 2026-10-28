@@ -137,3 +137,10 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 .u2-opt span { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 14px; }
 .u2-opt input:checked + span { background: var(--lime); color: var(--ink); border-color: var(--lime); }
 .u2-opt input:focus-visible + span { outline: 2px solid var(--ultra); outline-offset: 2px; }
+
+/* история прогноза */
+.u2-chart { margin: 8px 0 4px; }
+.u2-chart svg { display: block; width: 100%; height: 90px; background: var(--bg); border-radius: 10px; }
+.u2-chart-band { fill: var(--ultra); opacity: .18; }
+.u2-chart-line { fill: none; stroke: var(--ultra); stroke-width: 2.5; stroke-linejoin: round; }
+.u2-chart figcaption { color: var(--muted); font-size: 13px; margin-top: 6px; }

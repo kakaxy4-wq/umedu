@@ -10,7 +10,7 @@
 - plan: жадно берём номер с наибольшим ожидаемым приростом баллов за минуту.
 """
 import math
-from datetime import date
+from datetime import date, timedelta
 
 from . import exam_model as em
 
@@ -139,6 +139,26 @@ def exams_of(conn, sid):
 def load_states(conn, sid, exam_id):
     rows = conn.execute("SELECT task_key, p, n, last FROM skill_state WHERE student_id = ? AND exam_id = ?", (sid, exam_id))
     return {(int(k) if k.isdigit() else k): {"p": p, "n": n, "last": last} for k, p, n, last in rows}
+
+
+def log_forecast(conn, sid, exam_id, today=None):
+    """Пересчитывает прогноз и записывает его за сегодня (одна строка в день, последняя попытка дня побеждает)."""
+    today = today or date.today()
+    exam = em.load(exam_id)
+    fc = forecast(exam, load_states(conn, sid, exam_id), today)
+    key = "grade" if exam["scale"]["kind"] == "grade" else "test"
+    conn.execute("INSERT INTO forecast_log (student_id, exam_id, day, primary_mean, low, high, result) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(student_id, exam_id, day) DO UPDATE SET "
+                 "primary_mean = excluded.primary_mean, low = excluded.low, high = excluded.high, result = excluded.result",
+                 (sid, exam_id, today.isoformat(), fc["primary"], fc["low"], fc["high"], fc[key]))
+    return fc
+
+
+def history(conn, sid, exam_id, days=90, today=None):
+    since = ((today or date.today()) - timedelta(days=days)).isoformat()
+    return [dict(r) for r in conn.execute(
+        "SELECT day, primary_mean, low, high, result FROM forecast_log WHERE student_id = ? AND exam_id = ? AND day >= ? "
+        "ORDER BY day", (sid, exam_id, since))]
 
 
 def seed(conn, sid, exam_id, key, p, today=None):

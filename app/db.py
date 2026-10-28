@@ -409,6 +409,16 @@ CREATE TABLE IF NOT EXISTS exam_enroll (
     created_at TEXT NOT NULL,
     PRIMARY KEY (student_id, exam_id)
 );
+CREATE TABLE IF NOT EXISTS forecast_log (      -- прогноз на конец дня: история для вкладки «Прогресс»
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    primary_mean REAL NOT NULL,
+    low INTEGER NOT NULL,
+    high INTEGER NOT NULL,
+    result INTEGER NOT NULL,           -- отметка или тестовый балл по середине вилки
+    PRIMARY KEY (student_id, exam_id, day)
+);
 CREATE TABLE IF NOT EXISTS u2_prefs (
     student_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     daily_minutes INTEGER NOT NULL DEFAULT 30   -- сколько минут в день ученик готов заниматься

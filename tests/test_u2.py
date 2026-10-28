@@ -118,3 +118,27 @@ def test_daily_minutes_setting(client, monkeypatch):  # noqa: F811
     assert 50 < total <= 60                                                  # план заполняет новое время, не больше
     assert 'value="60" aria-pressed="true"' in client.get("/u2/me").text
     assert client.post("/u2/me/minutes", data={"csrf": csrf, "minutes": 7}).status_code == 400
+
+
+def test_forecast_history_and_chart(client, monkeypatch):  # noqa: F811
+    from datetime import timedelta
+    from app import knowledge as kn
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    assert "График появится со второго дня" in client.get("/u2/progress").text
+    client.post("/u2/train/oge-math-2026/1", data={"csrf": csrf, "score": 1})
+    client.post("/u2/train/oge-math-2026/2", data={"csrf": csrf, "score": 1})
+    conn, sid, today = connect(), sid_of(), config.today()
+    hist = kn.history(conn, sid, "oge-math-2026", today=today)
+    assert len(hist) == 1 and hist[0]["day"] == today.isoformat()              # одна строка в день
+    with conn:
+        for k in range(1, 6):
+            kn.record(conn, sid, "oge-math-2026", k + 2, 1, today - timedelta(days=9))
+        kn.log_forecast(conn, sid, "oge-math-2026", today - timedelta(days=9))
+    hist = kn.history(conn, sid, "oge-math-2026", today=today)
+    assert [h["day"] for h in hist] == sorted(h["day"] for h in hist) and len(hist) == 2
+    page = client.get("/u2/progress").text
+    assert "<polyline" in page and "u2-chart-band" in page

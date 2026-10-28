@@ -144,8 +144,25 @@ def u2_subject(exam_id: str, request: Request, conn=Depends(get_db), user=Depend
 
 @router.get("/progress", response_class=HTMLResponse)
 def u2_progress(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
-    sid = need_sid(conn, user)
-    return _page(request, conn, user, "progress", "u2/progress.html", cards=_cards(conn, sid, config.today()))
+    sid, today = need_sid(conn, user), config.today()
+    cards = _cards(conn, sid, today)
+    for c in cards:
+        c["chart"] = _chart(kn.history(conn, sid, c["id"], today=today), c["exam"]["max_points"])
+    return _page(request, conn, user, "progress", "u2/progress.html", cards=cards)
+
+
+def _chart(rows, max_points, w=300, h=90):
+    """Координаты для SVG: вилка первичного балла (многоугольник) и середина (линия) по дням. Нужно ≥ 2 дней."""
+    if len(rows) < 2:
+        return None
+    d0 = date.fromisoformat(rows[0]["day"])
+    span = max((date.fromisoformat(rows[-1]["day"]) - d0).days, 1)
+    x = [round((date.fromisoformat(r["day"]) - d0).days / span * w, 1) for r in rows]
+    y = lambda v: round(h - v / max_points * h, 1)  # noqa: E731
+    top = " ".join(f"{a},{y(r['high'])}" for a, r in zip(x, rows))
+    bottom = " ".join(f"{a},{y(r['low'])}" for a, r in reversed(list(zip(x, rows))))
+    return {"w": w, "h": h, "band": f"{top} {bottom}", "line": " ".join(f"{a},{y(r['primary_mean'])}" for a, r in zip(x, rows)),
+            "first": rows[0], "last": rows[-1], "days": span}
 
 
 @router.get("/me", response_class=HTMLResponse)
@@ -250,6 +267,7 @@ async def u2_diag_submit(exam_id: str, request: Request, conn=Depends(get_db), u
             if raw.isdigit() and int(raw) < len(LEVELS):
                 for key in sec["tasks"]:
                     kn.seed(conn, user["id"], exam_id, key, LEVELS[int(raw)][1], today)
+        kn.log_forecast(conn, user["id"], exam_id, today)
     return back("/u2/today")
 
 
@@ -334,6 +352,7 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         res = {"ok": score == mx, "score": score, "max": mx}
     with conn:
         kn.record(conn, sid, exam_id, key, got, today)
+        kn.log_forecast(conn, sid, exam_id, today)
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:
         v = oge_gen.make(key, seed)

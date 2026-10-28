@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from . import auth, config, oge_drill
 from . import exam_model as em
 from . import knowledge as kn
-from .content import math_gen, oge_gen
+from .content import inf_gen, math_gen, oge_gen
 from .content.oge import OGE_NUMBERS
 from .db import get_db
 from .main import back, need_sid, only_student, render
@@ -33,7 +33,7 @@ REVIEW_AFTER_DAYS = 14        # номер, к которому не возвр�
 REVIEW_MIN_P = 0.6
 FIPI_BANK = {"ОГЭ": "https://fipi.ru/oge/otkrytyy-bank-zadaniy-oge", "ЕГЭ": "https://fipi.ru/ege/otkrytyy-bank-zadaniy-ege"}
 # номера, для которых сайт сам выдаёт варианты и проверяет ответ; остальные — самопроверка по банку ФИПИ
-BANKS = {"oge-math-2026": math_gen.OGE, "ege-math-profile-2026": math_gen.EGE_PROFILE}
+BANKS = {"oge-math-2026": math_gen.OGE, "ege-math-profile-2026": math_gen.EGE_PROFILE, "ege-inf-2026": inf_gen.EGE}
 GENERATED = {"oge-inf-2026": set(oge_gen.GENERATORS), **{e: set(b.GENERATORS) for e, b in BANKS.items()}}
 TITLES = {"oge-inf-2026": {n: t[0] for n, t in OGE_NUMBERS.items()}, **{e: b.TITLES for e, b in BANKS.items()}}
 TABS = [("today", "Сегодня"), ("subjects", "Предметы"), ("progress", "Прогресс"), ("me", "Я")]

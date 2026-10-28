@@ -1,0 +1,207 @@
+{
+  "id": "ege-phys-2026",
+  "exam": "ЕГЭ",
+  "subject": "Физика",
+  "year": 2026,
+  "duration_min": 235,
+  "source": "Спецификация ФИПИ ЕГЭ 2026 (система оценивания); опорные точки шкалы и минимум — таблицы соответствия первичных и тестовых баллов ЕГЭ 2026, решения комиссии Рособрнадзора от 30.03.2026 № 04-1/КИД, 06.04.2026 № 04-2/КИД, 10.04.2026 № 04-3/КИД, 17.04.2026 № 04-6/КИД; полная таблица — lenta.ru 17.04.2026, сверена с опорными точками",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 45,
+  "parts": [
+    {
+      "name": "Часть 1",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 5,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 6,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 9,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 10,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 14,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 15,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 17,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 18,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short"
+        }
+      ]
+    },
+    {
+      "name": "Часть 2",
+      "tasks": [
+        {
+          "n": 21,
+          "points": 3,
+          "answer": "extended"
+        },
+        {
+          "n": 22,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 23,
+          "points": 2,
+          "answer": "extended"
+        },
+        {
+          "n": 24,
+          "points": 3,
+          "answer": "extended"
+        },
+        {
+          "n": 25,
+          "points": 3,
+          "answer": "extended"
+        },
+        {
+          "n": 26,
+          "points": 4,
+          "answer": "extended"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "test",
+    "table": [
+      0,
+      5,
+      9,
+      14,
+      18,
+      23,
+      27,
+      32,
+      36,
+      39,
+      41,
+      43,
+      44,
+      46,
+      48,
+      49,
+      51,
+      53,
+      54,
+      56,
+      58,
+      59,
+      61,
+      62,
+      64,
+      65,
+      67,
+      68,
+      70,
+      71,
+      73,
+      74,
+      76,
+      77,
+      79,
+      80,
+      82,
+      84,
+      86,
+      88,
+      90,
+      92,
+      94,
+      96,
+      98,
+      100
+    ],
+    "min_university": 36
+  }
+}

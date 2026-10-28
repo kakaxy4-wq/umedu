@@ -1,0 +1,321 @@
+{
+  "id": "ege-eng-2026",
+  "exam": "ЕГЭ",
+  "subject": "Английский язык",
+  "year": 2026,
+  "duration_min": 207,
+  "source": "Спецификация ФИПИ ЕГЭ 2026 (система оценивания); опорные точки шкалы и минимум — таблицы соответствия первичных и тестовых баллов ЕГЭ 2026, решения комиссии Рособрнадзора от 30.03.2026 № 04-1/КИД, 06.04.2026 № 04-2/КИД, 10.04.2026 № 04-3/КИД, 17.04.2026 № 04-6/КИД; полная таблица — lenta.ru 17.04.2026, сверена с опорными точками",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 82,
+  "parts": [
+    {
+      "name": "Письменная часть",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 2,
+          "points": 3,
+          "answer": "short"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 10,
+          "points": 3,
+          "answer": "short"
+        },
+        {
+          "n": 11,
+          "points": 2,
+          "answer": "short"
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 15,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 21,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 22,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 23,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 24,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 25,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 26,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 27,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 28,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 29,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 30,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 31,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 32,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 33,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 34,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 35,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 36,
+          "points": 1,
+          "answer": "short"
+        },
+        {
+          "n": 37,
+          "points": 6,
+          "answer": "essay"
+        },
+        {
+          "n": 38,
+          "points": 14,
+          "answer": "essay"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "test",
+    "table": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13,
+      14,
+      15,
+      16,
+      18,
+      19,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      84,
+      86,
+      88,
+      90,
+      92,
+      94,
+      96,
+      98,
+      100
+    ],
+    "min_university": 22
+  },
+  "criteria": [
+    {
+      "id": "У1",
+      "name": "Устная часть, задание 1 · чтение вслух",
+      "points": 1
+    },
+    {
+      "id": "У2",
+      "name": "Устная часть, задание 2 · диалог-расспрос",
+      "points": 4
+    },
+    {
+      "id": "У3",
+      "name": "Устная часть, задание 3 · диалог-интервью",
+      "points": 5
+    },
+    {
+      "id": "У4",
+      "name": "Устная часть, задание 4 · монолог",
+      "points": 10
+    }
+  ]
+}

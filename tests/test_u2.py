@@ -17,7 +17,8 @@ def test_enroll_and_tabs(client, monkeypatch):  # noqa: F811
     csrf = login(client, "student")
     r = client.get("/u2/today", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/u2/start"      # без экзамена — сначала выбор
-    assert "ОГЭ · Математика" in client.get("/u2/start").text
+    start = client.get("/u2/start").text
+    assert "ОГЭ · 9 класс" in start and "ЕГЭ · 11 класс" in start and start.count("u2-card u2-pick") == 21
 
     r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-05-20"},
                     follow_redirects=False)

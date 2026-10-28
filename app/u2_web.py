@@ -153,9 +153,10 @@ def _catalog():
     out = []
     for exam_id in em.all_ids():
         ex = em.load(exam_id)
-        out.append({"id": exam_id, "title": f'{ex["exam"]} · {ex["subject"]}', "kind": _kind(ex), "range": _goal_range(ex),
+        out.append({"id": exam_id, "exam": ex["exam"], "subject": ex["subject"], "title": f'{ex["exam"]} · {ex["subject"]}',
+                    "kind": _kind(ex), "range": _goal_range(ex),
                     "min": ex["scale"].get("min_university")})
-    return sorted(out, key=lambda e: (e["title"][:3] != "ОГЭ", e["title"]))
+    return sorted(out, key=lambda e: (e["exam"] != "ОГЭ", e["subject"]))
 
 
 @router.get("/start", response_class=HTMLResponse)

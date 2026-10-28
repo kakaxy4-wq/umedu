@@ -141,6 +141,15 @@ def load_states(conn, sid, exam_id):
     return {(int(k) if k.isdigit() else k): {"p": p, "n": n, "last": last} for k, p, n, last in rows}
 
 
+def seed(conn, sid, exam_id, key, p, today=None):
+    """Стартовое p по самооценке ученика. Попыткой не считается (n = 0 — вилка прогноза остаётся широкой) и не
+    затирает номер, по которому уже были попытки."""
+    conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) VALUES (?, ?, ?, ?, 0, ?) "
+                 "ON CONFLICT(student_id, exam_id, task_key) DO UPDATE SET p = excluded.p, last = excluded.last "
+                 "WHERE skill_state.n = 0",
+                 (sid, exam_id, str(key), round(min(max(p, 0.0), 1.0), 4), (today or date.today()).isoformat()))
+
+
 def record(conn, sid, exam_id, key, score, today=None):
     """Записывает попытку по номеру (или критерию) и возвращает новое состояние."""
     exam = em.load(exam_id)

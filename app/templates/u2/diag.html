@@ -1,0 +1,26 @@
+{% extends "u2/base.html" %}
+{% block title %}Стартовая оценка · {{ c.title }}{% endblock %}
+{% block content %}
+<h1 class="u2-h1">{{ c.title }}: с чего начинаем</h1>
+<p class="u2-hint">Минута честных ответов — и первый прогноз будет похож на правду. Это не экзамен: по первым же решённым
+  заданиям прогноз сам поправится.</p>
+<form method="post" action="/u2/diag/{{ c.id }}">
+  <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  {% for sec in sections %}
+  {% set i = loop.index0 %}
+  <fieldset class="u2-card u2-diag">
+    <legend>{{ sec.name }}</legend>
+    <p class="u2-hint">{% if sec.label %}Задания {{ sec.label }}. {% endif %}Как обычно получается?</p>
+    <div class="u2-seg">
+      {% for label, _ in levels %}
+      <label class="u2-opt"><input type="radio" name="s{{ i }}" value="{{ loop.index0 }}"> <span>{{ label }}</span></label>
+      {% endfor %}
+    </div>
+  </fieldset>
+  {% endfor %}
+  <div class="u2-actions">
+    <button class="u2-btn">Готово — к плану</button>
+    <a class="u2-btn ghost" href="/u2/today">Пропустить</a>
+  </div>
+</form>
+{% endblock %}

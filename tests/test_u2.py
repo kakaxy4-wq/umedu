@@ -76,3 +76,32 @@ def test_trainer_generated_and_self_check(client, monkeypatch):  # noqa: F811
     assert client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "score": 8}).status_code == 400
     assert client.get("/u2/train/oge-rus-2026/99").status_code == 404
     assert client.get("/u2/train/ege-inf-2026/1").status_code == 404          # экзамен не выбран
+
+
+def test_diag_seeds_start_without_attempts(client, monkeypatch):  # noqa: F811
+    from app import knowledge as kn
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4}, follow_redirects=False)
+    assert r.headers["location"] == "/u2/diag/oge-math-2026"                 # новый экзамен — сначала самооценка
+    page = client.get("/u2/diag/oge-math-2026").text
+    assert "Геометрия" in page and 'name="s2"' in page
+    client.post("/u2/train/oge-math-2026/15", data={"csrf": csrf, "score": 1})  # по №15 уже есть попытка
+    # практика — «почти всегда», алгебра — пропущена, геометрия — «не умею»
+    client.post("/u2/diag/oge-math-2026", data={"csrf": csrf, "s0": 3, "s2": 0})
+    states = kn.load_states(connect(), sid_of(), "oge-math-2026")
+    assert states[1]["p"] == 0.85 and states[1]["n"] == 0
+    assert 6 not in states                                                    # пропущенный раздел не тронут
+    assert states[16]["p"] == 0.1 and states[15]["n"] == 1 and states[15]["p"] > 0.1   # попытку не затирает
+    r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 5}, follow_redirects=False)
+    assert r.headers["location"] == "/u2/today"                              # смена цели — без повторной оценки
+
+
+def test_task_ranges_label():
+    import app.main  # noqa: F401 — u2_web подключается из main
+    from app.u2_web import _ranges
+    assert _ranges([1, 2, 3, 4, 5]) == "1–5"
+    assert _ranges([15, 16, 17, 18, 19, 23, 24, 25]) == "15–19, 23–25"
+    assert _ranges([1, 2, 4]) == "1, 2, 4" and _ranges([7]) == "7"

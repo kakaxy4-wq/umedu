@@ -148,7 +148,7 @@ def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user
     return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, config.today()))
 
 
-# ------------------------------------------------------------------ выбор экзамена (онбординг; диагностика — следующий шаг)
+# ------------------------------------------------------------------ выбор экзамена и стартовая самооценка
 def _catalog():
     out = []
     for exam_id in em.all_ids():
@@ -182,6 +182,56 @@ def u2_start_submit(exam_id: str = Form(...), goal: int = Form(...), exam_date: 
             raise HTTPException(400, "Дата экзамена в формате ГГГГ-ММ-ДД")
     with conn:
         kn.enroll(conn, user["id"], exam_id, goal, exam_date or None)
+    if kn.load_states(conn, user["id"], exam_id):
+        return back("/u2/today")                       # экзамен уже был — только обновили цель
+    return back(f"/u2/diag/{exam_id}")
+
+
+# самооценка раздела → стартовая вероятность решить его номера
+LEVELS = [("не умею", 0.1), ("иногда", 0.35), ("обычно", 0.6), ("почти всегда", 0.85)]
+
+
+def _sections(exam):
+    """Разделы для самооценки: группы экзамена (или части), плюс критерии работы в целом (ГК, устная часть)."""
+    groups = exam.get("groups") or [{"name": p["name"], "tasks": [t["n"] for t in p["tasks"]]} for p in exam["parts"]]
+    crit = [{"name": c["name"], "tasks": [c["id"]]} for c in exam.get("criteria", [])]
+    return [{"name": g["name"], "tasks": g["tasks"], "label": _ranges(g["tasks"])} for g in groups] + crit
+
+
+def _ranges(nums):
+    """[1, 2, 3, 5, 7, 8, 9] → «1–3, 5, 7–9»."""
+    out, nums = [], sorted(nums)
+    start = prev = nums[0]
+    for n in nums[1:] + [None]:
+        if n is not None and n == prev + 1:
+            prev = n
+            continue
+        out.append(str(start) if start == prev else f"{start}–{prev}" if prev > start + 1 else f"{start}, {prev}")
+        start = prev = n
+    return ", ".join(out)
+
+
+@router.get("/diag/{exam_id}", response_class=HTMLResponse)
+def u2_diag(exam_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    sid = need_sid(conn, user)
+    enr = _enrolled(conn, sid, exam_id)
+    exam = em.load(exam_id)
+    return _page(request, conn, user, "today", "u2/diag.html", c=_card(enr, {}, config.today()),
+                 sections=_sections(exam), levels=LEVELS)
+
+
+@router.post("/diag/{exam_id}")
+async def u2_diag_submit(exam_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    only_student(user)
+    _enrolled(conn, user["id"], exam_id)
+    form = await request.form()
+    today = config.today()
+    with conn:
+        for i, sec in enumerate(_sections(em.load(exam_id))):
+            raw = str(form.get(f"s{i}", ""))
+            if raw.isdigit() and int(raw) < len(LEVELS):
+                for key in sec["tasks"]:
+                    kn.seed(conn, user["id"], exam_id, key, LEVELS[int(raw)][1], today)
     return back("/u2/today")
 
 

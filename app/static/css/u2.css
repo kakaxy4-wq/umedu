@@ -127,3 +127,13 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 .u2-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .u2-score { display: flex; flex-wrap: wrap; gap: 8px; }
 .u2-score .u2-btn { min-width: 48px; }
+
+/* стартовая самооценка */
+.u2-diag { border: 1px solid var(--line); }
+.u2-diag legend { float: left; width: 100%; padding: 0; margin-bottom: 4px; font: 700 16px var(--head); }
+.u2-diag legend + * { clear: both; }
+.u2-opt { display: inline-flex; }
+.u2-opt input { position: absolute; opacity: 0; }
+.u2-opt span { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 14px; }
+.u2-opt input:checked + span { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+.u2-opt input:focus-visible + span { outline: 2px solid var(--ultra); outline-offset: 2px; }

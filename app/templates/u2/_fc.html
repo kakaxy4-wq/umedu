@@ -1,5 +1,5 @@
 {# прогноз одним блоком: отметка (ОГЭ) или тестовый балл (ЕГЭ) с вилкой #}
-{% macro forecast(c) %}
+{% macro forecast(c, how=True) %}
 {% set k = c.kind %}
 <div class="u2-fc">
   <div class="u2-fc-main">
@@ -14,5 +14,6 @@
     {% else %}· <b class="u2-ok">достигнута</b>{% endif %}</div>
   {% endif %}
   {% if c.attempts < 20 %}<p class="u2-hint">Прогноз пока грубый: решено заданий — {{ c.attempts }}. Вилка сужается с каждой попыткой.</p>{% endif %}
+  {% if how %}<p class="u2-hint"><a href="/u2/how">Как считается прогноз</a></p>{% endif %}
 </div>
 {% endmacro %}

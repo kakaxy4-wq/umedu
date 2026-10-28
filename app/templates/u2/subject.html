@@ -5,6 +5,30 @@
 <a class="u2-back" href="/u2/subjects">← Предметы</a>
 <h1 class="u2-h1">{{ c.title }}</h1>
 <section class="u2-card">{{ forecast(c) }}</section>
+{% if proj %}
+<section class="u2-card u2-proj">
+  <h2>К дню экзамена</h2>
+  <div class="u2-row"><span>{% if proj.pace %}В нынешнем темпе — около {{ proj.pace }} мин в день{% else %}Если не заниматься{% endif %}</span>
+    <b>{% if c.kind == 'grade' %}«{{ proj.now }}»{% else %}{{ proj.now }}{% endif %}</b></div>
+  {% if proj.planned %}<div class="u2-row"><span>По плану — {{ proj.planned }} мин в день</span>
+    <b>{% if c.kind == 'grade' %}«{{ proj.plan }}»{% else %}{{ proj.plan }}{% endif %}</b></div>{% endif %}
+  <p class="u2-hint">Учитываем и рост от тренировок, и забывание без практики. Это оценка, а не обещание: чем больше
+    решено заданий, тем она точнее.</p>
+</section>
+{% endif %}
+{% if path %}
+<section class="u2-card">
+  <h2>Путь к цели {% if c.kind == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}</h2>
+  {% if path.steps %}
+  <p class="u2-hint">{% if path.reached %}Хватит освоить {{ path.steps|length }} {{ 'номер' if path.steps|length % 10 == 1 and path.steps|length % 100 != 11 else ('номера' if path.steps|length % 10 in (2, 3, 4) and path.steps|length % 100 not in (12, 13, 14) else 'номеров') }} — довести шанс решить до 90 %.
+    Начни сверху: там больше всего баллов.{% else %}Даже если освоить все номера ниже до 90 %, по прогнозу до цели не хватает — нужны и остальные. Начни с этих:{% endif %}</p>
+  <ul class="u2-nums">
+    {% for s in path.steps %}<li><a href="/u2/train/{{ c.id }}/{{ s.n }}"><b>{{ s.label }}</b> {{ s.title }}<small>сейчас {{ (s.p * 100)|round|int }} % · около {{ s.reps }} {{ 'тренировки' if s.reps % 10 in (2, 3, 4) and s.reps % 100 not in (12, 13, 14) else ('тренировка' if s.reps % 10 == 1 and s.reps % 100 != 11 else 'тренировок') }}</small></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endif %}
+{% if c.mock %}<p class="u2-actions"><a class="u2-btn ghost" href="/u2/mock/{{ c.id }}">Мини-пробник · 25 минут</a></p>{% endif %}
 {% for g in c.groups %}
 <section class="u2-card">
   <div class="u2-card-head"><h2>{{ g.name }}</h2><span class="u2-chip">{{ (g.p * 100)|round|int }}%</span></div>

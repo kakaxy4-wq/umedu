@@ -511,15 +511,18 @@ class Bank:
 
     @staticmethod
     def check(v, given):
+        if "accept" in v:                     # особое правило: несколько верных ответов или ответ — не число
+            return _accepts(v["accept"], given)
         a = _num(given)
-        if a is None:
-            return False
-        if "accept" in v:                     # верных ответов несколько — проверяем условие, а не эталон
-            return _accepts(v["accept"], a)
-        return a == _num(v["answer"])
+        return a is not None and a == _num(v["answer"])
 
 
-def _accepts(rule, a):
+def _accepts(rule, given):
+    if rule["kind"] == "text":                # буквы, как в ЕГЭ по информатике №2: регистр и пробелы не важны
+        return re.sub(r"\s+", "", str(given)).lower() == rule["value"]
+    a = _num(given)
+    if a is None:
+        return False
     if rule["kind"] == "digits":              # трёхзначное, кратное k, сумма цифр s
         if a.denominator != 1 or not 100 <= a <= 999:
             return False

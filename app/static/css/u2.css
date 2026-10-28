@@ -81,7 +81,7 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 .u2-cell { color: inherit; text-decoration: none; }
 .u2-cell:hover { border-color: var(--ultra); }
 .u2-cell b { font: 700 15px var(--head); }
-.u2-cell small { font: 11px var(--mono); color: var(--muted); }
+.u2-cell small { font: 11px var(--mono); color: var(--text); opacity: .85; }   /* на цветной заливке серый не читается */
 
 .u2-band { position: relative; height: 14px; border-radius: 99px; background: var(--line); margin: 8px 0; }
 .u2-band-fill { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: var(--ultra); opacity: .45; }
@@ -149,8 +149,8 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 /* «Прогресс»: номера по группам — проседает / в работе / освоено */
 .u2-h3 { font: 700 15px var(--head); margin: 20px 0 4px; }
 .u2-mlabel { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; font-size: 14px; font-weight: 600; }
-.u2-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.u2-dot-weak { background: var(--weak); } .u2-dot-mid { background: var(--mid); } .u2-dot-good { background: var(--good); }
+.u2-mark { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.u2-mark-weak { background: var(--weak); } .u2-mark-mid { background: var(--mid); } .u2-mark-good { background: var(--good); }
 .u2-nums { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .u2-nums a { display: grid; grid-template-columns: 3.2em 1fr; column-gap: 8px; padding: 8px 12px; border: 1px solid var(--line);
   border-radius: 12px; color: var(--text); text-decoration: none; font-size: 14px; }
@@ -159,4 +159,39 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 .u2-nums small { grid-column: 2; color: var(--muted); font-size: 12px; }
 .u2-nums-done { grid-template-columns: repeat(auto-fill, minmax(4.5em, 1fr)); }
 .u2-nums-done a { display: block; text-align: center; padding: 6px 4px; }
-.u2-nums-done b { font-size: 13px; color: var(--good); }
+.u2-nums-done a { background: color-mix(in srgb, var(--good) 16%, transparent); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.u2-nums-done b { font-size: 13px; color: var(--text); }
+.u2-chip-bad { background: var(--weak); color: var(--ink); }
+
+/* учитель: класс по экзаменам */
+.u2-class { width: 100%; }
+.u2-class th, .u2-class td { text-align: left; vertical-align: top; }
+.u2-class small { display: block; color: var(--muted); font-size: 12px; }
+.u2-behind { color: var(--weak); }
+.u2-weak { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 99px; font: 600 12px var(--mono);
+  background: color-mix(in srgb, var(--weak) 18%, transparent); }
+
+/* «Как считается прогноз» */
+.u2-prose h2 { font-size: 17px; margin-bottom: 8px; }
+.u2-prose p { margin: 0 0 10px; }
+.u2-example { padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--lime) 22%, transparent); }
+.u2-example p, .u2-example ol { margin: 0; }
+.u2-example ol { padding-left: 20px; font: 14px/1.7 var(--mono); }
+
+/* «Сегодня»: серия дней и неделя */
+.u2-streak { display: grid; gap: 8px; }
+.u2-streak small { display: block; color: var(--muted); font-size: 13px; }
+.u2-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; max-width: 360px; }
+.u2-week span { text-align: center; padding: 6px 0; border-radius: 10px; border: 1px solid var(--line); font: 600 12px var(--mono);
+  color: var(--muted); }
+.u2-week span.on { background: var(--lime); border-color: var(--lime); color: var(--ink); }
+.u2-week span.now { outline: 2px solid var(--link); outline-offset: 1px; }
+
+/* первые шаги на «Сегодня» */
+.u2-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.u2-intro ol { margin: 8px 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 8px; }
+.u2-intro li { counter-increment: s; display: flex; align-items: center; gap: 10px; }
+.u2-intro li::before { content: counter(s); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid;
+  place-items: center; font: 700 13px var(--mono); background: var(--ultra); color: #fff; }
+.u2-intro li.done::before { content: "✓"; background: var(--good); }
+.u2-intro li.done span { color: var(--muted); text-decoration: line-through; }

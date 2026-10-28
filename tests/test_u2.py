@@ -175,7 +175,7 @@ def test_math_generators_selfcheck():
             for seed in range(1, 150):
                 v = bank.make(num, seed)
                 assert bank.check(v, v["answer"]) and not bank.check(v, v["answer"] + "1"), (bank.prefix, num, seed)
-                assert mg._num(v["answer"]) is not None
+                assert mg._num(v["answer"]) is not None or v["accept"]["kind"] == "text"
                 assert " -" not in v["text"] + v["explain"], (bank.prefix, num, seed)
             assert bank.make(num, 5) == bank.make(num, 5)
     assert mg.OGE.check(mg.OGE.make(10, 3), mg.OGE.make(10, 3)["answer"].replace(",", "."))   # точка тоже годится
@@ -239,3 +239,225 @@ def test_progress_by_numbers(client, monkeypatch):  # noqa: F811
     rows = connect().execute("SELECT task_key, score, seed, given FROM skill_attempt WHERE student_id = ? ORDER BY id",
                              (sid_of(),)).fetchall()
     assert [tuple(r) for r in rows][-2:] == [("8", 1.0, 5, mg.OGE.make(8, 5)["answer"]), ("6", 0.0, 9, "999999")]
+
+
+def test_mock_exam(client, monkeypatch):  # noqa: F811
+    """Мини-пробник: набор номеров на 25 минут из своих генераторов, сдача целиком, разбор только ошибок; каждая
+    задача — попытка в журнале и пересчёт прогноза. Для экзамена без генераторов пробника нет."""
+    from app import u2_web
+    from app.db import connect
+    from app import exam_model as em
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    assert "seed=" in client.get("/u2/mock/oge-math-2026", follow_redirects=False).headers["location"]
+    exam = em.load("oge-math-2026")
+    items = u2_web._mock_items(exam, 7)
+    assert len(items) >= 5 and len({n for n, _ in items}) == len(items)
+    assert sum(3 for _ in items) <= u2_web.MOCK_MINUTES
+    page = client.get("/u2/mock/oge-math-2026?seed=7").text
+    assert all(f'name="a{n}"' in page for n, _ in items) and "Сдать" in page
+    first, rest = items[0], items[1:]
+    data = {"csrf": csrf, "seed": 7, f"a{first[0]}": u2_web._variant("oge-math-2026", *first)["answer"]}
+    data.update({f"a{n}": "999999" for n, _ in rest[:-1]})                # последний оставлен пустым — тоже ошибка
+    res = client.post("/u2/mock/oge-math-2026", data=data).text
+    assert f"1 из {len(items)} верно" in res and res.count("Решить похожий") == len(items) - 1
+    rows = connect().execute("SELECT task_key, score, seed FROM skill_attempt WHERE student_id = ? ORDER BY id",
+                             (sid_of(),)).fetchall()
+    assert [(int(k), s) for k, _, s in rows] == items and [r[1] for r in rows].count(1.0) == 1
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-rus-2026", "goal": 4})
+    assert client.get("/u2/mock/oge-rus-2026?seed=3").status_code == 404
+    assert "мини-пробник" in client.get("/u2/today").text.lower()
+
+
+def test_teacher_class_view(client, monkeypatch):  # noqa: F811
+    """Учитель видит учеников по экзаменам: прогноз, цель, слабые номера, попытки за неделю; ученику экран закрыт."""
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    assert client.get("/u2/class").status_code == 403
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 5})
+    for seed in (1, 2):
+        client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": seed, "answer": "999999"})
+    login(client, "teacher")
+    assert "/u2/class" in client.get("/teacher").text
+    page = client.get("/u2/class").text
+    assert "ОГЭ · Математика" in page and "№9" in page and "u2-behind" in page
+    row = page.split("№9")[0].rsplit("<tr>", 1)[1]
+    assert "/teacher/student/" in row
+    assert ">2<" in page.split("№9")[1].split("</tr>")[0]            # попыток за 7 дней
+
+
+def test_how_forecast_page(client, monkeypatch):  # noqa: F811
+    """«Как считается прогноз»: числа из knowledge (не вписаны в текст руками), пример посчитан тем же update."""
+    from app import knowledge as kn
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    page = client.get("/u2/how").text
+    assert f"шанс\n    {round(kn.PRIOR * 100)} %" in page and f"за {kn.HALF_LIFE_DAYS} дней" in page
+    p = round(kn.update(kn.update(None, 1), 1)["p"] * 100)
+    assert f"2-я попытка: верно → шанс {p} %" in page
+    assert 'href="/u2/how"' in client.get("/u2/subject/oge-math-2026").text
+    today = client.get("/u2/today").text
+    assert 'href="/u2/how"' not in today                         # карточка — сама ссылка, вложенной не будет
+
+
+def test_my_mistakes(client, monkeypatch):  # noqa: F811
+    """«Мои ошибки»: неверный вариант пересобирается по сиду (условие, свой ответ, верный, разбор), после верного
+    решения того же номера помечается «исправлено»; самопроверка без сида сюда не попадает."""
+    from app.content import math_gen as mg
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    assert "Ошибок пока нет" in client.get("/u2/mistakes").text
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 21, "answer": "424242"})
+    client.post("/u2/train/oge-math-2026/18", data={"csrf": csrf, "score": 0})
+    v = mg.OGE.make(9, 21)
+    page = client.get("/u2/mistakes").text
+    assert "424242" in page and v["answer"].replace("-", "−") in page.replace("-", "−") and "№18" not in page
+    assert "ошибка</span>" in page and "/u2/train/oge-math-2026/9" in page
+    client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 22, "answer": mg.OGE.make(9, 22)["answer"]})
+    assert "исправлено" in client.get("/u2/mistakes").text
+
+
+def test_day_streak_and_week(client, monkeypatch):  # noqa: F811
+    """Серия — дни подряд с попытками; сегодняшний день её не обрывает, пока не прошёл. Неделя — пн–вс."""
+    from datetime import date, timedelta
+    from app import knowledge as kn
+    from app.db import connect
+    from test_app import sid_of
+    login(client, "student")
+    conn, sid = connect(), sid_of()
+    wed = date(2026, 10, 28)                                       # среда
+    for d in (wed - timedelta(days=k) for k in (1, 2, 3, 6)):      # вт, пн, вс прошлой недели, чт прошлой недели
+        conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, day) VALUES (?, 'oge-math-2026', "
+                     "'6', 1, ?)", (sid, d.isoformat()))
+    conn.commit()
+    a = kn.activity(conn, sid, wed)
+    assert a["streak"] == 3 and not a["today"] and a["week"] == [True, True, False, False, False, False, False]
+    assert kn.activity(conn, sid, wed + timedelta(days=1))["streak"] == 0       # пропущена среда — серия прервалась
+    monkeypatch.setattr(config, "UMEDU2", True)
+    monkeypatch.setattr(config, "today", lambda: wed)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    page = client.get("/u2/today").text
+    assert "3</b> дня подряд" in page and "серия продолжится" in page and "2 из 5" in page
+
+
+def test_projection_to_exam_date(client, monkeypatch):  # noqa: F811
+    """Прогноз к экзамену: без занятий — только забывание; больше минут в день — не хуже; на странице предмета
+    оба варианта, если дата экзамена известна."""
+    from datetime import date
+    from app import exam_model as em
+    from app import knowledge as kn
+    ex, today, until = em.load("oge-math-2026"), date(2026, 10, 29), date(2027, 6, 1)
+    states = {n: {"p": 0.9, "n": 5, "last": today.isoformat()} for n in range(1, 10)}
+    idle = kn.project(ex, states, today, until, 0)
+    assert idle == kn.forecast(ex, states, until) and idle["primary"] < kn.forecast(ex, states, today)["primary"]
+    runs = [kn.project(ex, states, today, until, m)["primary"] for m in (5, 15, 45)]
+    assert idle["primary"] < runs[0] <= runs[1] <= runs[2]
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-06-01"})
+    page = client.get("/u2/subject/oge-math-2026").text
+    assert "К дню экзамена" in page and "Если не заниматься" in page and "По плану — 30 мин в день" in page
+
+
+def test_path_to_goal(client, monkeypatch):  # noqa: F811
+    """Путь к цели: освоив номера из списка до 90 %, ученик по прогнозу выходит на цель; без последнего — нет."""
+    from datetime import date
+    from app import exam_model as em
+    from app import knowledge as kn
+    ex, today = em.load("oge-math-2026"), date(2026, 10, 29)
+    path = kn.path_to_goal(ex, {}, 4, today)
+    assert path["reached"] and path["steps"]
+    done = {s["n"]: {"p": kn.MASTER_P, "n": 1, "last": today.isoformat()} for s in path["steps"]}
+    assert kn.forecast(ex, done, today)["grade"] >= 4
+    del done[path["steps"][-1]["n"]]
+    assert kn.forecast(ex, done, today)["grade"] < 4
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    page = client.get("/u2/subject/oge-math-2026").text
+    assert "Путь к цели «4»" in page and f"Хватит освоить {len(path['steps'])}" in page
+
+
+def test_first_steps(client, monkeypatch):  # noqa: F811
+    """Первые шаги на «Сегодня»: отмечаются по данным и пропадают после первой попытки."""
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    page = client.get("/u2/today").text
+    assert "Первые шаги" in page and 'href="/u2/diag/oge-math-2026"' in page and "Решить первое задание из плана: №" in page
+    client.post("/u2/train/oge-math-2026/6", data={"csrf": csrf, "seed": 3, "answer": "1"})
+    assert "Первые шаги" not in client.get("/u2/today").text
+
+
+def test_parent_sees_u2_forecast(client, monkeypatch):  # noqa: F811
+    """Родитель по ссылке видит прогноз umedu 2.0, цель и что подтянуть — только при включённом флаге."""
+    from test_app import _parent_token, sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 5})
+    client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 4, "answer": "424242"})
+    token = _parent_token(client, sid_of())
+    client.cookies.clear()
+    page = client.get("/parent/%s" % token).text
+    assert "ОГЭ · Математика" in page and "цель «5»" in page and "Заданий за неделю: 1" in page and "№9" in page
+    monkeypatch.setattr(config, "UMEDU2", False)
+    assert "ОГЭ · Математика" not in client.get("/parent/%s" % token).text
+
+
+def test_u2_access_rules(client, monkeypatch):  # noqa: F811
+    """Доступ: чужой (невыбранный) экзамен — 404; преподаватель смотрит, но не пишет попытки; любой POST без
+    CSRF — 403; аноним не видит раздел; кэш модели экзамена после обхода страниц не изменён."""
+    import json
+    from app import exam_model as em
+    from app import u2_web
+    monkeypatch.setattr(config, "UMEDU2", True)
+    before = json.dumps(em.load("oge-math-2026"), sort_keys=True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-06-01"})
+    for url in ("/u2/subject/ege-inf-2026", "/u2/train/ege-inf-2026/7?seed=3", "/u2/mock/ege-inf-2026?seed=3",
+                "/u2/diag/ege-inf-2026"):
+        assert client.get(url).status_code == 404, url
+    for url, data in (("/u2/train/ege-inf-2026/7", {"seed": 3, "answer": "1"}), ("/u2/mock/ege-inf-2026", {"seed": 3}),
+                      ("/u2/diag/ege-inf-2026", {})):
+        assert client.post(url, data={"csrf": csrf, **data}).status_code == 404, url
+    # все POST раздела без токена
+    posts = [r.path for r in u2_web.router.routes if "POST" in r.methods]
+    assert len(posts) >= 5
+    for path in posts:
+        url = path.replace("{exam_id}", "oge-math-2026").replace("{raw}", "9")
+        assert client.post(url, data={"seed": 3, "answer": "1", "minutes": 30, "exam_id": "oge-math-2026",
+                                      "goal": 4}).status_code == 403, url
+    for url in ("/u2/today", "/u2/progress", "/u2/mistakes", "/u2/subject/oge-math-2026", "/u2/how",
+                "/u2/mock/oge-math-2026?seed=5", "/u2/train/oge-math-2026/9?seed=5"):
+        assert client.get(url).status_code == 200, url
+    # преподаватель: страницы ученика открываются, записи — нет
+    t = login(client, "teacher")
+    assert client.get("/u2/subject/oge-math-2026").status_code == 200
+    for url, data in (("/u2/train/oge-math-2026/9", {"seed": 3, "answer": "1"}), ("/u2/mock/oge-math-2026", {"seed": 3}),
+                      ("/u2/me/minutes", {"minutes": 30}), ("/u2/diag/oge-math-2026", {})):
+        assert client.post(url, data={"csrf": t, **data}).status_code == 403, url
+    client.cookies.clear()
+    r = client.get("/u2/today", follow_redirects=False)
+    assert r.status_code in (303, 307, 401) and "Сегодня" not in r.text
+    assert json.dumps(em.load("oge-math-2026"), sort_keys=True) == before
+
+
+def test_attempt_budget_per_day(client, monkeypatch):  # noqa: F811
+    """Журнал попыток не накрутить скриптом: сверх дневного лимита — 429, попытка не записывается."""
+    from app import u2_web
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    monkeypatch.setattr(u2_web, "MAX_ATTEMPTS_PER_DAY", 2)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    codes = [client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": s, "answer": "1"}).status_code
+             for s in (1, 2, 3)]
+    assert codes == [200, 200, 429]
+    assert client.post("/u2/mock/oge-math-2026", data={"csrf": csrf, "seed": 5}).status_code == 429
+    assert connect().execute("SELECT COUNT(*) FROM skill_attempt WHERE student_id = ?", (sid_of(),)).fetchone()[0] == 2

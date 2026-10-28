@@ -47,6 +47,17 @@
 
 {% if fc %}{{ oge_forecast(fc, False) }}{% endif %}
 
+{% for c in u2 %}{% set k = c.kind %}
+<section class="card">
+  <div class="eyebrow">🎯 {{ c.title }}{% if c.days is not none and c.days > 0 %} · до экзамена {{ c.days }} дн.{% endif %}</div>
+  <p>Прогноз: <b>{% if k == 'grade' %}«{{ c.fc.grade }}»{% else %}{{ c.fc.test }} баллов{% endif %}</b>
+    <span class="small muted">(от {% if k == 'grade' %}«{{ c.fc.grade_low }}» до «{{ c.fc.grade_high }}»{% else %}{{ c.fc.test_low }} до {{ c.fc.test_high }}{% endif %})</span>
+    {% if c.goal is not none %} · цель {% if k == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}{% if c.gap <= 0 %} — <b>достигнута</b>{% endif %}{% endif %}</p>
+  <p class="small">Заданий за неделю: {{ c.week }}.{% if c.weak %} Что подтянуть: {% for w in c.weak %}{{ w.label }}{{ ', ' if not loop.last }}{% endfor %}.{% endif %}</p>
+  {% if c.attempts < 20 %}<p class="small muted">Прогноз пока грубый: решено заданий — {{ c.attempts }}. С каждой попыткой он точнее.</p>{% endif %}
+</section>
+{% endfor %}
+
 {% if ru_ov %}
 <section class="card">
   <div class="eyebrow">📖 Русский язык</div>

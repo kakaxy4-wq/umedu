@@ -1,4 +1,5 @@
 {% extends "u2/base.html" %}
+{% from "u2/_task.html" import task_body %}
 {% block title %}{{ t.label }} · {{ c.title }}{% endblock %}
 {% block content %}
 <a class="u2-back" href="/u2/subject/{{ c.id }}">← {{ c.title }}</a>
@@ -11,13 +12,7 @@
 
 {% if generated %}
 <section class="u2-card u2-task">
-  {% for para in text %}{% if para is none %}<pre class="u2-code">{{ variant.code }}</pre>{% else %}<p>{{ para }}</p>{% endif %}{% endfor %}
-  {% if variant.table %}
-  <div class="u2-scroll"><table class="u2-table">
-    <tr>{% for cell in variant.table[0] %}<th>{{ cell }}</th>{% endfor %}</tr>
-    {% for row in variant.table[1:] %}<tr>{% for cell in row %}{% if loop.first and variant.table[0][0] == '' %}<th>{{ cell }}</th>{% else %}<td>{{ cell }}</td>{% endif %}{% endfor %}</tr>{% endfor %}
-  </table></div>
-  {% endif %}
+  {{ task_body(text, variant) }}
 </section>
 {% endif %}
 

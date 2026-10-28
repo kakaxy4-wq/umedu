@@ -1,0 +1,25 @@
+{% extends "u2/base.html" %}
+{% from "u2/_task.html" import task_body %}
+{% block title %}Мои ошибки{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/progress">← Прогресс</a>
+<h1 class="u2-h1">Мои ошибки</h1>
+{% if items %}
+<p class="u2-hint">Последние задания, где ответ не совпал. Разбери решение и реши похожий вариант — так ошибка
+  не повторится на экзамене.</p>
+{% for it in items %}
+<section class="u2-card u2-task">
+  <div class="u2-card-head"><h2>{{ it.t.label }} · {{ it.t.title }}</h2>
+    {% if it.fixed %}<span class="u2-chip">исправлено</span>{% else %}<span class="u2-chip u2-chip-bad">ошибка</span>{% endif %}</div>
+  <p class="u2-hint">{{ it.exam }} · {{ it.day[8:] }}.{{ it.day[5:7] }}</p>
+  {{ task_body(it.text, it.variant) }}
+  <p>Твой ответ: <b>{{ it.given or '—' }}</b> · верный: <b>{{ it.answer }}</b></p>
+  <p class="u2-hint">{{ it.explain }}</p>
+  <div class="u2-actions"><a class="u2-btn ghost" href="/u2/train/{{ it.exam_id }}/{{ it.t.key }}">Решить похожий</a></div>
+</section>
+{% endfor %}
+{% else %}
+<section class="u2-card"><p>Ошибок пока нет — или ты ещё не решал задания в тренажёре. Ошибки в номерах, которые
+  ты отмечаешь баллами сам, сюда не попадают: условие у них из твоего сборника.</p></section>
+{% endif %}
+{% endblock %}

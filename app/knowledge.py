@@ -21,6 +21,7 @@ LEARN_RATE = 0.25             # какую долю разрыва (1 − p) з�
 MINUTES = {"extended": 15, "file": 20, "program": 15, "essay": 30, "experiment": 20}   # остальные — 3 минуты
 MAX_REPS = 3                  # сколько раз один номер может стоять в плане на день
 MASTERED_STREAK = 3           # столько верных подряд — номер освоен
+WEEK_GOAL_DAYS = 5            # цель недели: столько дней с занятиями (пн–вс)
 Z80 = 1.28
 
 
@@ -121,6 +122,63 @@ def plan(exam, states, minutes=30, today=None, due=()):
     return list(out.values())
 
 
+MASTER_P = 0.9                # «освоить номер» для пути к цели — довести шанс до 90 %
+
+
+def path_to_goal(exam, states, goal, today=None):
+    """Самый короткий по времени путь к цели: жадно берём номер (или критерий), освоение которого до MASTER_P даёт
+    больше всего ожидаемых баллов на минуту тренировки, пока прогноз не дойдёт до цели. Возвращает
+    {'steps': [{'n', 'p', 'reps'}], 'reached': bool}; reps — сколько тренировок нужно по модели plan."""
+    key = "grade" if exam["scale"]["kind"] == "grade" else "test"
+    states = {k: dict(v) for k, v in states.items()}
+    by_n = {t["n"]: t for t in em.tasks(exam)}
+    steps = []
+    while forecast(exam, states, today)[key] < goal:
+        best = None
+        for n, pts in em.points(exam).items():
+            p = _p(states, n, today)["p"]
+            if p >= MASTER_P or any(s["n"] == n for s in steps):
+                continue
+            minutes = task_minutes(by_n[n]) if n in by_n else 5      # критерий сочинения — часть одной работы
+            score = ((MASTER_P - p) * pts / minutes, pts)
+            if best is None or score > best[0]:
+                best = (score, n, p)
+        if not best:
+            return {"steps": steps, "reached": False}
+        _, n, p = best
+        reps = math.ceil(math.log((1 - MASTER_P) / (1 - p)) / math.log(1 - LEARN_RATE))
+        steps.append({"n": n, "p": p, "reps": reps})
+        states[n] = {"p": MASTER_P, "n": max(states.get(n, {}).get("n", 0), 1), "last": (today or date.today()).isoformat()}
+    return {"steps": steps, "reached": True}
+
+
+PROJECT_MAX_DAYS = 400
+
+
+def project(exam, states, today, until, minutes_per_day):
+    """Прогноз на дату экзамена: каждый день до неё занимаемся minutes_per_day минут по плану (тренировка поднимает
+    p на LEARN_RATE · (1 − p), как в plan), между тренировками действует забывание. Минуты копим, поэтому и
+    «5 минут в день» даёт тренировку раз в несколько дней."""
+    states = {k: dict(v) for k, v in states.items()}
+    days = min((until - today).days, PROJECT_MAX_DAYS)
+    bank = 0.0
+    for i in range(1, days + 1):
+        d = today + timedelta(days=i)
+        bank += minutes_per_day
+        if bank < 3:
+            continue
+        spent = 0
+        for it in plan(exam, states, int(bank), d):
+            st = decay(states.get(it["n"]), d)
+            p = st["p"]
+            for _ in range(it["times"]):
+                p += LEARN_RATE * (1 - p)
+            states[it["n"]] = {"p": round(p, 4), "n": st.get("n", 0) + it["times"], "last": d.isoformat()}
+            spent += it["minutes"]
+        bank -= spent
+    return forecast(exam, states, until)
+
+
 def split_minutes(gaps, minutes):
     """Делит время между предметами пропорционально разрыву «цель − прогноз» (не меньше 0).
     gaps = {предмет: разрыв}; при нулевых разрывах — поровну. Минуты кратны 5."""
@@ -197,6 +255,23 @@ def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None):
     conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, seed, given, day) "
                  "VALUES (?, ?, ?, ?, ?, ?, ?)", (sid, exam_id, str(key), score, seed, given, st["last"]))
     return st
+
+
+def activity(conn, sid, today=None):
+    """Дни занятий по журналу попыток: серия (дней подряд, сегодняшний ещё не потерян, пока он не кончился)
+    и неделя пн–вс — какие дни уже были."""
+    today = today or date.today()
+    monday = today - timedelta(days=today.weekday())
+    since = min(monday, today - timedelta(days=400)).isoformat()
+    days = {date.fromisoformat(d) for (d,) in conn.execute(
+        "SELECT DISTINCT day FROM skill_attempt WHERE student_id = ? AND day >= ?", (sid, since))}
+    d, streak = (today if today in days else today - timedelta(days=1)), 0
+    while d in days:
+        streak += 1
+        d -= timedelta(days=1)
+    week = [monday + timedelta(days=i) in days for i in range(7)]
+    return {"streak": streak, "today": today in days, "week": week, "week_days": sum(week), "goal": WEEK_GOAL_DAYS,
+            "weekday": today.weekday()}
 
 
 def streaks(conn, sid, exam_id):

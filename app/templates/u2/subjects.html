@@ -6,7 +6,7 @@
 {% for c in cards %}
 <a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">
   <div class="u2-card-head"><h2>{{ c.title }}</h2></div>
-  {{ forecast(c) }}
+  {{ forecast(c, how=False) }}
 </a>
 {% else %}
 <p>Экзамен ещё не выбран.</p>

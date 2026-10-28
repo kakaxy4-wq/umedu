@@ -2,6 +2,7 @@
 {% block title %}Прогресс{% endblock %}
 {% block content %}
 <h1 class="u2-h1">Прогресс</h1>
+<p class="u2-actions"><a class="u2-btn ghost" href="/u2/mistakes">Мои ошибки</a></p>
 {% for c in cards %}
 <section class="u2-card">
   <div class="u2-card-head"><h2>{{ c.title }}</h2><span class="u2-chip">попыток: {{ c.attempts }}</span></div>
@@ -27,19 +28,19 @@
   {% set m = c.mastery %}
   <h3 class="u2-h3">По номерам</h3>
   {% if m.sagging %}
-  <p class="u2-mlabel"><span class="u2-dot u2-dot-weak" aria-hidden="true"></span>Проседает — начни с них</p>
+  <p class="u2-mlabel"><span class="u2-mark u2-mark-weak" aria-hidden="true"></span>Проседает — начни с них</p>
   <ul class="u2-nums">
     {% for t in m.sagging %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}"><b>{{ t.label }}</b> {{ t.title }}<small>{{ t.why }}</small></a></li>{% endfor %}
   </ul>
   {% endif %}
   {% if m.working %}
-  <p class="u2-mlabel"><span class="u2-dot u2-dot-mid" aria-hidden="true"></span>В работе — для освоения нужно 3 верных подряд</p>
+  <p class="u2-mlabel"><span class="u2-mark u2-mark-mid" aria-hidden="true"></span>В работе — для освоения нужно 3 верных подряд</p>
   <ul class="u2-nums">
     {% for t in m.working %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}"><b>{{ t.label }}</b> {{ t.title }}<small>подряд: {{ t.streak }} из 3</small></a></li>{% endfor %}
   </ul>
   {% endif %}
   {% if m.mastered %}
-  <p class="u2-mlabel"><span class="u2-dot u2-dot-good" aria-hidden="true"></span>Освоено — 3 верных подряд</p>
+  <p class="u2-mlabel"><span class="u2-mark u2-mark-good" aria-hidden="true"></span>Освоено — 3 верных подряд</p>
   <ul class="u2-nums u2-nums-done">
     {% for t in m.mastered %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}" aria-label="{{ t.label }}, {{ t.title }}"><b>{{ t.label }}</b></a></li>{% endfor %}
   </ul>

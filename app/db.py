@@ -409,6 +409,10 @@ CREATE TABLE IF NOT EXISTS exam_enroll (
     created_at TEXT NOT NULL,
     PRIMARY KEY (student_id, exam_id)
 );
+CREATE TABLE IF NOT EXISTS u2_prefs (
+    student_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    daily_minutes INTEGER NOT NULL DEFAULT 30   -- сколько минут в день ученик готов заниматься
+);
 CREATE TABLE IF NOT EXISTS skill_state (
     student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     exam_id TEXT NOT NULL,

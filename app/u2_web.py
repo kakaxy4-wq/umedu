@@ -25,7 +25,8 @@ def _enabled():
 
 router = APIRouter(prefix="/u2", dependencies=[Depends(_enabled)])
 
-DAILY_MINUTES = 30
+DAILY_MINUTES = 30            # по умолчанию; ученик меняет во вкладке «Я»
+MINUTE_CHOICES = (15, 30, 45, 60, 90)
 REVIEW_AFTER_DAYS = 14        # номер, к которому не возвращались столько дней, попадает в план как повторение
 REVIEW_MIN_P = 0.6
 FIPI_BANK = {"ОГЭ": "https://fipi.ru/oge/otkrytyy-bank-zadaniy-oge", "ЕГЭ": "https://fipi.ru/ege/otkrytyy-bank-zadaniy-ege"}
@@ -93,6 +94,11 @@ def _split(cards, total):
     return out
 
 
+def _minutes(conn, sid):
+    row = conn.execute("SELECT daily_minutes FROM u2_prefs WHERE student_id = ?", (sid,)).fetchone()
+    return row[0] if row else DAILY_MINUTES
+
+
 def _page(request, conn, user, tab, name, **ctx):
     return render(request, name, conn, user, tab=tab, tabs=TABS, **ctx)
 
@@ -108,7 +114,7 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     cards = _cards(conn, sid, today)
     if not cards:
         return back("/u2/start")
-    minutes = _split(cards, DAILY_MINUTES)
+    minutes = _split(cards, _minutes(conn, sid))
     plans = []
     for c in cards:
         if minutes.get(c["id"]):
@@ -145,7 +151,19 @@ def u2_progress(request: Request, conn=Depends(get_db), user=Depends(auth.curren
 @router.get("/me", response_class=HTMLResponse)
 def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
-    return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, config.today()))
+    return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, config.today()),
+                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES)
+
+
+@router.post("/me/minutes")
+def u2_me_minutes(minutes: int = Form(...), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    only_student(user)
+    if minutes not in MINUTE_CHOICES:
+        raise HTTPException(400, "Выбери время из списка")
+    with conn:
+        conn.execute("INSERT INTO u2_prefs (student_id, daily_minutes) VALUES (?, ?) "
+                     "ON CONFLICT(student_id) DO UPDATE SET daily_minutes = excluded.daily_minutes", (user["id"], minutes))
+    return back("/u2/me")
 
 
 # ------------------------------------------------------------------ выбор экзамена и стартовая самооценка
@@ -263,9 +281,9 @@ def _task_info(exam, key):
             "points": task["points"], "group": group or part}
 
 
-def _next_step(exam, states, today, after):
+def _next_step(exam, states, today, after, minutes):
     """Следующий номер по плану на сегодня, кроме только что решённого."""
-    for st in kn.plan(exam, states, DAILY_MINUTES, today):
+    for st in kn.plan(exam, states, minutes, today):
         if st["n"] != after:
             return st["n"]
     return None
@@ -323,5 +341,5 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
     after = ctx["c"]
     k = after["kind"]
     delta = {"from": before["fc"][k], "to": after["fc"][k], "primary": round(after["fc"]["primary"] - before["fc"]["primary"], 1)}
-    nxt = _next_step(exam, after["states"], today, key)
+    nxt = _next_step(exam, after["states"], today, key, _minutes(conn, sid))
     return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt, **ctx)

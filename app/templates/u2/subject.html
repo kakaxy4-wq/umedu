@@ -10,11 +10,19 @@
   <div class="u2-card-head"><h2>{{ g.name }}</h2><span class="u2-chip">{{ (g.p * 100)|round|int }}%</span></div>
   <div class="u2-cells">
     {% for t in tasks if t.n in g.tasks %}
-    <div class="u2-cell" style="--p: {{ t.p }}" title="№{{ t.n }}: решишь с вероятностью {{ (t.p * 100)|round|int }}%, попыток {{ t.n_try }}">
-      <b>{{ t.n }}</b><small>{{ t.points }} б.</small></div>
+    <a class="u2-cell" href="/u2/train/{{ c.id }}/{{ t.n }}" style="--p: {{ t.p }}" title="№{{ t.n }}: решишь с вероятностью {{ (t.p * 100)|round|int }}%, попыток {{ t.n_try }}">
+      <b>{{ t.n }}</b><small>{{ t.points }} б.</small></a>
     {% endfor %}
   </div>
 </section>
 {% endfor %}
-<p class="u2-hint">Источник шкалы: {{ c.exam.source }}.</p>
+{% if c.exam.criteria %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>Оценка работы целиком</h2></div>
+  {% for k in c.exam.criteria %}
+  <div class="u2-row"><a href="/u2/train/{{ c.id }}/{{ k.id }}">{{ k.id }} · {{ k.name }}</a><span>{{ k.points }} б.</span></div>
+  {% endfor %}
+</section>
+{% endif %}
+<p class="u2-hint">Нажми на номер, чтобы потренировать его. Источник шкалы: {{ c.exam.source }}.</p>
 {% endblock %}

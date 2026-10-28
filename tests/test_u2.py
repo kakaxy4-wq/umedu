@@ -43,3 +43,35 @@ def test_enroll_validation(client, monkeypatch):  # noqa: F811
     for data in bad:
         assert client.post("/u2/start", data={"csrf": csrf, **data}).status_code == 400, data
     assert client.post("/u2/start", data={"exam_id": "oge-math-2026", "goal": 4}).status_code in (400, 403)  # без csrf
+
+
+def test_trainer_generated_and_self_check(client, monkeypatch):  # noqa: F811
+    from app import knowledge as kn
+    from app.content import oge_gen
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-inf-2026", "goal": 5})
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-rus-2026", "goal": 4})
+
+    r = client.get("/u2/train/oge-inf-2026/1", follow_redirects=False)
+    assert r.status_code == 303 and "seed=" in r.headers["location"]          # генерируемый номер — свой вариант
+    page = client.get("/u2/train/oge-inf-2026/1?seed=42").text
+    assert 'name="answer"' in page
+    right = oge_gen.make(1, 42)["answer"]
+    res = client.post("/u2/train/oge-inf-2026/1", data={"csrf": csrf, "seed": 42, "answer": right}).text
+    assert "Верно" in res and "Дальше по плану" in res
+    sid = sid_of()
+    assert kn.load_states(connect(), sid, "oge-inf-2026")[1]["n"] == 1
+
+    page = client.get("/u2/train/oge-rus-2026/13").text                     # сочинение — самопроверка по баллам
+    assert "fipi.ru/oge" in page and 'name="score" value="7"' in page
+    assert "Записано: 5 из 7" in client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "score": 5}).text
+    assert abs(kn.load_states(connect(), sid, "oge-rus-2026")[13]["p"] - (0.3 + 0.5 * (5 / 7 - 0.3))) < 1e-3
+    client.post("/u2/train/oge-rus-2026/ГК", data={"csrf": csrf, "score": 9})
+    assert kn.load_states(connect(), sid, "oge-rus-2026")["ГК"]["n"] == 1
+
+    assert client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "score": 8}).status_code == 400
+    assert client.get("/u2/train/oge-rus-2026/99").status_code == 404
+    assert client.get("/u2/train/ege-inf-2026/1").status_code == 404          # экзамен не выбран

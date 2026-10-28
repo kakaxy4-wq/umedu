@@ -8,10 +8,9 @@
   <div class="u2-card-head"><h2>{{ p.card.title }}</h2><span class="u2-chip">{{ p.minutes }} мин</span></div>
   <ol class="u2-plan">
     {% for it in p.steps %}
-    <li><span class="u2-num">№{{ it.n }}</span><span class="u2-why">{{ it.why }}</span><span class="u2-min">{{ it.minutes }} мин</span></li>
+    <li><a href="/u2/train/{{ p.card.id }}/{{ it.n }}"><span class="u2-num">№{{ it.n }}</span><span class="u2-why">{{ it.why }}</span><span class="u2-min">{{ it.minutes }} мин</span></a></li>
     {% endfor %}
   </ol>
-  <p class="u2-hint">Тренажёр по номерам подключим следующим шагом.</p>
 </section>
 {% endfor %}
 <h2 class="u2-h2">Прогноз</h2>

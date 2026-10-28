@@ -198,3 +198,12 @@ def test_math_trainer(client, monkeypatch):  # noqa: F811
     assert kn.load_states(connect(), sid_of(), "oge-math-2026")[9]["n"] == 1
     page = client.get("/u2/train/oge-math-2026/18").text                     # клетчатая бумага — самопроверка
     assert 'name="score"' in page
+
+
+def test_subject_mentions_regional_scale(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-rus-2026", "goal": 80})
+    assert "Регион может утвердить свою шкалу" in client.get("/u2/subject/oge-math-2026").text
+    assert "Регион может" not in client.get("/u2/subject/ege-rus-2026").text   # шкала ЕГЭ единая

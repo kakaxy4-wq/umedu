@@ -67,10 +67,11 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 
 .u2-plan { list-style: none; margin: 0; padding: 0; }
 .u2-plan li { border-top: 1px solid var(--line); }
-.u2-plan li a { color: inherit; text-decoration: none; display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; padding: 8px 0; }
+.u2-plan li a { color: inherit; text-decoration: none; display: grid; grid-template-columns: 72px 1fr auto; gap: 8px; padding: 8px 0; }
 .u2-plan li:first-child { border-top: 0; }
 .u2-num { font: 700 15px var(--head); }
-.u2-why { color: var(--muted); font-size: 14px; }
+.u2-why { font-size: 15px; }
+.u2-why small { display: block; color: var(--muted); font-size: 13px; }
 .u2-min { font: 600 13px var(--mono); }
 
 .u2-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }

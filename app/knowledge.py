@@ -19,6 +19,7 @@ HALF_LIFE_DAYS = 30
 ALPHA_MIN, ALPHA_FIRST = 0.15, 0.5
 LEARN_RATE = 0.25             # какую долю разрыва (1 − p) закрывает одна тренировка номера
 MINUTES = {"extended": 15, "file": 20, "program": 15, "essay": 30, "experiment": 20}   # остальные — 3 минуты
+MAX_REPS = 3                  # сколько раз один номер может стоять в плане на день
 Z80 = 1.28
 
 
@@ -86,24 +87,37 @@ def gain_per_minute(exam, task, states, today=None):
 
 def plan(exam, states, minutes=30, today=None, due=()):
     """План на день: сначала повторения с подошедшим сроком (due — номера), затем номера с наибольшим
-    ожидаемым приростом баллов за минуту. Возвращает [{'n', 'minutes', 'gain', 'why'}]."""
+    ожидаемым приростом баллов за минуту. Отдача убывает: после каждой запланированной тренировки p номера
+    условно растёт на LEARN_RATE · (1 − p), так что слабый номер может встать в план несколько раз (до MAX_REPS),
+    но только пока он выгоднее остальных. Возвращает [{'n', 'minutes', 'gain', 'why', 'times'}] в порядке
+    первого появления номера."""
     by_n = {t["n"]: t for t in em.tasks(exam)}
-    out, left = [], minutes
+    out, left = {}, minutes
     for n in due:
         t = by_n.get(n)
         if t and task_minutes(t) <= left:
-            out.append({"n": n, "minutes": task_minutes(t), "gain": 0.0, "why": "повторение"})
+            out[n] = {"n": n, "minutes": task_minutes(t), "gain": 0.0, "why": "повторение", "times": 1}
             left -= task_minutes(t)
-    ranked = sorted((t for t in by_n.values() if t["n"] not in due), key=lambda t: -gain_per_minute(exam, t, states, today))
-    for t in ranked:
-        m = task_minutes(t)
-        if m <= left:
-            g = gain_per_minute(exam, t, states, today) * m
-            out.append({"n": t["n"], "minutes": m, "gain": round(g, 2), "why": "больше всего баллов за минуту"})
-            left -= m
-        if left < 3:
+    p = {n: _p(states, n, today)["p"] for n in by_n}
+    while left >= 3:
+        best, best_g = None, 0.0
+        for t in by_n.values():
+            m = task_minutes(t)
+            if t["n"] in due or m > left or out.get(t["n"], {}).get("times", 0) >= MAX_REPS:
+                continue
+            g = (1 - p[t["n"]]) * t["points"] * LEARN_RATE / m
+            if g > best_g:
+                best, best_g = t, g
+        if not best:
             break
-    return out
+        n, m = best["n"], task_minutes(best)
+        it = out.setdefault(n, {"n": n, "minutes": 0, "gain": 0.0, "why": "больше всего баллов за минуту", "times": 0})
+        it["minutes"] += m
+        it["gain"] = round(it["gain"] + best_g * m, 2)
+        it["times"] += 1
+        p[n] += LEARN_RATE * (1 - p[n])
+        left -= m
+    return list(out.values())
 
 
 def split_minutes(gaps, minutes):

@@ -122,6 +122,8 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     for c in cards:
         if minutes.get(c["id"]):
             items = kn.plan(c["exam"], c["states"], minutes[c["id"]], today, due=_due(c["exam"], c["states"], today, minutes[c["id"]]))
+            for it in items:
+                it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})
     return _page(request, conn, user, "today", "u2/today.html", cards=cards, plans=plans,
                  total=sum(p["minutes"] for p in plans))

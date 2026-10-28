@@ -55,7 +55,7 @@ def test_plan_prefers_cheap_weak_tasks_and_fits_time():
     assert pl[0]["n"] == 4
     assert sum(x["minutes"] for x in pl) <= 30
     with_due = kn.plan(ex, states, 30, D, due=[17])
-    assert with_due[0] == {"n": 17, "minutes": 3, "gain": 0.0, "why": "повторение"}
+    assert with_due[0] == {"n": 17, "minutes": 3, "gain": 0.0, "why": "повторение", "times": 1}
 
 
 def test_split_minutes():
@@ -90,3 +90,14 @@ def test_storage_roundtrip(client):  # noqa: F811
         conn.execute("DELETE FROM users WHERE id = ?", (sid,))
     assert kn.load_states(conn, sid, "oge-math-2026") == {} and kn.exams_of(conn, sid) == []
     conn.close()
+
+
+def test_plan_repeats_weak_task_with_diminishing_returns():
+    ex = em.load("oge-math-2026")
+    states = {n: {"p": 0.95, "n": 20, "last": D.isoformat()} for n in range(1, 26)}
+    states[9] = {"p": 0.1, "n": 5, "last": D.isoformat()}
+    pl = kn.plan(ex, states, 30, D)
+    weak = next(x for x in pl if x["n"] == 9)
+    assert pl[0]["n"] == 9 and 1 < weak["times"] <= kn.MAX_REPS and weak["minutes"] == 3 * weak["times"]
+    assert len({x["n"] for x in pl}) == len(pl)                       # один номер — одна строка
+    assert 27 <= sum(x["minutes"] for x in pl) <= 30                  # бюджет заполнен, не превышен

@@ -20,6 +20,7 @@ ALPHA_MIN, ALPHA_FIRST = 0.15, 0.5
 LEARN_RATE = 0.25             # какую долю разрыва (1 − p) закрывает одна тренировка номера
 MINUTES = {"extended": 15, "file": 20, "program": 15, "essay": 30, "experiment": 20}   # остальные — 3 минуты
 MAX_REPS = 3                  # сколько раз один номер может стоять в плане на день
+MASTERED_STREAK = 3           # столько верных подряд — номер освоен
 Z80 = 1.28
 
 
@@ -184,7 +185,7 @@ def seed(conn, sid, exam_id, key, p, today=None):
                  (sid, exam_id, str(key), round(min(max(p, 0.0), 1.0), 4), (today or date.today()).isoformat()))
 
 
-def record(conn, sid, exam_id, key, score, today=None):
+def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None):
     """Записывает попытку по номеру (или критерию) и возвращает новое состояние."""
     exam = em.load(exam_id)
     if key not in em.points(exam):
@@ -193,4 +194,23 @@ def record(conn, sid, exam_id, key, score, today=None):
     conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) VALUES (?, ?, ?, ?, ?, ?) "
                  "ON CONFLICT(student_id, exam_id, task_key) DO UPDATE SET p = excluded.p, n = excluded.n, last = excluded.last",
                  (sid, exam_id, str(key), st["p"], st["n"], st["last"]))
+    conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, seed, given, day) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?)", (sid, exam_id, str(key), score, seed, given, st["last"]))
     return st
+
+
+def streaks(conn, sid, exam_id):
+    """{номер: {'streak': верных подряд с конца, 'last': балл последней попытки}} по журналу попыток."""
+    out = {}
+    for k, score in conn.execute("SELECT task_key, score FROM skill_attempt WHERE student_id = ? AND exam_id = ? "
+                                 "ORDER BY id DESC", (sid, exam_id)):
+        key = int(k) if k.isdigit() else k
+        s = out.get(key)
+        if s is None:
+            out[key] = {"streak": int(score >= 1), "last": score, "open": score >= 1}
+        elif s["open"]:
+            if score >= 1:
+                s["streak"] += 1
+            else:
+                s["open"] = False
+    return {k: {"streak": s["streak"], "last": s["last"]} for k, s in out.items()}

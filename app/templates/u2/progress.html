@@ -24,6 +24,27 @@
   {% for g in c.groups %}
   <div class="u2-bar"><span>{{ g.name }}</span><i style="--p: {{ g.p }}"></i><b>{{ (g.p * 100)|round|int }}%</b></div>
   {% endfor %}
+  {% set m = c.mastery %}
+  <h3 class="u2-h3">По номерам</h3>
+  {% if m.sagging %}
+  <p class="u2-mlabel"><span class="u2-dot u2-dot-weak" aria-hidden="true"></span>Проседает — начни с них</p>
+  <ul class="u2-nums">
+    {% for t in m.sagging %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}"><b>{{ t.label }}</b> {{ t.title }}<small>{{ t.why }}</small></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if m.working %}
+  <p class="u2-mlabel"><span class="u2-dot u2-dot-mid" aria-hidden="true"></span>В работе — для освоения нужно 3 верных подряд</p>
+  <ul class="u2-nums">
+    {% for t in m.working %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}"><b>{{ t.label }}</b> {{ t.title }}<small>подряд: {{ t.streak }} из 3</small></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if m.mastered %}
+  <p class="u2-mlabel"><span class="u2-dot u2-dot-good" aria-hidden="true"></span>Освоено — 3 верных подряд</p>
+  <ul class="u2-nums u2-nums-done">
+    {% for t in m.mastered %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}" aria-label="{{ t.label }}, {{ t.title }}"><b>{{ t.label }}</b></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if m.untouched %}<p class="u2-hint">Ещё не решал{% if m.sagging or m.working or m.mastered %} ни разу{% endif %}: {{ m.untouched }} {{ 'номер' if m.untouched % 10 == 1 and m.untouched % 100 != 11 else ('номера' if m.untouched % 10 in (2, 3, 4) and m.untouched % 100 not in (12, 13, 14) else 'номеров') }}. План на «Сегодня» подскажет, с какого начать.</p>{% endif %}
 </section>
 {% else %}
 <p>Экзамен ещё не выбран. <a href="/u2/start">Выбрать</a></p>

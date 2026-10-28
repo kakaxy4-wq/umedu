@@ -212,3 +212,30 @@ def test_subject_mentions_regional_scale(client, monkeypatch):  # noqa: F811
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-rus-2026", "goal": 80})
     assert "Регион может утвердить свою шкалу" in client.get("/u2/subject/oge-math-2026").text
     assert "Регион может" not in client.get("/u2/subject/ege-rus-2026").text   # шкала ЕГЭ единая
+
+
+def test_progress_by_numbers(client, monkeypatch):  # noqa: F811
+    """«Прогресс → По номерам»: 3 верных подряд — освоено, ошибка после них — проседает; попытки пишутся в журнал
+    вместе с вариантом и ответом ученика."""
+    from app.content import math_gen as mg
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
+    for seed in (1, 2, 3):
+        client.post("/u2/train/oge-math-2026/6", data={"csrf": csrf, "seed": seed, "answer": mg.OGE.make(6, seed)["answer"]})
+    client.post("/u2/train/oge-math-2026/7", data={"csrf": csrf, "seed": 5, "answer": "999999"})
+    client.post("/u2/train/oge-math-2026/8", data={"csrf": csrf, "seed": 5, "answer": mg.OGE.make(8, 5)["answer"]})
+    page = client.get("/u2/progress").text
+    done = page.split("Освоено")[1]
+    sag = page.split("Проседает")[1].split("В работе")[0]
+    work = page.split("В работе")[1].split("Освоено")[0]
+    assert "№6" in done and "№7" in sag and "последняя попытка неверная" in sag and "№8" in work
+    assert "подряд: 1 из 3" in work and "Ещё не решал ни разу" in page
+    client.post("/u2/train/oge-math-2026/6", data={"csrf": csrf, "seed": 9, "answer": "999999"})
+    page = client.get("/u2/progress").text
+    assert "№6" in page.split("Проседает")[1].split("В работе")[0] and "Освоено" not in page
+    rows = connect().execute("SELECT task_key, score, seed, given FROM skill_attempt WHERE student_id = ? ORDER BY id",
+                             (sid_of(),)).fetchall()
+    assert [tuple(r) for r in rows][-2:] == [("8", 1.0, 5, mg.OGE.make(8, 5)["answer"]), ("6", 0.0, 9, "999999")]

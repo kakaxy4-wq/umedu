@@ -432,6 +432,17 @@ CREATE TABLE IF NOT EXISTS skill_state (
     last TEXT,
     PRIMARY KEY (student_id, exam_id, task_key)
 );
+CREATE TABLE IF NOT EXISTS skill_attempt (     -- каждая попытка: серии «3 верно подряд», «Мои ошибки», дни занятий
+    id INTEGER PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    task_key TEXT NOT NULL,
+    score REAL NOT NULL,               -- доля баллов 0…1
+    seed INTEGER,                      -- вариант генератора, если номер генерируется
+    given TEXT,                        -- ответ ученика (до 100 символов)
+    day TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_skill_attempt ON skill_attempt(student_id, exam_id, id);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

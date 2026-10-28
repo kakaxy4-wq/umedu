@@ -154,7 +154,39 @@ def u2_progress(request: Request, conn=Depends(get_db), user=Depends(auth.curren
     cards = _cards(conn, sid, today)
     for c in cards:
         c["chart"] = _chart(kn.history(conn, sid, c["id"], today=today), c["exam"]["max_points"])
+        c["mastery"] = _mastery(c["exam"], c["states"], kn.streaks(conn, sid, c["id"]), today)
     return _page(request, conn, user, "progress", "u2/progress.html", cards=cards)
+
+
+SAG_P = 0.5                   # ниже — номер «проседает», даже если последняя попытка верная
+
+
+def _mastery(exam, states, streaks, today):
+    """Номера по группам: освоено (MASTERED_STREAK верных подряд и не забыто), проседает (последняя попытка
+    неверная, низкое p или освоенное забывается), в работе — остальные решённые хоть раз; не начатые — числом."""
+    out = {"mastered": [], "sagging": [], "working": [], "untouched": 0}
+    for key in em.points(exam):
+        st, sk = states.get(key), streaks.get(key)
+        if not st or not st["n"] or not sk:
+            out["untouched"] += 1
+            continue
+        p = kn.decay(st, today)["p"]
+        item = {**_task_info(exam, key), "p": p, "streak": sk["streak"]}
+        if sk["streak"] >= kn.MASTERED_STREAK:
+            if p >= REVIEW_MIN_P:
+                out["mastered"].append(item)
+                continue
+            item["why"] = "давно не повторял"
+        elif sk["last"] < 1:
+            item["why"] = "последняя попытка неверная"
+        elif p < SAG_P:
+            item["why"] = "пока мало верных"
+        else:
+            out["working"].append(item)
+            continue
+        out["sagging"].append(item)
+    out["sagging"].sort(key=lambda i: i["p"])
+    return out
 
 
 def _chart(rows, max_points, w=300, h=90):
@@ -375,15 +407,16 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
             res = {"ok": BANKS[exam_id].check(v, answer[:100]), "answer": v["answer"], "explain": v["explain"], "xp": 0}
         else:
             res = oge_drill.answer(conn, sid, key, seed, answer[:100])  # заодно — статистика и трофеи старого тренажёра
-        got = 1.0 if res["ok"] else 0.0
+        got, given = (1.0 if res["ok"] else 0.0), answer.strip()[:100]
     else:
         mx = em.points(exam)[key]
         if not 0 <= score <= mx:
             raise HTTPException(400, f"Баллы — от 0 до {mx}")
         got = score / mx
         res = {"ok": score == mx, "score": score, "max": mx}
+        seed, given = None, None
     with conn:
-        kn.record(conn, sid, exam_id, key, got, today)
+        kn.record(conn, sid, exam_id, key, got, today, seed=seed, given=given)
         kn.log_forecast(conn, sid, exam_id, today)
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:

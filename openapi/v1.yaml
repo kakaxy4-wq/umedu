@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: umedu API
+  version: "1.0.0"
+  description: >
+    Живые пути этапа 1. Почта и POST /attempts появятся на этапах 4 и 2,
+    не раньше, чем сервер на них ответит.
+servers:
+  - url: https://umedu.ru
+paths:
+  /api/v1/config:
+    get:
+      operationId: getConfig
+      summary: Флаги и минимальная сборка
+      responses:
+        "200":
+          description: Текущий конфиг. Нет записи в базу.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+  /api/v1/catalog:
+    get:
+      operationId: getCatalog
+      summary: Экзамены и предметы
+      responses:
+        "200":
+          description: Каталог из кода. Нет записи в базу.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Catalog"
+components:
+  schemas:
+    Config:
+      type: object
+      additionalProperties: false
+      required: [schema_version, hard_min_build, flags, notice]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        hard_min_build:
+          type: integer
+          minimum: 1
+        flags:
+          $ref: "#/components/schemas/Flags"
+        notice:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/Notice"
+    Flags:
+      type: object
+      additionalProperties: false
+      required: [trainer, trial, crash_reports]
+      properties:
+        trainer:
+          type: boolean
+        trial:
+          type: boolean
+        crash_reports:
+          type: boolean
+    Notice:
+      type: object
+      additionalProperties: false
+      required: [kind, text]
+      properties:
+        kind:
+          type: string
+          enum: [paused, info]
+        text:
+          type: string
+    Catalog:
+      type: object
+      additionalProperties: false
+      required: [schema_version, tracks]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Track"
+    Track:
+      type: object
+      additionalProperties: false
+      required: [id, title, year, subjects]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        year:
+          type: integer
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subject"
+    Subject:
+      type: object
+      additionalProperties: false
+      required: [id, exam_id, title, status, required, max_points]
+      properties:
+        id:
+          type: string
+        exam_id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [live, soon]
+        required:
+          type: boolean
+        max_points:
+          type: integer
+          minimum: 1

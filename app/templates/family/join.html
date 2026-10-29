@@ -16,7 +16,7 @@
     <label>Логин<input name="login" value="{{ form.login or '' }}" autocomplete="username" autocapitalize="off" required pattern="[a-zA-Z0-9_.\-]{2,32}"></label>
     <label>Пароль (от 8 символов)<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
     <p class="muted small">Можно взять такой: <code>{{ suggested }}</code> — его легко запомнить.</p>
-    <label class="check"><input type="checkbox" name="consent" value="1" required> <span>Я родитель или законный представитель ребёнка и согласен(на) на обработку данных моих и ребёнка по <a href="/privacy" target="_blank" rel="noopener">политике</a>.</span></label>
+    <label class="check"><input type="checkbox" name="consent" value="1" required> <span>Я родитель или законный представитель ребёнка и даю <a href="/consent#parent" target="_blank" rel="noopener">согласие на обработку моих данных и данных ребёнка</a>.</span></label>
     <button class="btn btn-big">Завести кабинет</button>
   </form>
   <p class="muted small">Ни телефона, ни почты не нужно. Уже есть кабинет? <a href="/family/login">Войдите</a> и снова откройте ссылку.</p>

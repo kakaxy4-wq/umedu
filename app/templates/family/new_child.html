@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Аккаунт для ребёнка{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="login-card card join-card">
+  <div class="login-hero">👪</div>
+  <h1>Аккаунт для ребёнка</h1>
+  <p class="muted">Детям младше 14 лет аккаунт заводит родитель: вы даёте согласие за ребёнка и видите его прогресс в своём кабинете.</p>
+  {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
+  <form method="post" action="/family/new-child" class="stack">
+    {% if fam %}{{ fam_csrf(fam) }}
+    <p>Вы вошли как <b>{{ fam.display_name }}</b> — ребёнок появится в вашем кабинете.</p>
+    {% else %}
+    <h2>Вы</h2>
+    <label>Как к вам обращаться<input name="pname" value="{{ form.pname or '' }}" maxlength="60" required placeholder="Например, Анна Сергеевна"></label>
+    <label>Ваш логин<input name="plogin" value="{{ form.plogin or '' }}" autocomplete="username" autocapitalize="off" required pattern="[a-zA-Z0-9_.\-]{2,32}"></label>
+    <label>Ваш пароль (от 8 символов)<input name="ppassword" type="password" autocomplete="new-password" minlength="8" required></label>
+    <p class="muted small">Уже есть кабинет? <a href="/family/login">Войдите</a> и снова откройте эту страницу.</p>
+    {% endif %}
+    <h2>Ребёнок</h2>
+    <label>Как к нему обращаться<input name="name" value="{{ form.name or '' }}" maxlength="40" required autocomplete="off" placeholder="Имя или ник"></label>
+    <fieldset class="grade-pick">
+      <legend>Класс</legend>
+      {% for g, title in grades.items() %}
+      <label class="check"><input type="radio" name="grade" value="{{ g }}" required {{ 'checked' if form.grade == g }}> {{ title }}</label>
+      {% endfor %}
+    </fieldset>
+    <label>Логин ребёнка — латиницей<input name="login" value="{{ form.login or '' }}" required pattern="[a-zA-Z0-9_.\-]{2,32}" autocomplete="off" autocapitalize="off"></label>
+    <label>Пароль ребёнка — не короче 6 символов<input name="password" value="{{ suggested }}" required minlength="6" autocomplete="off" autocapitalize="off"></label>
+    <p class="small muted">Запишите логин и пароль ребёнка — он будет входить с ними.</p>
+    <label class="hp" aria-hidden="true">Сайт<input name="website" tabindex="-1" autocomplete="off"></label>
+    <label class="check"><input type="checkbox" name="consent" value="1" required>
+      <span>Я родитель или законный представитель ребёнка и даю <a href="/consent#parent" target="_blank" rel="noopener">согласие на обработку моих данных и данных ребёнка</a>.</span></label>
+    <button class="btn btn-big">Завести аккаунт</button>
+  </form>
+</div>
+{% endblock %}

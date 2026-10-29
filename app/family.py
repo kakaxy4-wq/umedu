@@ -14,7 +14,7 @@ from . import auth, config, students
 
 COOKIE = "cq_family"
 SESSION_DAYS = 60
-CONSENT_VERSION = "2026-10-27"            # меняется вместе с текстом /privacy
+CONSENT_VERSION = "2026-10-29"            # меняется вместе с текстом /privacy и /consent
 MAX_CHILDREN = 6
 
 

@@ -70,7 +70,7 @@ PYTHON_ONLY = ("/today", "/lesson/", "/homework", "/task/", "/api/task/", "/api/
                "/files/sub/", "/files/project/", "/teacher/weekly", "/teacher/lessons", "/teacher/lesson/", "/teacher/guide/",
                "/teacher/reviews", "/teacher/review/", "/teacher/rewards", "/teacher/purchase/", "/teacher/solutions",
                "/teacher/attempts/", "/teacher/journal", "/teacher/xp", "/teacher/leaderboard", "/teacher/certificates",
-               "/teacher/cert-name", "/teacher/analytics", "/family", "/privacy")
+               "/teacher/cert-name", "/teacher/analytics", "/family", "/privacy", "/consent")
 
 
 @app.middleware("http")

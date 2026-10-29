@@ -233,6 +233,58 @@ def family_unlink(sid: int, request: Request, csrf: str = Form(""), conn=Depends
     return back("/family")
 
 
+# ------------------------------------------------------------------ родитель заводит аккаунт ребёнку (младше 14 — только так)
+def _new_child_page(request, conn, fam, error=None, form=None):
+    return render(request, "family/new_child.html", conn, None, fam=fam, grades=students.GRADES, error=error,
+                  form=form or {}, suggested=students.generate_password())
+
+
+@router.get("/family/new-child", response_class=HTMLResponse)
+def new_child_page(request: Request, conn=Depends(get_db)):
+    if not config.OPEN_SIGNUP:
+        raise HTTPException(404)
+    return _new_child_page(request, conn, family.load(request, conn))
+
+
+@router.post("/family/new-child", response_class=HTMLResponse)
+def new_child(request: Request, pname: str = Form(""), plogin: str = Form(""), ppassword: str = Form(""),
+              name: str = Form(""), grade: int = Form(0), login: str = Form(""), password: str = Form(""),
+              consent: str = Form(""), csrf: str = Form(""), website: str = Form(""), conn=Depends(get_db)):
+    """Одна форма: кабинет родителя (если ещё не вошёл) + аккаунт ребёнка. Согласие за обоих даёт родитель."""
+    if not config.OPEN_SIGNUP:
+        raise HTTPException(404)
+    fam = family.load(request, conn)
+    if fam:
+        family.check_csrf(fam, csrf)
+    ip = _client_ip(request)
+    form = {"pname": pname, "plogin": plogin, "name": name, "grade": grade, "login": login}
+    if website or students.signup_limited(ip):
+        return _new_child_page(request, conn, fam, "Не получилось. Попробуйте через час.", form)
+    if consent != "1":
+        return _new_child_page(request, conn, fam, "Без согласия на обработку данных аккаунт завести нельзя.", form)
+    with conn:
+        pid, err = (fam["id"], None) if fam else family.signup(conn, pname, plogin, ppassword, True)
+        sid = None
+        if not err:
+            sid, err = students.signup(conn, name, grade, login, password, True, ip, parent_id=pid)
+        if not err:
+            err = family.link(conn, pid, sid)
+        if err:
+            conn.rollback()                # не оставляем родителя без ребёнка и ребёнка без родителя
+    if err:
+        return _new_child_page(request, conn, fam, err, form)
+    resp = back("/family")
+    if not fam:
+        family.set_cookie(resp, family.create_session(conn, pid))
+    return resp
+
+
+@router.get("/consent", response_class=HTMLResponse)
+def consent(request: Request, conn=Depends(get_db)):
+    return render(request, "consent.html", conn, None, operator=config.OPERATOR, contact=config.CONTACT,
+                  version=family.CONSENT_VERSION, student_name="", tg_bot=parent_bot.enabled())
+
+
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy(request: Request, conn=Depends(get_db)):
     return render(request, "privacy.html", conn, None, operator=config.OPERATOR, contact=config.CONTACT,

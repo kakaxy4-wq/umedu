@@ -1427,7 +1427,7 @@ def test_family_cabinet(client):
     client.cookies.clear()
     page = client.get("/parent/%s" % tok_m).text
     assert "Завести кабинет" in page and "csrf" not in page
-    assert "/privacy" in client.get("/parent/%s/account" % tok_m).text
+    assert "/consent" in client.get("/parent/%s/account" % tok_m).text
     form = {"name": "Мама", "login": "mama", "password": "dlinnyi-parol"}
     r = client.post("/parent/%s/account" % tok_m, data=form)
     assert "согласия" in r.text and "cq_family" not in r.cookies                     # без галочки — нельзя
@@ -1491,7 +1491,9 @@ def test_brand_only_on_public_site(client, monkeypatch):
 
 def test_privacy_page(client):
     r = client.get("/privacy")
-    assert r.status_code == 200 and "152-ФЗ" in r.text
+    assert r.status_code == 200 and "152-ФЗ" in r.text and 'href="/consent"' in r.text
+    r = client.get("/consent")                                         # согласие — отдельным документом (ст. 9 ч. 1)
+    assert r.status_code == 200 and "Оператор" in r.text and "Срок и отзыв" in r.text and 'id="parent"' in r.text
 
 
 def test_events_and_analytics(client, monkeypatch):
@@ -1547,8 +1549,10 @@ def test_open_signup(client, monkeypatch):
     client.cookies.clear()
     assert "Зарегистрироваться бесплатно" in client.get("/login").text
     page = client.get("/join").text
-    assert 'name="consent"' in page and "/privacy" in page and "код приглашения" not in page.lower()
-    form = {"name": "Аня", "grade": 9, "login": "anya9", "password": "kot-luna-27", "consent": "1"}
+    assert 'name="consent"' in page and 'name="age14"' in page and "/consent" in page and "/family/new-child" in page
+    assert "код приглашения" not in page.lower()
+    form = {"name": "Аня", "grade": 9, "login": "anya9", "password": "kot-luna-27", "consent": "1", "age14": "1"}
+    assert "с 14 лет" in client.post("/join", data=dict(form, age14="")).text   # младше 14 — только через родителя
     r = client.post("/join", data=dict(form, consent=""))
     assert "Отметь согласие" in r.text and not connect().execute("SELECT 1 FROM users WHERE username = 'anya9'").fetchone()
     assert "Не получилось" in client.post("/join", data=dict(form, website="http://spam")).text
@@ -1670,7 +1674,8 @@ def test_solo_student_needs_no_teacher(client, monkeypatch):
     monkeypatch.setattr(config, "SUBJECTS", ["python", "russian"])
     students._signups.clear()
     client.cookies.clear()
-    client.post("/join", data={"name": "Соло", "grade": 9, "login": "solo9", "password": "kot-luna-27", "consent": "1"})
+    client.post("/join", data={"name": "Соло", "grade": 9, "login": "solo9", "password": "kot-luna-27", "consent": "1",
+                         "age14": "1"})
     sid = sid_of("solo9")
     conn = connect()
     row = conn.execute("SELECT subjects FROM users WHERE id = ?", (sid,)).fetchone()
@@ -1747,3 +1752,37 @@ def test_parent_telegram_report(client, monkeypatch):
     code = conn.execute("SELECT tg_code FROM parents WHERE username = 'mama'").fetchone()[0]
     assert "устарела" in parent_bot.handle(conn, {"message": {"chat": chat, "text": "/start " + code}})[1]
     assert "Отчёт в Telegram" in client.get("/privacy").text
+
+
+def test_parent_creates_child(client, monkeypatch):
+    """Младше 14: аккаунт ребёнку заводит родитель — одной формой вместе со своим кабинетом; согласие даёт он."""
+    from app import config, students
+    from app.db import connect
+    assert client.get("/family/new-child").status_code == 404           # только при открытой регистрации
+    monkeypatch.setattr(config, "SIGNUP", True)
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    students._signups.clear()
+    client.cookies.clear()
+    assert 'name="pname"' in client.get("/family/new-child").text
+    form = {"pname": "Мама", "plogin": "mama2", "ppassword": "dlinnyi-parol", "name": "Петя", "grade": 7,
+            "login": "petya7", "password": "kot-luna-27", "consent": "1"}
+    assert "согласия" in client.post("/family/new-child", data=dict(form, consent="")).text
+    # ошибка в данных ребёнка — родитель тоже не создаётся
+    assert "Выбери класс" in client.post("/family/new-child", data=dict(form, grade=3)).text
+    assert not connect().execute("SELECT 1 FROM parents WHERE username = 'mama2'").fetchone()
+    r = client.post("/family/new-child", data=form, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/family"
+    assert "Петя" in client.get("/family").text
+    row = connect().execute("SELECT * FROM users WHERE username = 'petya7'").fetchone()
+    assert "родитель #" in row["consent"]
+    # второй ребёнок — родитель уже вошёл, нужен только CSRF
+    page = client.get("/family/new-child").text
+    assert 'name="pname"' not in page
+    second = {"name": "Оля", "grade": 7, "login": "olya7", "password": "kot-luna-28", "consent": "1"}
+    assert client.post("/family/new-child", data=dict(second, csrf="bad")).status_code == 403
+    client.post("/family/new-child", data=dict(second, csrf=_fam_csrf(page)))
+    assert "Оля" in client.get("/family").text
+    # ребёнок входит сам
+    client.cookies.clear()
+    r = client.post("/login", data={"username": "petya7", "password": "kot-luna-27"}, follow_redirects=False)
+    assert r.status_code == 303 and "Петя" in client.get("/").text

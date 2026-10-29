@@ -112,7 +112,7 @@
       <label>Возраст <input name="age" type="number" inputmode="numeric" min="6" max="25" value="{{ st.age or '' }}" style="max-width: 7em"></label>
       <input type="hidden" name="calm_set" value="1">
       <label class="check"><input type="checkbox" name="calm" value="1" {{ 'checked' if st.calm }}> 🧘 Спокойный вид: без бойцов и конфетти (ранги и трофеи остаются)</label>
-      {% if st.consent %}<p class="small muted">Зарегистрировался на сайте сам. Согласие на обработку данных: {{ st.consent }}</p>{% endif %}
+      {% if st.consent %}<p class="small muted">{{ "Аккаунт завёл родитель" if "родитель" in st.consent else "Зарегистрировался на сайте сам" }}. Согласие на обработку данных: {{ st.consent }}</p>{% endif %}
       <label class="check"><input type="checkbox" name="self_pace" value="1" {{ 'checked' if st.self_paced }}> 🚀 Самостоятельный темп: урок засчитывается, когда решено 60% его задач, и сразу открывается следующий (у уроков без задач — кнопка «Урок изучен»)</label>
       <button class="btn btn-small">Сохранить</button>
     </form>

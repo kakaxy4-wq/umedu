@@ -49,6 +49,8 @@ MAX_STUDENTS = int(os.environ.get("CQ_MAX_STUDENTS", "60" if CHEM_SITE else "30"
 SIGNUP_MODE = os.environ.get("CQ_SIGNUP", "1" if CHEM_SITE else "0").strip().lower()
 SIGNUP = SIGNUP_MODE in ("1", "open")
 OPEN_SIGNUP = SIGNUP_MODE == "open" and not CHEM_SITE
+# umedu 2.0 (ОГЭ/ЕГЭ с прогнозом) — раздел /u2; пока за флагом, на действующий сайт не влияет
+UMEDU2 = os.environ.get("CQ_UMEDU2", "0") == "1"
 TRAINER_DAILY_XP_CAP = int(os.environ.get("CQ_TRAINER_DAILY_XP_CAP", "30"))
 
 try:

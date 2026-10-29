@@ -1,0 +1,248 @@
+{
+  "id": "ege-rus-2026",
+  "exam": "ЕГЭ",
+  "subject": "Русский язык",
+  "year": 2026,
+  "duration_min": 210,
+  "source": "ФИПИ ЕГЭ 2026: 27 заданий, 50 баллов (задания 8 и 22 — по 2, сочинение — 22; по rg.ru 23.09.2025); шкала — Рособрнадзор 2026 (по lenta.ru 17.04.2026)",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 50,
+  "parts": [
+    {
+      "name": "Часть 1",
+      "answer": "short",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 1,
+          "answer": "short",
+          "title": "Связь предложений в тексте"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short",
+          "title": "Лексическое значение слова"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short",
+          "title": "Стилистика"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short",
+          "title": "Ударения"
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "short",
+          "title": "Паронимы"
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "short",
+          "title": "Лексические нормы"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short",
+          "title": "Морфологические нормы"
+        },
+        {
+          "n": 8,
+          "points": 2,
+          "answer": "short",
+          "title": "Синтаксические нормы"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short",
+          "title": "Корни"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short",
+          "title": "Приставки, ъ и ь"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short",
+          "title": "Суффиксы"
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "short",
+          "title": "Окончания глаголов, суффиксы причастий"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short",
+          "title": "НЕ и НИ"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short",
+          "title": "Слитно, дефис, раздельно"
+        },
+        {
+          "n": 15,
+          "points": 1,
+          "answer": "short",
+          "title": "Н и НН"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short",
+          "title": "Однородные члены, ССП"
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short",
+          "title": "Обособление"
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short",
+          "title": "Вводные слова, обращения"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short",
+          "title": "Сложное предложение"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short",
+          "title": "Разные виды связи"
+        },
+        {
+          "n": 21,
+          "points": 1,
+          "answer": "short",
+          "title": "Пунктуационный анализ"
+        },
+        {
+          "n": 22,
+          "points": 2,
+          "answer": "short",
+          "title": "Средства выразительности"
+        },
+        {
+          "n": 23,
+          "points": 1,
+          "answer": "short",
+          "title": "Смысл текста"
+        },
+        {
+          "n": 24,
+          "points": 1,
+          "answer": "short",
+          "title": "Информация в тексте"
+        },
+        {
+          "n": 25,
+          "points": 1,
+          "answer": "short",
+          "title": "Лексика текста"
+        },
+        {
+          "n": 26,
+          "points": 1,
+          "answer": "short",
+          "title": "Связь предложений в тексте"
+        }
+      ]
+    },
+    {
+      "name": "Часть 2 · сочинение",
+      "answer": "extended",
+      "tasks": [
+        {
+          "n": 27,
+          "points": 22,
+          "answer": "extended",
+          "title": "Сочинение"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "test",
+    "min_certificate": 24,
+    "min_university": 40,
+    "table": [
+      0,
+      3,
+      5,
+      8,
+      10,
+      12,
+      15,
+      17,
+      20,
+      22,
+      24,
+      27,
+      29,
+      32,
+      34,
+      36,
+      37,
+      39,
+      40,
+      42,
+      43,
+      45,
+      46,
+      48,
+      49,
+      51,
+      52,
+      54,
+      55,
+      57,
+      58,
+      60,
+      61,
+      63,
+      64,
+      66,
+      67,
+      69,
+      70,
+      72,
+      73,
+      75,
+      78,
+      81,
+      83,
+      86,
+      89,
+      91,
+      94,
+      97,
+      100
+    ]
+  },
+  "conditions": []
+}

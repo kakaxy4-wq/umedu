@@ -48,6 +48,20 @@ def parent_page(token: str, request: Request, conn=Depends(get_db)):
                   linked=linked, **_parent_ctx(conn, st))
 
 
+def _u2_cards(conn, sid):
+    """umedu 2.0 для родителя: прогноз, цель, дни до экзамена, слабые номера и активность за неделю — только
+    при включённом флаге."""
+    if not config.UMEDU2:
+        return []
+    from . import u2_web                      # импорт здесь: u2_web сам импортирует main
+    today = config.today()
+    out = []
+    for enr in u2_web.kn.exams_of(conn, sid):
+        row = u2_web._class_row(conn, {"id": sid, "display_name": ""}, enr, today)
+        out.append({**row["c"], "weak": row["weak"], "week": row["week"]})
+    return out
+
+
 def _parent_ctx(conn, st):
     """Всё для страницы успехов ребёнка: и по секретной ссылке, и в кабинете родителя."""
     sid = st["id"]
@@ -63,7 +77,7 @@ def _parent_ctx(conn, st):
                 (config.today() - timedelta(days=i) for i in range(13, -1, -1))]
     plans = conn.execute("SELECT COUNT(*) FROM xp_events WHERE student_id = ? AND kind = 'drop' AND ref LIKE 'today:%' "
                          "AND created_at >= ?", (sid, since)).fetchone()[0]
-    return dict(st=st, me=game.stats(conn, sid), lessons=lessons, states=states,
+    return dict(st=st, me=game.stats(conn, sid), lessons=lessons, states=states, u2=_u2_cards(conn, sid),
                 fc=forecast.forecast(oge_progress(conn, sid)) if "python" in subj else None,
                 ru_ov=russian.overview(conn, sid) if "russian" in subj else None, activity=activity, plans=plans,
                 results=[(CHECK_BY_ID[r["check_id"]], r) for r in results if r["check_id"] in CHECK_BY_ID],

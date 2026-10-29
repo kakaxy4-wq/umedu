@@ -1,0 +1,41 @@
+{% extends "u2/base.html" %}
+{% from "u2/_fc.html" import forecast %}
+{% block title %}Сегодня{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Сегодня · {{ total }} минут</h1>
+{% if intro %}
+<section class="u2-card u2-intro" aria-labelledby="intro-h">
+  <h2 id="intro-h">Первые шаги</h2>
+  <ol>
+    {% for s in intro %}<li class="{{ 'done' if s.done }}">{% if s.done %}<span>{{ s.text }}</span>{% else %}<a href="{{ s.href }}">{{ s.text }}</a>{% endif %}{% if s.done %}<span class="u2-sr"> — готово</span>{% endif %}</li>{% endfor %}
+  </ol>
+  <p class="u2-hint">Дальше каждый день здесь будет план на выбранное время — по нему прогноз растёт быстрее всего.</p>
+</section>
+{% endif %}
+<section class="u2-card u2-streak">
+  <div><b class="u2-big">{{ act.streak }}</b> {{ 'день' if act.streak % 10 == 1 and act.streak % 100 != 11 else ('дня' if act.streak % 10 in (2, 3, 4) and act.streak % 100 not in (12, 13, 14) else 'дней') }} подряд
+    {% if not act.today %}<small>{% if act.streak %}реши одно задание сегодня — серия продолжится{% else %}начни серию: одно задание сегодня{% endif %}</small>{% endif %}</div>
+  <div class="u2-week" role="img" aria-label="Неделя: занимался {{ act.week_days }} из {{ act.goal }} дней цели">
+    {% for d in act.week %}<span class="{{ 'on' if d }}{{ ' now' if loop.index0 == act.weekday }}">{{ ['пн','вт','ср','чт','пт','сб','вс'][loop.index0] }}</span>{% endfor %}
+  </div>
+  <small>Цель недели: {{ act.goal }} дней — {% if act.week_days >= act.goal %}<b class="u2-ok">выполнена</b>{% else %}{{ act.week_days }} из {{ act.goal }}{% endif %}</small>
+</section>
+{% for p in plans %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ p.card.title }}</h2><span class="u2-chip">{{ p.minutes }} мин</span></div>
+  <ol class="u2-plan">
+    {% for it in p.steps %}
+    <li><a href="/u2/train/{{ p.card.id }}/{{ it.n }}"><span class="u2-num">№{{ it.n }}{% if it.times > 1 %} × {{ it.times }}{% endif %}</span><span class="u2-why">{{ it.title }}{% if it.why == 'повторение' %}<small>повторение: давно не было</small>{% elif it.times > 1 %}<small>слабое место: {{ it.times }} варианта подряд</small>{% endif %}</span><span class="u2-min">{{ it.minutes }} мин</span></a></li>
+    {% endfor %}
+  </ol>
+  {% if p.card.mock %}<p class="u2-hint">Проверить себя в условиях экзамена: <a href="/u2/mock/{{ p.card.id }}">мини-пробник на 25 минут</a>.</p>{% endif %}
+</section>
+{% endfor %}
+<h2 class="u2-h2">Прогноз</h2>
+{% for c in cards %}
+<a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">
+  <div class="u2-card-head"><h2>{{ c.title }}</h2>{% if c.days is not none %}<span class="u2-chip">{{ c.days }} дн. до экзамена</span>{% endif %}</div>
+  {{ forecast(c, how=False) }}
+</a>
+{% endfor %}
+{% endblock %}

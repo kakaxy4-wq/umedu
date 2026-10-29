@@ -1,0 +1,46 @@
+{% extends "u2/base.html" %}
+{% from "u2/_task.html" import task_body %}
+{% block title %}Мини-пробник · {{ c.title }}{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/subject/{{ c.id }}">← {{ c.title }}</a>
+<h1 class="u2-h1">Мини-пробник · {{ minutes }} минут</h1>
+{% if result %}
+<section class="u2-card u2-res {{ 'ok' if result.right == result.total else 'bad' }}">
+  <h2>{{ result.right }} из {{ result.total }} верно · {{ result.points }} из {{ result.max_points }} {{ 'балла' if result.max_points % 10 in (2, 3, 4) and result.max_points % 100 not in (12, 13, 14) else ('балл' if result.max_points % 10 == 1 and result.max_points % 100 != 11 else 'баллов') }}</h2>
+  <p class="u2-delta">Прогноз: {% if c.kind == 'grade' %}«{{ delta.from }}» → «{{ delta.to }}»{% else %}{{ delta.from }} → {{ delta.to }}{% endif %}
+    · первичный {{ '+' if delta.primary >= 0 }}{{ delta.primary|string|replace('.', ',')|replace('-', '−') }}</p>
+  {% if result.right < result.total %}<p class="u2-hint">Ниже — разбор ошибок. Прогноз и план на «Сегодня» уже их учли.</p>{% endif %}
+</section>
+{% for it in items if not it.ok %}
+<section class="u2-card u2-task">
+  <div class="u2-card-head"><h2>{{ it.t.label }} · {{ it.t.title }}</h2><span class="u2-chip u2-chip-bad">неверно</span></div>
+  {{ task_body(it.text, it.variant) }}
+  <p>Твой ответ: <b>{{ it.given or '—' }}</b> · верный: <b>{{ it.answer }}</b></p>
+  <p class="u2-hint">{{ it.explain }}</p>
+  <div class="u2-actions"><a class="u2-btn ghost" href="/u2/train/{{ c.id }}/{{ it.t.key }}">Решить похожий</a></div>
+</section>
+{% endfor %}
+{% set good = items|selectattr('ok')|list %}
+{% if good %}<p class="u2-hint">Верно: {% for it in good %}{{ it.t.label }}{{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+<div class="u2-actions">
+  <a class="u2-btn" href="/u2/mock/{{ c.id }}">Новый пробник</a>
+  <a class="u2-btn ghost" href="/u2/today">К плану на сегодня</a>
+</div>
+{% else %}
+<p class="u2-hint">{{ items|length }} {{ 'номер' if items|length % 10 == 1 and items|length % 100 != 11 else ('номера' if items|length % 10 in (2, 3, 4) and items|length % 100 not in (12, 13, 14) else 'номеров') }} из разных частей экзамена, как на настоящем: без подсказок, ответ — после всех заданий.
+  Засеки {{ minutes }} минут. Пропущенное задание считается ошибкой.</p>
+{% if user.role != 'student' %}<p class="u2-hint">Режим просмотра: ответы преподавателя не записываются.</p>{% endif %}
+<form method="post" action="/u2/mock/{{ c.id }}">
+  <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  <input type="hidden" name="seed" value="{{ seed }}">
+  {% for it in items %}
+  <section class="u2-card u2-task">
+    <div class="u2-card-head"><h2>{{ it.t.label }} · {{ it.t.title }}</h2><span class="u2-chip">{{ it.t.points }} б.</span></div>
+    {{ task_body(it.text, it.variant) }}
+    <label class="u2-pick-row">Ответ <input name="a{{ it.t.key }}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+  </section>
+  {% endfor %}
+  {% if user.role == 'student' %}<button class="u2-btn">Сдать и посмотреть результат</button>{% endif %}
+</form>
+{% endif %}
+{% endblock %}

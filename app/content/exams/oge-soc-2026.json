@@ -1,0 +1,173 @@
+{
+  "id": "oge-soc-2026",
+  "exam": "ОГЭ",
+  "subject": "Обществознание",
+  "year": 2026,
+  "duration_min": 180,
+  "source": "Спецификация ФИПИ ОГЭ 2026 (система оценивания, обобщённый план варианта); шкала и порог профильных классов — письмо Рособрнадзора от 25.02.2026 № 02-20, приложение 1, раздел 7, таблица 8",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 37,
+  "parts": [
+    {
+      "name": "Работа",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 2,
+          "answer": "extended",
+          "title": "Ценности, государство"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short",
+          "title": "Человек и общество"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short",
+          "title": "Примеры"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short",
+          "title": "Ценности и взаимосвязи"
+        },
+        {
+          "n": 5,
+          "points": 3,
+          "answer": "extended",
+          "title": "Социальная информация"
+        },
+        {
+          "n": 6,
+          "points": 2,
+          "answer": "extended",
+          "title": "Нормы и поступки"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short",
+          "title": "Экономика"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short",
+          "title": "Примеры"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short",
+          "title": "Взаимосвязи явлений"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short",
+          "title": "Семья и социальные нормы"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short",
+          "title": "Государство"
+        },
+        {
+          "n": 12,
+          "points": 4,
+          "answer": "extended",
+          "title": "Работа с источником"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short",
+          "title": "Политика"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short",
+          "title": "Государство"
+        },
+        {
+          "n": 15,
+          "points": 2,
+          "answer": "short",
+          "title": "Классификация"
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short",
+          "title": "Конституция и право"
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short",
+          "title": "Примеры"
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short",
+          "title": "Взаимосвязи явлений"
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short",
+          "title": "Сравнение"
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short",
+          "title": "Ценности и государство"
+        },
+        {
+          "n": 21,
+          "points": 2,
+          "answer": "extended",
+          "title": "Работа с текстом"
+        },
+        {
+          "n": 22,
+          "points": 2,
+          "answer": "extended",
+          "title": "Работа с текстом"
+        },
+        {
+          "n": 23,
+          "points": 3,
+          "answer": "extended",
+          "title": "Примеры"
+        },
+        {
+          "n": 24,
+          "points": 2,
+          "answer": "extended",
+          "title": "Объяснение и аргументы"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "grade",
+    "from": {
+      "3": 14,
+      "4": 24,
+      "5": 32
+    }
+  },
+  "profile_min": 29
+}

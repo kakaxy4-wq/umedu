@@ -1,0 +1,19 @@
+{# прогноз одним блоком: отметка (ОГЭ) или тестовый балл (ЕГЭ) с вилкой #}
+{% macro forecast(c, how=True) %}
+{% set k = c.kind %}
+<div class="u2-fc">
+  <div class="u2-fc-main">
+    {% if k == 'grade' %}<span class="u2-grade g{{ c.fc.grade }}">{{ c.fc.grade }}</span>
+    {% else %}<span class="u2-big">{{ c.fc.test }}</span>{% endif %}
+    <span class="u2-fc-band">{% if k == 'grade' %}{% if c.fc.grade_low != c.fc.grade_high %}от «{{ c.fc.grade_low }}» до «{{ c.fc.grade_high }}»{% else %}уверенно{% endif %}{% else %}{{ c.fc.test_low }}–{{ c.fc.test_high }} баллов{% endif %}
+      · первичный {{ c.fc.low }}–{{ c.fc.high }} из {{ c.exam.max_points }}</span>
+  </div>
+  {% if c.goal is not none %}
+  <div class="u2-goal">цель {% if k == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}
+    {% if c.gap > 0 %}· до цели {% if k == 'grade' %}+{{ c.goal - c.fc.grade }}{% else %}+{{ c.goal - c.fc.test }} б.{% endif %}
+    {% else %}· <b class="u2-ok">достигнута</b>{% endif %}</div>
+  {% endif %}
+  {% if c.attempts < 20 %}<p class="u2-hint">Прогноз пока грубый: решено заданий — {{ c.attempts }}. Вилка сужается с каждой попыткой.</p>{% endif %}
+  {% if how %}<p class="u2-hint"><a href="/u2/how">Как считается прогноз</a></p>{% endif %}
+</div>
+{% endmacro %}

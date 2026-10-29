@@ -1,0 +1,36 @@
+{% extends "u2/base.html" %}
+{% block title %}Я{% endblock %}
+{% block content %}
+<h1 class="u2-h1">{{ student_name }}</h1>
+<section class="u2-card">
+  <h2>Мои экзамены</h2>
+  {% for c in cards %}
+  <div class="u2-row"><span>{{ c.title }}</span><span>цель {% if c.kind == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}{% if c.exam_date %} · {{ c.exam_date }}{% endif %}</span></div>
+  {% endfor %}
+  <a class="u2-btn ghost" href="/u2/start">Изменить цель или добавить экзамен</a>
+</section>
+<section class="u2-card">
+  <h2>Время на подготовку</h2>
+  <p class="u2-hint">Сколько минут в день — план «Сегодня» уложится в это время.</p>
+  <form method="post" action="/u2/me/minutes" class="u2-seg">
+    <input type="hidden" name="csrf" value="{{ user.csrf }}">
+    {% for m in choices %}<button name="minutes" value="{{ m }}" aria-pressed="{{ 'true' if m == minutes else 'false' }}"{% if user.role != 'student' %} disabled{% endif %}>{{ m }} мин</button>{% endfor %}
+  </form>
+</section>
+<section class="u2-card">
+  <h2>Как это работает</h2>
+  <p class="u2-hint"><a href="/u2/how">Как считается прогноз и план на день</a> — простыми словами, с примером.</p>
+</section>
+<section class="u2-card">
+  <h2>Оформление</h2>
+  <div class="u2-seg" role="group" aria-label="Тема">
+    <button type="button" data-theme-set="light">Светлая</button>
+    <button type="button" data-theme-set="dark">Тёмная</button>
+    <button type="button" data-theme-set="">Как в системе</button>
+  </div>
+</section>
+<form method="post" action="/logout">
+  <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  <button class="u2-btn ghost">Выйти</button>
+</form>
+{% endblock %}

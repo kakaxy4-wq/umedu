@@ -1,0 +1,53 @@
+{% extends "u2/base.html" %}
+{% block title %}Прогресс{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Прогресс</h1>
+<p class="u2-actions"><a class="u2-btn ghost" href="/u2/mistakes">Мои ошибки</a></p>
+{% for c in cards %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ c.title }}</h2><span class="u2-chip">попыток: {{ c.attempts }}</span></div>
+  <div class="u2-band" role="img" aria-label="Прогноз первичного балла от {{ c.fc.low }} до {{ c.fc.high }} из {{ c.exam.max_points }}">
+    <span class="u2-band-fill" style="left: {{ c.fc.low / c.exam.max_points * 100 }}%; width: {{ (c.fc.high - c.fc.low) / c.exam.max_points * 100 }}%"></span>
+    <span class="u2-band-mid" style="left: {{ c.fc.primary / c.exam.max_points * 100 }}%"></span>
+  </div>
+  <p class="u2-hint">Первичный балл: {{ c.fc.low }}–{{ c.fc.high }} из {{ c.exam.max_points }}.</p>
+  {% if c.chart %}{% set ch = c.chart %}
+  <figure class="u2-chart">
+    <svg viewBox="0 0 {{ ch.w }} {{ ch.h }}" preserveAspectRatio="none" role="img"
+         aria-label="Прогноз первичного балла за {{ ch.days }} дн.: было {{ ch.first.primary_mean|round|int }}, стало {{ ch.last.primary_mean|round|int }} из {{ c.exam.max_points }}">
+      <polygon points="{{ ch.band }}" class="u2-chart-band"/>
+      <polyline points="{{ ch.line }}" class="u2-chart-line" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <figcaption>{{ ch.first.day[8:] }}.{{ ch.first.day[5:7] }} → {{ ch.last.day[8:] }}.{{ ch.last.day[5:7] }}: первичный {{ ch.first.primary_mean|round|int }} → {{ ch.last.primary_mean|round|int }},
+      {% if c.kind == 'grade' %}отметка «{{ ch.first.result }}» → «{{ ch.last.result }}»{% else %}{{ ch.first.result }} → {{ ch.last.result }} баллов{% endif %}</figcaption>
+  </figure>
+  {% else %}<p class="u2-hint">График появится со второго дня занятий.</p>{% endif %}
+  {% for g in c.groups %}
+  <div class="u2-bar"><span>{{ g.name }}</span><i style="--p: {{ g.p }}"></i><b>{{ (g.p * 100)|round|int }}%</b></div>
+  {% endfor %}
+  {% set m = c.mastery %}
+  <h3 class="u2-h3">По номерам</h3>
+  {% if m.sagging %}
+  <p class="u2-mlabel"><span class="u2-mark u2-mark-weak" aria-hidden="true"></span>Проседает — начни с них</p>
+  <ul class="u2-nums">
+    {% for t in m.sagging %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}"><b>{{ t.label }}</b> {{ t.title }}<small>{{ t.why }}</small></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if m.working %}
+  <p class="u2-mlabel"><span class="u2-mark u2-mark-mid" aria-hidden="true"></span>В работе — для освоения нужно 3 верных подряд</p>
+  <ul class="u2-nums">
+    {% for t in m.working %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}"><b>{{ t.label }}</b> {{ t.title }}<small>подряд: {{ t.streak }} из 3</small></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if m.mastered %}
+  <p class="u2-mlabel"><span class="u2-mark u2-mark-good" aria-hidden="true"></span>Освоено — 3 верных подряд</p>
+  <ul class="u2-nums u2-nums-done">
+    {% for t in m.mastered %}<li><a href="/u2/train/{{ c.id }}/{{ t.key }}" title="{{ t.title }}" aria-label="{{ t.label }}, {{ t.title }}"><b>{{ t.label }}</b></a></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if m.untouched %}<p class="u2-hint">Ещё не решал{% if m.sagging or m.working or m.mastered %} ни разу{% endif %}: {{ m.untouched }} {{ 'номер' if m.untouched % 10 == 1 and m.untouched % 100 != 11 else ('номера' if m.untouched % 10 in (2, 3, 4) and m.untouched % 100 not in (12, 13, 14) else 'номеров') }}. План на «Сегодня» подскажет, с какого начать.</p>{% endif %}
+</section>
+{% else %}
+<p>Экзамен ещё не выбран. <a href="/u2/start">Выбрать</a></p>
+{% endfor %}
+{% endblock %}

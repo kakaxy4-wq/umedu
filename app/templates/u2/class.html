@@ -1,0 +1,33 @@
+{% extends "u2/base.html" %}
+{% block title %}Класс{% endblock %}
+{% block content %}
+<a class="u2-back" href="/teacher">← Кабинет преподавателя</a>
+<h1 class="u2-h1">Класс по экзаменам</h1>
+{% for ex in exams %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ ex.title }}</h2><span class="u2-chip">{{ ex.rows|length }} уч.</span></div>
+  <div class="u2-scroll">
+  <table class="u2-table u2-class">
+    <thead><tr><th scope="col">Ученик</th><th scope="col">Прогноз</th><th scope="col">Цель</th><th scope="col">Слабые номера</th>
+      <th scope="col">Попыток за 7 дней</th><th scope="col">Занимался</th></tr></thead>
+    <tbody>
+    {% for r in ex.rows %}{% set fc = r.c.fc %}
+    <tr>
+      <th scope="row"><a href="/teacher/student/{{ r.sid }}">{{ r.name }}</a></th>
+      <td>{% if ex.kind == 'grade' %}«{{ fc.grade }}»{% else %}{{ fc.test }}{% endif %}<small>первичный {{ fc.low }}–{{ fc.high }}</small></td>
+      <td>{% if r.c.goal is none %}—{% elif r.c.gap > 0 %}<b class="u2-behind">{{ '«%s»'|format(r.c.goal) if ex.kind == 'grade' else r.c.goal }}</b>{% else %}{{ '«%s»'|format(r.c.goal) if ex.kind == 'grade' else r.c.goal }} ✓{% endif %}</td>
+      <td>{% for w in r.weak %}<span class="u2-weak" title="решит с вероятностью {{ (w.p * 100)|round|int }}%">{{ w.label }}</span>{% else %}—{% endfor %}</td>
+      <td>{{ r.week }}</td>
+      <td>{% if r.last %}{{ r.last[8:] }}.{{ r.last[5:7] }}{% else %}ещё нет{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% else %}
+<p>Пока никто из учеников не выбрал экзамен в umedu 2.0.</p>
+{% endfor %}
+<p class="u2-hint">Сверху — у кого разрыв с целью больше. Цель жирным — пока не достигнута по прогнозу. Слабые номера — решённые хоть раз,
+  где вероятность решить ниже 60 %. Чтобы открыть кабинет ученика, нажми на имя.</p>
+{% endblock %}

@@ -1,0 +1,248 @@
+{
+  "id": "ege-inf-2026",
+  "exam": "ЕГЭ",
+  "subject": "Информатика",
+  "year": 2026,
+  "duration_min": 235,
+  "source": "ФИПИ ЕГЭ 2026: 27 заданий, 29 баллов, компьютерная форма, без изменений КИМ; шкала — Рособрнадзор 2026 (по lenta.ru 17.04.2026)",
+  "verified": {
+    "structure": true,
+    "scale": true
+  },
+  "max_points": 29,
+  "parts": [
+    {
+      "name": "Работа на компьютере",
+      "answer": "short",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 1,
+          "answer": "short",
+          "title": "Граф и таблица",
+          "minutes": 3
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "short",
+          "title": "Таблицы истинности",
+          "minutes": 3
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "short",
+          "title": "Базы данных",
+          "minutes": 3
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "short",
+          "title": "Кодирование и декодирование",
+          "minutes": 2
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "short",
+          "title": "Простой алгоритм",
+          "minutes": 4
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "short",
+          "title": "Исполнитель и цикл",
+          "minutes": 4
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "short",
+          "title": "Кодирование изображений и звука",
+          "minutes": 5
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "short",
+          "title": "Комбинаторика",
+          "minutes": 4
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "short",
+          "title": "Электронные таблицы",
+          "minutes": 6
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "short",
+          "title": "Поиск в тексте",
+          "minutes": 3
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "short",
+          "title": "Объём информации",
+          "minutes": 3
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "short",
+          "title": "Исполнитель Редактор",
+          "minutes": 6
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "short",
+          "title": "Маска подсети",
+          "minutes": 3
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "short",
+          "title": "Системы счисления",
+          "minutes": 3
+        },
+        {
+          "n": 15,
+          "points": 1,
+          "answer": "short",
+          "title": "Математическая логика",
+          "minutes": 3
+        },
+        {
+          "n": 16,
+          "points": 1,
+          "answer": "short",
+          "title": "Рекурсия",
+          "minutes": 5
+        },
+        {
+          "n": 17,
+          "points": 1,
+          "answer": "short",
+          "title": "Обработка последовательности",
+          "minutes": 14
+        },
+        {
+          "n": 18,
+          "points": 1,
+          "answer": "short",
+          "title": "Электронные таблицы: динамика",
+          "minutes": 8
+        },
+        {
+          "n": 19,
+          "points": 1,
+          "answer": "short",
+          "title": "Теория игр: один ход",
+          "minutes": 6
+        },
+        {
+          "n": 20,
+          "points": 1,
+          "answer": "short",
+          "title": "Теория игр: стратегия",
+          "minutes": 8
+        },
+        {
+          "n": 21,
+          "points": 1,
+          "answer": "short",
+          "title": "Теория игр: дерево",
+          "minutes": 11
+        },
+        {
+          "n": 22,
+          "points": 1,
+          "answer": "short",
+          "title": "Параллельные процессы",
+          "minutes": 7
+        },
+        {
+          "n": 23,
+          "points": 1,
+          "answer": "short",
+          "title": "Исполнитель: число программ",
+          "minutes": 8
+        },
+        {
+          "n": 24,
+          "points": 1,
+          "answer": "short",
+          "title": "Обработка строк",
+          "minutes": 18
+        },
+        {
+          "n": 25,
+          "points": 1,
+          "answer": "short",
+          "title": "Делители и маски",
+          "minutes": 20
+        },
+        {
+          "n": 26,
+          "points": 2,
+          "answer": "short",
+          "title": "Сортировка",
+          "minutes": 35
+        },
+        {
+          "n": 27,
+          "points": 2,
+          "answer": "short",
+          "title": "Анализ данных",
+          "minutes": 40
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "test",
+    "min_certificate": 40,
+    "min_university": 46,
+    "table": [
+      0,
+      7,
+      14,
+      20,
+      27,
+      34,
+      40,
+      43,
+      46,
+      48,
+      51,
+      54,
+      56,
+      59,
+      62,
+      64,
+      67,
+      70,
+      72,
+      75,
+      78,
+      80,
+      83,
+      85,
+      88,
+      90,
+      93,
+      95,
+      98,
+      100
+    ]
+  },
+  "conditions": []
+}

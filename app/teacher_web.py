@@ -288,6 +288,7 @@ def teacher_home(request: Request, conn=Depends(get_db), user=Depends(auth.teach
     attempts_week = conn.execute("SELECT COUNT(*) FROM task_attempts WHERE student_id = ? AND "
                                  "created_at >= date('now', '-7 days')", (sid,)).fetchone()[0]
     return render(request, "teacher/home.html", conn, user, sid=sid, pending=pending, purchases=purchases, events=events,
+                  umedu2=config.UMEDU2,
                   current=LESSON_BY_NUM.get(upto), upto=upto, week=week, attempts_week=attempts_week,
                   current_guide=has_guide(upto), next_lesson_at=students.get_student(conn, sid)["next_lesson_at"] or "",
                   state=conn.execute("SELECT * FROM lesson_state WHERE student_id = ? AND num = ?", (sid, upto)).fetchone(),

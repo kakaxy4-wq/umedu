@@ -1,0 +1,7 @@
+<form method="post" action="/account/gallery" class="stack">
+  <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  <input type="hidden" name="next" value="{{ gallery_next or '/account' }}">
+  <p><label><input type="checkbox" name="gallery" value="1"{% if gallery_on %} checked{% endif %}> Показывать мой ник в галерее</label></p>
+  {% include "account/_gallery_note.html" %}
+  <button class="{{ gallery_button or 'btn btn-small' }}">Сохранить</button>
+</form>

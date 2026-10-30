@@ -100,6 +100,7 @@
   {{ group("prize", "🏆 Награды", prize_links, False) }}
   {{ group("more", "Ещё", more_links, False) }}
   {% endif %}
+  {% if user.role == 'student' %}<a href="/account">👤 Аккаунт и данные</a>{% endif %}
   <form method="post" action="/logout" class="logout">
     <input type="hidden" name="csrf" value="{{ user.csrf }}">
     <button class="linklike">🚪 Выйти ({{ user.display_name }})</button>

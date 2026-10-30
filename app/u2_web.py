@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import auth, config, oge_drill
+from . import account, auth, config, oge_drill
 from . import exam_model as em
 from . import knowledge as kn
 from .content import inf_gen, math_gen, oge_gen, phys_gen
@@ -288,8 +288,10 @@ def u2_how(request: Request, conn=Depends(get_db), user=Depends(auth.current_use
 @router.get("/me", response_class=HTMLResponse)
 def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
+    st = students.get_student(conn, sid)
     return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, config.today()),
-                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES)
+                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES,
+                 gallery_on=account.granted(st) if st else False)
 
 
 @router.post("/me/minutes")

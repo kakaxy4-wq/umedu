@@ -8,7 +8,7 @@
   <a class="card project" href="/p/{{ p.slug }}">
     {% if p.image_path %}<img src="/files/project/{{ p.id }}/image" alt="" class="project-img">{% else %}<div class="project-img placeholder">🐍</div>{% endif %}
     <h3>{{ p.title }}</h3>
-    <small class="muted">автор: {{ p.author }}</small>
+    {% if p.author %}<small class="muted">автор: {{ p.author }}</small>{% endif %}
     <p class="muted small">{{ p.description[:140] }}</p>
   </a>
   {% else %}

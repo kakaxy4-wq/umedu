@@ -101,9 +101,10 @@ def signup(conn, name, grade, login, password, consent, ip="?", age14=False, par
         return None, "Сейчас все места заняты — загляни через пару дней."
     sid = create_student(conn, login, name, password)
     chosen = [s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"]
-    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ? WHERE id = ?",
+    # parent_id — аккаунт заводит родитель, ученику меньше 14 лет. Сам с 14 лет: minor = 0.
+    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ?, minor = ? WHERE id = ?",
                  (grade, "%s · %s%s" % (CONSENT_VERSION, game.now_iso(), " · родитель #%d" % parent_id if parent_id else ""),
-                  subjects.serialize(chosen), sid))
+                  subjects.serialize(chosen), 1 if parent_id else 0, sid))
     for cid in ["oge1"] + (["ru_entry"] if "russian" in chosen else []):
         conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
                      (sid, cid, game.now_iso()))

@@ -7,6 +7,13 @@
   python manage.py name <логин> <имя>   — имя ученика для приветствия и публичных страниц
   python manage.py students             — список учеников
   python manage.py backup               — копия базы в data/backups/
+  python manage.py purge-inactive       — кто будет удалён через год без занятий (база не меняется)
+  python manage.py purge-inactive --apply
+                                        — удалить таких учеников и пустые кабинеты родителей
+                                        Сайт делает это сам раз в сутки. Выключить: CQ_PURGE_INACTIVE=0
+  python manage.py delete-student <логин> [--apply]
+  python manage.py delete-parent <логин> [--apply]
+                                        — удалить один аккаунт; без --apply только показывает, что пропадёт
 
 Учеников удобнее добавлять на сайте: «👥 Ученики» → «Добавить ученика».
 """
@@ -90,6 +97,61 @@ def cmd_students():
         print("%-16s %-20s %s" % (s["username"], s["display_name"], "" if s["active"] else "(архив)"))
 
 
+def _print_purge(report):
+    for st in report["students"]:
+        print("ученик %-16s %-20s последнее: %s%s" % (
+            st["username"], st["display_name"], st["last"], " · младше 14" if st["minor"] else ""))
+    for p in report["parents"]:
+        print("родитель %-16s %-20s последнее: %s" % (p["username"], p["display_name"], p["last"]))
+    if not report["students"] and not report["parents"]:
+        print("Некого удалять.")
+    elif report["dry_run"]:
+        print("База не изменена. Чтобы удалить, добавьте --apply.")
+    else:
+        print("Удалено: учеников %d, родителей %d." % (len(report["students"]), len(report["parents"])))
+
+
+def cmd_purge(apply):
+    init_db()
+    from app import account
+    _print_purge(account.purge_inactive(connect(), dry_run=not apply))
+
+
+def cmd_delete_student(login, apply):
+    init_db()
+    from app import account
+    conn = connect()
+    row = conn.execute("SELECT id, username, display_name FROM users WHERE username = ? AND role = 'student'",
+                       (login.lower(),)).fetchone()
+    if not row:
+        sys.exit("Нет ученика %s" % login)
+    print("Ученик %s (%s), id=%d. Удалятся аккаунт, ответы, прогресс, проекты, согласия и файлы." % (
+        row["username"], row["display_name"], row["id"]))
+    if not apply:
+        print("База не изменена. Чтобы удалить, добавьте --apply.")
+        return
+    account.delete_student(conn, row["id"])
+    print("Удалено.")
+
+
+def cmd_delete_parent(login, apply):
+    init_db()
+    from app import account
+    conn = connect()
+    row = conn.execute("SELECT id, username, display_name FROM parents WHERE username = ?", (login.lower(),)).fetchone()
+    if not row:
+        sys.exit("Нет родителя %s" % login)
+    kids = account.exclusive_minors(conn, row["id"])
+    print("Родитель %s (%s), id=%d." % (row["username"], row["display_name"], row["id"]))
+    if kids:
+        print("Вместе с ним удалятся дети младше 14 лет: %s." % ", ".join(k["display_name"] for k in kids))
+    if not apply:
+        print("База не изменена. Чтобы удалить, добавьте --apply.")
+        return
+    account.delete_parent(conn, row["id"])
+    print("Удалено.")
+
+
 def cmd_backup():
     dest_dir = config.DATA_DIR / "backups"
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -122,6 +184,12 @@ if __name__ == "__main__":
         print("Схема базы актуальна: %s" % config.DB_PATH)
     elif args[0] == "backup":
         cmd_backup()
+    elif args[0] == "purge-inactive":
+        cmd_purge(apply="--apply" in args[1:])
+    elif args[0] == "delete-student" and len(args) >= 2:
+        cmd_delete_student(args[1], apply="--apply" in args[2:])
+    elif args[0] == "delete-parent" and len(args) >= 2:
+        cmd_delete_parent(args[1], apply="--apply" in args[2:])
     elif args[0] == "has-users":
         init_db()
         sys.exit(0 if connect().execute("SELECT COUNT(*) FROM users").fetchone()[0] else 1)

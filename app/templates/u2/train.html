@@ -38,14 +38,14 @@
   {% if generated %}
   <input type="hidden" name="seed" value="{{ seed }}">
   <div class="u2-pick-row">
-    <label>Ответ <input name="answer" autocomplete="off" autocapitalize="off" spellcheck="false" required autofocus></label>
-    <button class="u2-btn">Проверить</button>
+    <label>Ответ <input name="answer" data-qa="answer" autocomplete="off" autocapitalize="off" spellcheck="false" required autofocus></label>
+    <button class="u2-btn" data-qa="check">Проверить</button>
   </div>
   {% else %}
   <p>Реши задание {{ t.label }} из <a href="{{ bank }}" target="_blank" rel="noopener">открытого банка ФИПИ</a> или своего сборника,
     сверь с ответом и отметь, сколько баллов получил бы на экзамене.</p>
   <div class="u2-score" role="group" aria-label="Баллы">
-    {% for s in range(t.points + 1) %}<button name="score" value="{{ s }}" class="u2-btn{{ ' ghost' if s < t.points }}">{{ s }}</button>{% endfor %}
+    {% for s in range(t.points + 1) %}<button name="score" value="{{ s }}" data-qa="score" data-score="{{ s }}" class="u2-btn{{ ' ghost' if s < t.points }}">{{ s }}</button>{% endfor %}
   </div>
   <p class="u2-hint">Честная отметка важнее высокой: от неё зависит прогноз и план.</p>
   {% endif %}

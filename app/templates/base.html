@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ site_name }}{% endblock %} · {{ site_name }}</title>
+{% if stage %}<meta name="robots" content="noindex, nofollow">{% endif %}
 {% if user %}<meta name="csrf" content="{{ user.csrf }}">{% endif %}
 {% if logo %}<link rel="icon" href="{{ logo }}" type="image/svg+xml">{% else %}<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{ brand }}</text></svg>">{% endif %}
 <link rel="stylesheet" href="/static/vendor/codemirror/codemirror.css?v={{ v }}">
 <link rel="stylesheet" href="/static/css/app.css?v={{ v }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+{% if stage %}<p class="stage-banner" role="status" data-qa="stage-banner">Тестовый стенд, данные могут быть стёрты</p>{% endif %}
 {% if user %}
 <header class="topbar">
   <button class="nav-toggle" aria-label="Меню">☰</button>

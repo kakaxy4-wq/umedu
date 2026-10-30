@@ -11,7 +11,7 @@
   <form method="post" action="/parent/{{ token }}/link">{{ fam_csrf(fam) }}<button class="btn btn-big">➕ Добавить {{ st.display_name }} в мой кабинет</button></form>
   {% else %}
   {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
-  <form method="post" action="/parent/{{ token }}/account" class="stack">
+  <form method="post" action="/parent/{{ token }}/account" class="stack" data-qa="parent-join">
     <label>Как к вам обращаться<input name="name" value="{{ form.name or '' }}" maxlength="60" required autofocus placeholder="Например, Анна Сергеевна"></label>
     <label>Логин<input name="login" value="{{ form.login or '' }}" autocomplete="username" autocapitalize="off" required pattern="[a-zA-Z0-9_.\-]{2,32}"></label>
     <label>Пароль (от 8 символов)<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>

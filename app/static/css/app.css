@@ -53,6 +53,8 @@
 :root { color-scheme: light dark; }
 :root[data-theme="light"] { color-scheme: light; }
 
+.stage-banner { margin: 0; padding: 8px 12px; background: #c6ff1a; color: #14112a; text-align: center;
+  font-weight: 700; font-size: 14px; line-height: 1.35; }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
 body { overflow-x: clip; }

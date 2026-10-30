@@ -12,7 +12,7 @@
   <form method="post" action="/parent/{{ token }}/link">{{ fam_csrf(fam) }}<button class="btn btn-small">➕ Добавить в мой кабинет</button></form>
   {% else %}
   <p><b>Сохраните доступ:</b> заведите кабинет родителя — вход по логину и паролю, все дети в одном месте, ссылку больше не потеряете.</p>
-  <a class="btn btn-small" href="/parent/{{ token }}/account">👪 Завести кабинет</a> <a class="small" href="/family/login">У меня уже есть кабинет</a>
+  <a class="btn btn-small" href="/parent/{{ token }}/account" data-qa="parent-account">👪 Завести кабинет</a> <a class="small" href="/family/login">У меня уже есть кабинет</a>
   {% endif %}
 </section>
 {% endif %}

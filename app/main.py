@@ -106,6 +106,9 @@ async def security_headers(request: Request, call_next):
         # страница родителя и карточки доступа — не кэшировать и не индексировать
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    if config.STAGE:
+        # стенд не должен попасть в поиск, даже если страница сама по себе открытая
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
 
 
@@ -135,7 +138,7 @@ async def _http_error(request: Request, exc):
     return templates.TemplateResponse(request, "error.html", {
         "request": request, "user": None, "site_name": config.SITE_NAME, "brand": config.BRAND_EMOJI,
         "v": STATIC_VERSION, "nav": request.url.path, "chem_site": config.CHEM_SITE, "status": exc.status_code,
-        "message": detail}, status_code=exc.status_code)
+        "message": detail, "stage": config.STAGE}, status_code=exc.status_code)
 
 
 @app.exception_handler(NoStudent)
@@ -252,6 +255,8 @@ def render(request, name, conn, user=None, **ctx):
         "game_full": config.GAME == "full",
         "signup": config.SIGNUP,
         "open_signup": config.OPEN_SIGNUP,
+        "stage": config.STAGE,
+        "umedu2": config.UMEDU2,
         "public_site": theme.THEME == "public",
         "source_url": config.SOURCE_URL,
         "logo": theme.LOGO,

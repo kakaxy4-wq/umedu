@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import account, auth, config, oge_drill
+from . import account, auth, config, labs, oge_drill
 from . import exam_model as em
 from . import knowledge as kn
 from .content import inf_gen, math_gen, oge_gen, phys_gen
@@ -128,7 +128,8 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
                 it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})
     return _page(request, conn, user, "today", "u2/today.html", cards=cards, plans=plans,
-                 total=sum(p["minutes"] for p in plans), act=kn.activity(conn, sid, today), intro=_intro(cards, plans))
+                 total=sum(p["minutes"] for p in plans), act=kn.activity(conn, sid, today), intro=_intro(cards, plans),
+                 lab_offer=_lab_offer(conn, sid, cards, today))
 
 
 def _intro(cards, plans):
@@ -522,6 +523,103 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
     delta = {"from": before["fc"][k], "to": after["fc"][k], "primary": round(after["fc"]["primary"] - before["fc"]["primary"], 1)}
     nxt = _next_step(exam, after["states"], today, key, _minutes(conn, sid))
     return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt, **ctx)
+
+
+def _lab_offer(conn, sid, cards, today):
+    """Если номер, к которому привязан опыт, проседает — одна карточка на «Сегодня». Не чаще раза в 3 дня."""
+    sagging = {}
+    for c in cards:
+        mastery = _mastery(c["exam"], c["states"], kn.streaks(conn, sid, c["id"]), today)
+        sagging[c["id"]] = [(it["key"], it["p"]) for it in mastery["sagging"] if isinstance(it["key"], int)]
+    offered = {r["lab_id"]: date.fromisoformat(r["day"]) for r in conn.execute(
+        "SELECT lab_id, day FROM lab_offer WHERE student_id = ?", (sid,))}
+    pick = labs.pick_offer(sagging, offered, today)
+    if not pick:
+        return None
+    with conn:
+        conn.execute("INSERT INTO lab_offer (student_id, lab_id, day) VALUES (?, ?, ?) "
+                     "ON CONFLICT(student_id, lab_id) DO UPDATE SET day = excluded.day",
+                     (sid, pick["id"], today.isoformat()))
+    exam = em.load(pick["exam_id"])
+    pick["exam_title"] = "%s · %s" % (exam["exam"], exam["subject"])
+    pick["task_title"] = _task_info(exam, pick["task"])["title"]
+    return pick
+
+
+def _lab_or_404(lab_id):
+    try:
+        return labs.get(lab_id)
+    except KeyError:
+        raise HTTPException(404)
+
+
+@router.get("/lab", response_class=HTMLResponse)
+def u2_labs(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    need_sid(conn, user)
+    items = []
+    for lab in labs.all_labs():
+        items.append({**lab, "exams_label": labs.exams_label(lab)})
+    return _page(request, conn, user, "today", "u2/lab_list.html", labs=items)
+
+
+@router.get("/lab/{lab_id}", response_class=HTMLResponse)
+def u2_lab(lab_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    sid = need_sid(conn, user)
+    lab = _lab_or_404(lab_id)
+    enrolled = {e["exam_id"] for e in kn.exams_of(conn, sid)}
+    return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result=None,
+                 transfer=labs.transfer_public(lab, enrolled), fipi=FIPI_BANK["ОГЭ"],
+                 lab_json=labs.client_json(lab, random.randrange(1, 10 ** 6)))
+
+
+@router.post("/lab/{lab_id}/check")
+def u2_lab_check(lab_id: str, kind: str = Form(...), predict: str = Form(""), value: str = Form(""),
+                 user=Depends(auth.check_csrf)):
+    only_student(user)
+    lab = _lab_or_404(lab_id)
+    if kind == "predict":
+        return labs.check_predict(lab, predict)
+    if kind == "reading":
+        return labs.check_reading(lab, value)
+    raise HTTPException(400, "Неизвестный шаг")
+
+
+@router.post("/lab/{lab_id}/transfer", response_class=HTMLResponse)
+async def u2_lab_transfer(lab_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    sid, today = only_student(user), config.today()
+    lab = _lab_or_404(lab_id)
+    enrolled_rows = kn.exams_of(conn, sid)
+    enrolled = {e["exam_id"] for e in enrolled_rows}
+    items = labs.visible_transfer(lab, enrolled)
+    if not items:
+        raise HTTPException(400, "Сначала выбери экзамен по физике")
+    form = await request.form()
+    answers = [str(form.get("a%d" % i, ""))[:100] for i in range(len(items))]
+    graded = labs.grade_transfer(items, answers)
+    _budget(conn, sid, today, len(graded))
+    before = {}
+    for g in graded:
+        if g["exam"] not in before:
+            enr = next(e for e in enrolled_rows if e["exam_id"] == g["exam"])
+            before[g["exam"]] = _card(enr, kn.load_states(conn, sid, g["exam"]), today)
+    with conn:
+        for g in graded:
+            kn.record(conn, sid, g["exam"], g["task"], 1.0 if g["ok"] else 0.0, today, given=g["given"] or None)
+        for exam_id in before:
+            kn.log_forecast(conn, sid, exam_id, today)
+    deltas = []
+    for exam_id, was in before.items():
+        enr = next(e for e in enrolled_rows if e["exam_id"] == exam_id)
+        after = _card(enr, kn.load_states(conn, sid, exam_id), today)
+        k = after["kind"]
+        deltas.append({"title": after["title"], "kind": k, "was": was["fc"][k], "now": after["fc"][k]})
+    shown = []
+    for g in graded:
+        name = "ОГЭ" if g["exam"].startswith("oge") else "ЕГЭ"
+        shown.append({"label": "%s №%s" % (name, g["task"]), "text": g["text"], "ok": g["ok"],
+                      "given": g["given"], "explain": "" if g["ok"] else g["explain"]})
+    return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result={"items": shown, "deltas": deltas},
+                 transfer=[], fipi=FIPI_BANK["ОГЭ"], lab_json="")
 
 
 # ================================================================== мини-пробник

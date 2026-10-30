@@ -1,0 +1,15 @@
+{% extends "u2/base.html" %}
+{% block title %}Лаборатория{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/today">← Сегодня</a>
+<h1 class="u2-h1">Лаборатория</h1>
+<p class="u2-hint">Сначала вопрос и твоё предсказание, потом измерения, сравнение и закон. В конце — короткие задания в прогноз. Это не ролик.</p>
+{% for lab in labs %}
+<a class="u2-card u2-link" href="/u2/lab/{{ lab.id }}">
+  <div class="u2-card-head"><h2>{{ lab.title }}</h2><span class="u2-chip">{{ lab.grade_band }}</span></div>
+  <p>{{ lab.question }}</p>
+  <p class="u2-hint">{{ lab.exams_label }}</p>
+</a>
+{% endfor %}
+<p class="u2-hint">Химия — «Собери атом» и видео — остаётся в ХимЛабе. Сюда её не переносили.</p>
+{% endblock %}

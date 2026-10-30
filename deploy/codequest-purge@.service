@@ -1,0 +1,20 @@
+# Удаление аккаунтов, которыми не пользовались год (политика: «через 1 год после последнего занятия»).
+# Шаблон на экземпляр: %i — имя экземпляра, настройки в /etc/codequest/%i.env, данные в /var/lib/codequest-%i.
+# Сначала сухой прогон (список — в журнал), потом удаление. Установка и влияние на другие экземпляры — deploy/README.md.
+[Unit]
+Description=%i — удаление аккаунтов без занятий больше года
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=codequest
+Group=codequest
+WorkingDirectory=/opt/codequest
+EnvironmentFile=/etc/codequest/%i.env
+ExecStartPre=/opt/codequest/.venv/bin/python manage.py purge-inactive
+ExecStart=/opt/codequest/.venv/bin/python manage.py purge-inactive --apply
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/codequest-%i
+PrivateTmp=true

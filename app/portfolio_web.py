@@ -7,7 +7,7 @@ import secrets
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import auth, config, game
+from . import account, auth, config, game
 from .db import get_db
 from .main import FILE_EXT, IMAGE_EXT, back, is_teacher, need_sid, render, save_upload, upload_path
 
@@ -99,8 +99,7 @@ def project_file(pid: int, kind: str, request: Request, conn=Depends(get_db)):
 
 @router.get("/p/{slug}", response_class=HTMLResponse)
 def public_project(slug: str, request: Request, conn=Depends(get_db)):
-    row = conn.execute("SELECT p.*, u.display_name AS author FROM projects p JOIN users u ON u.id = p.student_id "
-                       "WHERE p.slug = ? AND p.public = 1 AND u.active = 1", (slug,)).fetchone()
+    row = account.public_project(conn, slug)
     if not row:
         raise HTTPException(404)
     return render(request, "public_project.html", conn, None, project=row, student_name=row["author"])
@@ -108,6 +107,5 @@ def public_project(slug: str, request: Request, conn=Depends(get_db)):
 
 @router.get("/gallery", response_class=HTMLResponse)
 def gallery(request: Request, conn=Depends(get_db)):
-    projects = conn.execute("SELECT p.*, u.display_name AS author FROM projects p JOIN users u ON u.id = p.student_id "
-                            "WHERE p.public = 1 AND u.active = 1 ORDER BY p.updated_at DESC").fetchall()
+    projects = account.public_projects(conn)
     return render(request, "gallery.html", conn, None, projects=projects, student_name="")

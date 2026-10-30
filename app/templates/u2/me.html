@@ -29,6 +29,26 @@
     <button type="button" data-theme-set="">Как в системе</button>
   </div>
 </section>
+{% if user.role == 'student' %}
+<section class="u2-card">
+  <h2>Ник в галерее</h2>
+  {% if subject.minor %}
+  <p class="u2-hint">Тебе меньше 14 лет. Показ ника включает родитель в своём кабинете. Сам ты эту галочку не ставишь.</p>
+  {% else %}
+  {% set gallery_next = '/u2/me' %}
+  {% set gallery_button = 'u2-btn' %}
+  {% include "account/_gallery_form.html" %}
+  {% endif %}
+</section>
+<section class="u2-card">
+  <h2>Аккаунт</h2>
+  {% if subject.minor %}
+  <p class="u2-hint">Удалить аккаунт может родитель. <a href="/account">Подробнее</a></p>
+  {% else %}
+  <p class="u2-hint"><a href="/account/delete">Удалить аккаунт</a> — вместе с ответами, прогрессом и проектами.</p>
+  {% endif %}
+</section>
+{% endif %}
 <form method="post" action="/logout">
   <input type="hidden" name="csrf" value="{{ user.csrf }}">
   <button class="u2-btn ghost">Выйти</button>

@@ -22,8 +22,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from markupsafe import Markup, escape
 from starlette.concurrency import run_in_threadpool
 
-from . import (art, auth, config, events, game, levels, oge_drill, parent_bot, russian, season, students, subjects, theme,
-               today, weekly)
+from . import (account, art, auth, config, events, game, levels, oge_drill, parent_bot, russian, season, students,
+               subjects, theme, today, weekly)
 
 from .content.checks import CHECK_BY_ID, CHECKS, grade
 from .content.glossary import add_abbr
@@ -44,6 +44,13 @@ async def lifespan(_app):
     config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     init_db()
     tasks = [asyncio.create_task(weekly.scheduler())] if os.environ.get("CQ_WEEKLY", "1") == "1" else []
+    if account.purge_enabled():
+        # Раз в сутки снимаем аккаунты, которыми не пользовались год. Ошибка здесь не должна ронять сайт.
+        try:
+            account.run_scheduled()
+        except Exception:
+            account.log.exception("не удалось проверить неактивные аккаунты")
+        tasks.append(asyncio.create_task(account.scheduler()))
     if parent_bot.enabled():
         tasks.append(asyncio.create_task(parent_bot.poller()))
     yield
@@ -475,6 +482,7 @@ from .family_web import router as family_router  # noqa: E402
 from .teacher_web import router as teacher_router  # noqa: E402
 from .signup_web import router as signup_router  # noqa: E402
 from .u2_web import router as u2_router  # noqa: E402
+from .account_web import router as account_router  # noqa: E402
 app.include_router(student_router)
 app.include_router(oge_router)
 app.include_router(russian_router)
@@ -483,6 +491,7 @@ app.include_router(family_router)
 app.include_router(teacher_router)
 app.include_router(signup_router)
 app.include_router(u2_router)
+app.include_router(account_router)
 from .chem_web import router as chem_router  # noqa: E402 — после всех общих функций, которыми он пользуется
 
 app.include_router(chem_router)

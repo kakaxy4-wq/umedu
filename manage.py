@@ -14,6 +14,9 @@
   python manage.py delete-student <логин> [--apply]
   python manage.py delete-parent <логин> [--apply]
                                         — удалить один аккаунт; без --apply только показывает, что пропадёт
+  python manage.py seed_demo            — демо-ученик, родитель и класс с попытками за 2 недели.
+                                        Только стенд (CQ_STAGE=1). На проде команда отказывается
+                                        и базу не меняет. Повторный запуск тоже ничего не меняет.
 
 Учеников удобнее добавлять на сайте: «👥 Ученики» → «Добавить ученика».
 """
@@ -152,6 +155,30 @@ def cmd_delete_parent(login, apply):
     print("Удалено.")
 
 
+def cmd_seed_demo():
+    from app.demo import DemoRefused, seed_demo
+    if not config.STAGE:
+        sys.stderr.write("seed_demo только для тестового стенда (CQ_STAGE=1). База не изменена.\n")
+        sys.exit(1)
+    init_db()
+    try:
+        report = seed_demo(connect())
+    except DemoRefused as exc:
+        sys.stderr.write(str(exc) + "\n")
+        sys.exit(1)
+    if report["created"]:
+        print("Демо-класс записан: %d учеников, попыток %d, дни %s … %s." % (
+            report["members"], report["attempts"], report["first_day"], report["last_day"]))
+    else:
+        print("Демо уже есть, база не изменена. Попыток %d, дни %s … %s." % (
+            report["attempts"], report["first_day"], report["last_day"]))
+    print("Преподаватель: %s. Пароль demo-teacher — только если учётки ещё не было, иначе пароль прежний." % report["teacher"])
+    for login in report["students"]:
+        print("Ученик %s / %s" % (login, report["passwords"][login]))
+    print("Родитель %s / %s" % (report["parent"], report["passwords"][report["parent"]]))
+    print("Пароли только для стенда. Данные можно стереть.")
+
+
 def cmd_backup():
     dest_dir = config.DATA_DIR / "backups"
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -193,6 +220,8 @@ if __name__ == "__main__":
     elif args[0] == "has-users":
         init_db()
         sys.exit(0 if connect().execute("SELECT COUNT(*) FROM users").fetchone()[0] else 1)
+    elif args[0] == "seed_demo":
+        cmd_seed_demo()
     else:
         print(__doc__)
         sys.exit(1)

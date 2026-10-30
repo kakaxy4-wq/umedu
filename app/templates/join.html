@@ -7,7 +7,7 @@
   <h1>Регистрация</h1>
   <p class="muted">Бесплатно. Фамилию, телефон и почту не спрашиваем — только имя или ник.</p>
   {% if error %}<p class="pill bad">{{ error }}</p>{% endif %}
-  <form method="post" action="/join" class="stack">
+  <form method="post" action="/join" class="stack" data-qa="join">
     <label>Как к тебе обращаться
       <input name="name" value="{{ form.name or '' }}" required maxlength="40" autocomplete="off" placeholder="Имя или ник"></label>
     <fieldset class="grade-pick">

@@ -4,7 +4,7 @@
 <h1 class="u2-h1">{{ c.title }}: с чего начинаем</h1>
 <p class="u2-hint">Минута честных ответов — и первый прогноз будет похож на правду. Это не экзамен: по первым же решённым
   заданиям прогноз сам поправится.</p>
-<form method="post" action="/u2/diag/{{ c.id }}">
+<form method="post" action="/u2/diag/{{ c.id }}" data-qa="diag">
   <input type="hidden" name="csrf" value="{{ user.csrf }}">
   {% for sec in sections %}
   {% set i = loop.index0 %}

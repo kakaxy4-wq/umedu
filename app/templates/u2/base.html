@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}umedu{% endblock %} · umedu</title>
+{% if stage %}<meta name="robots" content="noindex, nofollow">{% endif %}
 <meta name="csrf" content="{{ user.csrf }}">
 <link rel="icon" href="/static/img/brand/umedu-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/css/u2.css?v={{ v }}">
 <script src="/static/js/u2.js?v={{ v }}"></script>
 </head>
 <body>
+{% if stage %}<p class="stage-banner" role="status" data-qa="stage-banner">Тестовый стенд, данные могут быть стёрты</p>{% endif %}
 <header class="u2-top">
   <a class="u2-logo" href="/u2/today"><img src="/static/img/brand/umedu-mark.svg" alt=""> umedu</a>
   <span class="u2-who">{{ student_name }}</span>
@@ -19,7 +21,7 @@
 </main>
 <nav class="u2-tabs" aria-label="Разделы">
   {% for key, label in tabs %}
-  <a href="/u2/{{ key }}" class="u2-tab{% if key == tab %} on{% endif %}"{% if key == tab %} aria-current="page"{% endif %}>
+  <a href="/u2/{{ key }}" class="u2-tab{% if key == tab %} on{% endif %}" data-qa="tab-{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>
     <span class="u2-dot" aria-hidden="true"></span>{{ label }}</a>
   {% endfor %}
 </nav>

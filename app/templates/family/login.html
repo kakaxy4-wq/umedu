@@ -7,7 +7,7 @@
   <h1>Кабинет родителя</h1>
   <p class="muted">{{ site_name }}</p>
   {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
-  <form method="post" action="/family/login" class="stack">
+  <form method="post" action="/family/login" class="stack" data-qa="parent-login">
     <label>Логин<input name="username" autocomplete="username" autocapitalize="off" required autofocus></label>
     <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
     <button class="btn btn-big">Войти</button>

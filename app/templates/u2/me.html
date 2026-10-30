@@ -51,6 +51,6 @@
 {% endif %}
 <form method="post" action="/logout">
   <input type="hidden" name="csrf" value="{{ user.csrf }}">
-  <button class="u2-btn ghost">Выйти</button>
+  <button class="u2-btn ghost" data-qa="logout">Выйти</button>
 </form>
 {% endblock %}

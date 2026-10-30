@@ -8,7 +8,7 @@
 {% for exam, group in catalog|groupby('exam')|sort(attribute='grouper', reverse=true) %}
 <h2 class="u2-h2">{{ exam }} · {{ '9 класс' if exam == 'ОГЭ' else '11 класс' }}</h2>
 {% for e in group %}
-<form method="post" action="/u2/start" class="u2-card u2-pick">
+<form method="post" action="/u2/start" class="u2-card u2-pick" data-qa="pick-exam" data-exam-id="{{ e.id }}">
   <input type="hidden" name="csrf" value="{{ user.csrf }}">
   <input type="hidden" name="exam_id" value="{{ e.id }}">
   <div class="u2-card-head"><h2>{{ e.subject }}</h2>{% if e.id in mine %}<span class="u2-chip">выбран</span>{% endif %}</div>

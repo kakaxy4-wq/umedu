@@ -15,7 +15,7 @@
     <p class="lead">Ученик занимается 10–15 минут в день в игре с рангами, героями и сундуками. Задания каждый раз новые — генератор
       собирает вариант в формате экзамена и проверяет ответ сам. Родитель видит прогноз балла, преподаватель — кому нужна помощь.</p>
     <div class="row">
-      {% if open_signup %}<a class="btn btn-big" href="/join">Начать бесплатно →</a>{% endif %}
+      {% if open_signup %}<a class="btn btn-big" href="/join" data-qa="start">Начать бесплатно →</a>{% endif %}
       {% if contact and not open_signup %}<a class="btn btn-big" href="{{ contact }}" target="_blank" rel="noopener">Попасть в пилот →</a>{% endif %}
       <a class="btn btn-big btn-ghost" href="#how">Как это устроено</a>
     </div>

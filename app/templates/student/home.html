@@ -3,6 +3,13 @@
 {% block title %}Главная{% endblock %}
 {% block content %}
 <h1 class="hello">Привет{% if student_name %}, {{ subject.badge ~ ' ' if subject and subject.badge }}{{ student_name }}{% endif %}! 👋</h1>
+{% if umedu2 %}
+<a class="card check-banner" href="/u2" data-qa="exam-prep">
+  <span class="check-emoji">🎯</span>
+  <span><b>Подготовка к экзамену</b><br><small>Выбери экзамен, оцени себя по разделам и реши задания из плана</small></span>
+  <span class="btn btn-small">Открыть →</span>
+</a>
+{% endif %}
 {% if subject and subject.title %}<p class="hello-title">🏷️ {{ subject.title }}</p>{% endif %}
 
 {% if ru_ov %}
@@ -30,7 +37,7 @@
 <div class="grid grid-home">
 
   {% if invite_parent %}
-  <a class="card span2 parent-invite" href="/for-parents">
+  <a class="card span2 parent-invite" href="/for-parents" data-qa="for-parents">
     <div class="eyebrow">👪 Для родителей</div>
     <p>Дай родителю ссылку — он увидит твои занятия и прогноз балла ОГЭ. Смотреть сможет, менять — нет.</p>
     <span class="btn btn-small">Получить ссылку →</span>

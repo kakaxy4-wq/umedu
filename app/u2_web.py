@@ -11,11 +11,14 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import account, auth, config, oge_drill
+from . import account, auth, config, oge_drill, russian
 from . import exam_model as em
 from . import knowledge as kn
-from .content import inf_gen, math_gen, oge_gen, phys_gen
+from .content import inf_gen, math_gen, oge_gen, oge_u2, oge16_gen, phys_gen
+from .content import robot as robot_content
 from .content.oge import OGE_NUMBERS
+from .content.ru import RULES as RU_RULES
+from . import u2_onsite
 from .db import get_db
 from . import students
 from .main import back, need_sid, only_student, render
@@ -36,7 +39,7 @@ FIPI_BANK = {"ОГЭ": "https://fipi.ru/oge/otkrytyy-bank-zadaniy-oge", "ЕГЭ"
 # номера, для которых сайт сам выдаёт варианты и проверяет ответ; остальные — самопроверка по банку ФИПИ
 BANKS = {"oge-math-2026": math_gen.OGE, "ege-math-profile-2026": math_gen.EGE_PROFILE, "ege-inf-2026": inf_gen.EGE,
          "ege-math-base-2026": math_gen.EGE_BASE, "oge-phys-2026": phys_gen.OGE, "ege-phys-2026": phys_gen.EGE}
-GENERATED = {"oge-inf-2026": set(oge_gen.GENERATORS), **{e: set(b.GENERATORS) for e, b in BANKS.items()}}
+GENERATED = dict(u2_onsite.SHORT)
 TITLES = {"oge-inf-2026": {n: t[0] for n, t in OGE_NUMBERS.items()}, **{e: b.TITLES for e, b in BANKS.items()}}
 TABS = [("today", "Сегодня"), ("subjects", "Предметы"), ("progress", "Прогресс"), ("me", "Я")]
 
@@ -123,7 +126,8 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     plans = []
     for c in cards:
         if minutes.get(c["id"]):
-            items = kn.plan(c["exam"], c["states"], minutes[c["id"]], today, due=_due(c["exam"], c["states"], today, minutes[c["id"]]))
+            due = _due(c["exam"], c["states"], today, minutes[c["id"]])
+            items = _plan(c["exam"], c["states"], minutes[c["id"]], today, due)
             for it in items:
                 it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})
@@ -438,9 +442,17 @@ def _task_info(exam, key):
             "points": task["points"], "group": group or part}
 
 
+def _plan(exam, states, minutes, today, due=()):
+    """План дня только из номеров, которые решаются на сайте, — для экзаменов, где это уже возможно."""
+    only = u2_onsite.onsite(exam["id"])
+    if only is not None:
+        due = [n for n in due if n in only]
+    return kn.plan(exam, states, minutes, today, due=due, only=only)
+
+
 def _next_step(exam, states, today, after, minutes):
     """Следующий номер по плану на сегодня, кроме только что решённого."""
-    for st in kn.plan(exam, states, minutes, today):
+    for st in _plan(exam, states, minutes, today):
         if st["n"] != after:
             return st["n"]
     return None
@@ -450,8 +462,9 @@ def _train_ctx(conn, sid, enr, key, today):
     exam = em.load(enr["exam_id"])
     states = kn.load_states(conn, sid, exam["id"])
     st = kn.decay(states.get(key), today)
+    mode = u2_onsite.mode_of(exam["id"], key)
     return {"c": _card(enr, states, today), "t": _task_info(exam, key), "p": st["p"], "tries": st.get("n", 0),
-            "bank": FIPI_BANK.get(exam["exam"]), "generated": key in GENERATED.get(exam["id"], ())}
+            "bank": FIPI_BANK.get(exam["exam"]), "generated": mode == "gen", "mode": mode}
 
 
 @router.get("/train/{exam_id}/{raw}", response_class=HTMLResponse)
@@ -461,11 +474,10 @@ def u2_train(exam_id: str, raw: str, request: Request, seed: int = 0, conn=Depen
     enr = _enrolled(conn, sid, exam_id)
     key = _task_key(em.load(exam_id), raw)
     ctx = _train_ctx(conn, sid, enr, key, today)
-    if ctx["generated"]:
+    if ctx["mode"] != "self":
         if not 0 < seed < 10 ** 7:
-            return back(f"/u2/train/{exam_id}/{key}?seed={random.randrange(1, 10 ** 6)}")
-        v = _variant(exam_id, key, seed)
-        ctx.update(seed=seed, variant=oge_gen.public(v), text=oge_drill.rich(v["text"]))
+            return back(f"/u2/train/{exam_id}/{key}?seed={_fresh_seed()}")
+        ctx.update(_play_ctx(exam_id, key, seed))
     return _page(request, conn, user, "today", "u2/train.html", res=None, **ctx)
 
 
@@ -480,30 +492,64 @@ def _budget(conn, sid, today, n=1):
 
 
 def _variant(exam_id, key, seed):
+    if exam_id == "oge-inf-2026" and key in oge_u2.GENERATORS:
+        return oge_u2.make(key, seed)
     bank = BANKS.get(exam_id)
     return bank.make(key, seed) if bank else oge_gen.make(key, seed)
 
 
+def _fresh_seed():
+    return random.randrange(1, 10 ** 6)
+
+
+def _play_ctx(exam_id, key, seed):
+    """Условие номера, которое можно показать до ответа."""
+    mode = u2_onsite.mode_of(exam_id, key)
+    if mode == "gen":
+        v = _variant(exam_id, key, seed)
+        return {"seed": seed, "variant": oge_gen.public(v), "text": oge_drill.rich(v["text"])}
+    if mode == "ru":
+        item = u2_onsite.ru_item(exam_id, key, seed)
+        return {"seed": seed, "ru": russian.public(item)}
+    if mode == "robot":
+        task = robot_content.TASKS[seed % len(robot_content.TASKS)]
+        return {"seed": seed, "robot": robot_content.public(task), "fields": robot_content.fields_for(task, seed),
+                "help": robot_content.COMMANDS_HELP, "starter": task["starter"]}
+    v = oge16_gen.make(seed)
+    return {"seed": seed, "code": {"text": v["text"], "examples": [t for t in v["tests"] if not t["hidden"]],
+                                   "tests": v["tests"], "id": v["id"]}}
+
+
+def _steps_view(v):
+    return [oge_drill.rich(s) for s in v.get("steps") or []]
+
+
 @router.post("/train/{exam_id}/{raw}", response_class=HTMLResponse)
 def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0), answer: str = Form(""),
-                    score: int = Form(-1), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+                    score: int = Form(-1), hint: int = Form(0), conn=Depends(get_db), user=Depends(auth.check_csrf)):
     only_student(user)
     sid, today = user["id"], config.today()
     enr = _enrolled(conn, sid, exam_id)
     exam = em.load(exam_id)
     key = _task_key(exam, raw)
-    _budget(conn, sid, today)
     before = _card(enr, kn.load_states(conn, sid, exam_id), today)
     if key in GENERATED.get(exam_id, ()):
         if not 0 < seed < 10 ** 7:
             raise HTTPException(400)
-        if exam_id in BANKS:
-            v = BANKS[exam_id].make(key, seed)
-            res = {"ok": BANKS[exam_id].check(v, answer[:100]), "answer": v["answer"], "explain": v["explain"], "xp": 0}
-        else:
-            res = oge_drill.answer(conn, sid, key, seed, answer[:100])  # заодно — статистика и трофеи старого тренажёра
-        got, given = (1.0 if res["ok"] else 0.0), answer.strip()[:100]
+        v = _variant(exam_id, key, seed)
+        ok = BANKS[exam_id].check(v, answer[:100]) if exam_id in BANKS else oge_gen.check(v, answer[:100])
+        if not ok and hint != 1:
+            ctx = _train_ctx(conn, sid, enr, key, today)
+            ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
+            return _page(request, conn, user, "today", "u2/train.html",
+                         res={"ok": False, "pending": True, "hint": oge_drill.rich(v["steps"][0])}, **ctx)
+        _budget(conn, sid, today)
+        if exam_id not in BANKS and key in oge_gen.GENERATORS:
+            oge_drill.answer(conn, sid, key, seed, answer[:100])   # трофеи старого тренажёра
+        got, given = (1.0 if ok else 0.0), answer.strip()[:100]
+        res = {"ok": ok, "answer": v["answer"], "explain": v["explain"], "steps": _steps_view(v), "xp": 0}
     else:
+        _budget(conn, sid, today)
         mx = em.points(exam)[key]
         if not 0 <= score <= mx:
             raise HTTPException(400, f"Баллы — от 0 до {mx}")
@@ -515,13 +561,80 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         kn.log_forecast(conn, sid, exam_id, today)
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:
-        v = _variant(exam_id, key, seed)
-        ctx.update(seed=seed, variant=oge_gen.public(v), text=oge_drill.rich(v["text"]), given=answer[:100])
+        ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
     after = ctx["c"]
     k = after["kind"]
     delta = {"from": before["fc"][k], "to": after["fc"][k], "primary": round(after["fc"]["primary"] - before["fc"]["primary"], 1)}
     nxt = _next_step(exam, after["states"], today, key, _minutes(conn, sid))
     return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt, **ctx)
+
+
+@router.post("/api/ru/{exam_id}/{raw}")
+async def u2_ru_answer(exam_id: str, raw: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    """Ответ в тренажёре русского внутри /u2. Первая ошибка — подсказка и не пишется в журнал."""
+    only_student(user)
+    sid, today = user["id"], config.today()
+    _enrolled(conn, sid, exam_id)
+    exam = em.load(exam_id)
+    key = _task_key(exam, raw)
+    if u2_onsite.mode_of(exam_id, key) != "ru":
+        raise HTTPException(404)
+    data = await request.json()
+    try:
+        seed = int(data.get("seed", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(400)
+    if not 0 < seed < 10 ** 7:
+        raise HTTPException(400)
+    item = u2_onsite.ru_item(exam_id, key, seed)
+    if str(data.get("id", "")) != item["id"]:
+        raise HTTPException(400)
+    ok, detail = u2_onsite.check_ru(item, data.get("answer"))
+    title, rule = RU_RULES[item["rule"]]
+    if not ok and int(data.get("hint") or 0) != 1:
+        return {"ok": False, "pending": True, "hint": u2_onsite.rule_hint(item), "rule_title": title}
+    _budget(conn, sid, today)
+    given = json.dumps(data.get("answer"), ensure_ascii=False)[:100]
+    with conn:
+        kn.record(conn, sid, exam_id, key, 1.0 if ok else 0.0, today, seed=seed, given=given)
+        kn.log_forecast(conn, sid, exam_id, today)
+    return {"ok": ok, "pending": False, "rule_title": title, "rule_text": rule, **detail}
+
+
+@router.post("/api/play/{exam_id}/{raw}")
+async def u2_play(exam_id: str, raw: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    """Робот и №16: проверка в браузере, как в старых тренажёрах. В журнал — со второй ошибки или с верного ответа."""
+    only_student(user)
+    sid, today = user["id"], config.today()
+    _enrolled(conn, sid, exam_id)
+    exam = em.load(exam_id)
+    key = _task_key(exam, raw)
+    mode = u2_onsite.mode_of(exam_id, key)
+    if mode not in ("robot", "code"):
+        raise HTTPException(404)
+    data = await request.json()
+    try:
+        seed = int(data.get("seed", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(400)
+    if not 0 < seed < 10 ** 7:
+        raise HTTPException(400)
+    passed = bool(data.get("passed"))
+    if mode == "robot":
+        task = robot_content.TASKS[seed % len(robot_content.TASKS)]
+        hint, steps = task["hint"], [task["hint"], "Проверь программу на короткой стене и на длинной.",
+                                     "Крась клетку в том же цикле, где идёшь вдоль стены."]
+        solution = {"py": task["solution"], "ku": task["kumir"]}
+    else:
+        v = oge16_gen.make(seed)
+        hint, steps, solution = v["steps"][0], v["steps"], {"py": v["solution"]}
+    if not passed and int(data.get("hint") or 0) != 1:
+        return {"ok": False, "pending": True, "hint": hint}
+    _budget(conn, sid, today)
+    with conn:
+        kn.record(conn, sid, exam_id, key, 1.0 if passed else 0.0, today, seed=seed, given=str(data.get("code", ""))[:100])
+        kn.log_forecast(conn, sid, exam_id, today)
+    return {"ok": passed, "pending": False, "steps": steps, "solution": solution}
 
 
 # ================================================================== мини-пробник

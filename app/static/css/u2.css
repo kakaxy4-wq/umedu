@@ -195,3 +195,68 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
   place-items: center; font: 700 13px var(--mono); background: var(--ultra); color: #fff; }
 .u2-intro li.done::before { content: "✓"; background: var(--good); }
 .u2-intro li.done span { color: var(--muted); text-decoration: line-through; }
+
+/* формулы: Golos Text, корень с чертой, без зазора перед точкой */
+.u2-formula, .u2-root { font-family: "Golos Text", var(--body), sans-serif; font-weight: 600; }
+.u2-root { white-space: nowrap; }
+.u2-root-sign { display: inline-block; transform: scaleX(0.75); margin-right: -0.08em; }
+.u2-root-bar { border-top: 1px solid currentColor; padding: 0 0.15em 0 0.04em; }
+.u2-fig { margin: 0 0 12px; }
+.u2-fig svg { display: block; width: 100%; height: auto; max-width: 100%; }
+.u2-steps { margin: 8px 0 0; padding-left: 1.2em; }
+.u2-steps li { margin: 4px 0; }
+
+/* русский внутри вкладки */
+.ru-sentence { display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 8px; font-size: 1.25rem; line-height: 1.7; }
+.ru-word { white-space: nowrap; }
+.ru-gap { width: 22px; height: 32px; margin: 0 1px; border: 0; border-radius: 6px; background: transparent; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--ultra); position: relative; }
+.ru-gap::after { content: ""; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--line); }
+.ru-gap.on::before { content: ","; font-size: 1.4rem; }
+.ru-gap.on::after { display: none; }
+.ru-word-big { font-size: 1.6rem; font-weight: 700; margin: 8px 0 12px; }
+.ru-blank { display: inline-block; min-width: 1.2em; border-bottom: 3px solid var(--ultra); text-align: center; }
+.ru-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ru-opt.on { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+.ru-basis { column-gap: 4px; }
+.ru-bword { font: inherit; color: inherit; background: transparent; border: 0; border-radius: 6px; padding: 2px 3px 8px; cursor: pointer; }
+.ru-u-s { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.ru-u-p { text-decoration: underline double; text-underline-offset: 4px; }
+.u2-ru-result { margin-top: 12px; }
+.u2-ru-result.ok { color: var(--good); }
+.u2-ru-result.bad { color: var(--weak); }
+
+/* робот и программа — без горизонтальной прокрутки страницы */
+.robot-app { display: grid; gap: 12px; }
+.robot-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.robot-tab { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 4px 10px; font: inherit; cursor: pointer; }
+.robot-tab.active { background: var(--ultra); color: #fff; border-color: var(--ultra); }
+.robot-svg { overflow-x: auto; }
+.rg-line { stroke: var(--line); stroke-width: 1; }
+.rg-wall { stroke: var(--text); stroke-width: 4; stroke-linecap: round; }
+.rg-goal { fill: none; stroke: var(--ultra); stroke-width: 2; stroke-dasharray: 4 3; }
+.rg-robot rect { fill: var(--lime); stroke: var(--ink); }
+.rg-eye { fill: var(--ink); }
+.robot-code textarea, .cb-plain, .codebox textarea { width: 100%; min-height: 180px; font: 14px/1.45 var(--mono); padding: 10px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); }
+.robot-result { margin-top: 10px; }
+.robot-result.ok { color: var(--good); }
+.robot-result.bad { color: var(--weak); }
+.cb-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.cb-status { color: var(--muted); font-size: 14px; }
+.examples-io { display: flex; flex-wrap: wrap; gap: 8px; }
+.io { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.io pre { margin: 2px 0 0; white-space: pre-wrap; font: 13px/1.4 var(--mono); }
+.u2-help { margin: 8px 0 0; padding-left: 1.1em; }
+.u2-help code { font-size: 13px; }
+.cb-results-head.ok { color: var(--good); }
+.cb-results-head.bad { color: var(--weak); }
+.cb-tests { padding-left: 1.1em; }
+.cb-panels { margin-top: 8px; }
+.cb-console { background: var(--ink); color: #F2F1FA; border-radius: 12px; padding: 8px 10px; overflow-x: auto; }
+.cb-out { margin: 0; white-space: pre-wrap; font: 13px/1.4 var(--mono); }
+.cb-error { color: var(--weak); margin-top: 8px; }
+@media (max-width: 400px) {
+  .u2-main { padding-left: 12px; padding-right: 12px; }
+  .ru-sentence { font-size: 1.1rem; }
+}

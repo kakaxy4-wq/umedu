@@ -11,16 +11,25 @@ from .content import oge_gen
 MASTER_STREAK = 3       # три верных варианта подряд — номер «освоен»
 
 
+def _root(inner):
+    return ('<span class="u2-root"><span class="u2-root-sign">√</span><span class="u2-root-bar">%s</span></span>'
+            % inner)
+
+
 def rich(text):
-    """Условие → список абзацев-HTML: переносы строк, **жирный**. Абзац "{code}" — место для программы (шаблон
-    подставит её блоком кода)."""
+    """Условие → список абзацев-HTML: переносы строк, **жирный** шрифтом Golos, корень с чертой.
+    Абзац "{code}" — место для программы (шаблон подставит её блоком кода)."""
     out = []
     for para in text.split("\n\n"):
         if para == "{code}":
             out.append(None)
             continue
         p = html.escape(para)
-        p = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", p).replace("\n", "<br>")
+        p = re.sub(r"\*\*(.+?)\*\*", r'<b class="u2-formula">\1</b>', p)
+        p = re.sub(r"√\(([^)]+)\)", lambda m: _root(m.group(1)), p)
+        p = re.sub(r"√(\d+)", lambda m: _root(m.group(1)), p)
+        p = re.sub(r"√([A-Za-zА-Яа-яЁё])", lambda m: _root(m.group(1)), p)
+        p = re.sub(r"\s+([.,;:!?])", r"\1", p).replace("\n", "<br>")
         out.append(Markup(p))
     return out
 

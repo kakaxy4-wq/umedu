@@ -20,6 +20,14 @@
   </div>
   <small>Цель недели: {{ act.goal }} дней — {% if act.week_days >= act.goal %}<b class="u2-ok">выполнена</b>{% else %}{{ act.week_days }} из {{ act.goal }}{% endif %}</small>
 </section>
+{% if lab_offer %}
+<section class="u2-card" data-lab-offer="{{ lab_offer.id }}">
+  <div class="u2-card-head"><h2>Опыт: {{ lab_offer.title }}</h2><span class="u2-chip">№{{ lab_offer.task }}</span></div>
+  <p>{{ lab_offer.question }}</p>
+  <p class="u2-hint">{{ lab_offer.exam_title }}, {{ lab_offer.task_title }} — номер проседает. Опыт на 15 минут, такое предложение не чаще раза в 3 дня.</p>
+  <a class="u2-btn" href="/u2/lab/{{ lab_offer.id }}">Начать опыт</a>
+</section>
+{% endif %}
 {% for p in plans %}
 <section class="u2-card">
   <div class="u2-card-head"><h2>{{ p.card.title }}</h2><span class="u2-chip">{{ p.minutes }} мин</span></div>
@@ -31,6 +39,7 @@
   {% if p.card.mock %}<p class="u2-hint">Проверить себя в условиях экзамена: <a href="/u2/mock/{{ p.card.id }}">мини-пробник на 25 минут</a>.</p>{% endif %}
 </section>
 {% endfor %}
+<p class="u2-hint"><a href="/u2/lab">Лаборатория опытов</a> — вопрос, измерение, закон.</p>
 <h2 class="u2-h2">Прогноз</h2>
 {% for c in cards %}
 <a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">

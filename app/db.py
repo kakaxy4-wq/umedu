@@ -444,6 +444,12 @@ CREATE TABLE IF NOT EXISTS skill_attempt (     -- каждая попытка: �
 );
 CREATE INDEX IF NOT EXISTS idx_skill_attempt ON skill_attempt(student_id, exam_id, id);
 CREATE INDEX IF NOT EXISTS idx_skill_attempt_day ON skill_attempt(student_id, day);
+CREATE TABLE IF NOT EXISTS lab_offer (          -- когда «Сегодня» уже предлагало опыт: не чаще раза в 3 дня
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lab_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    PRIMARY KEY (student_id, lab_id)
+);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

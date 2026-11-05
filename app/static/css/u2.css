@@ -256,6 +256,14 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 .cb-console { background: var(--ink); color: #F2F1FA; border-radius: 12px; padding: 8px 10px; overflow-x: auto; }
 .cb-out { margin: 0; white-space: pre-wrap; font: 13px/1.4 var(--mono); }
 .cb-error { color: var(--weak); margin-top: 8px; }
+.u2-badges { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.u2-badges li { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "title chip" "text chip";
+  gap: 0 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.u2-badges li:first-child { border-top: 0; padding-top: 0; }
+.u2-badges b { grid-area: title; }
+.u2-badges small { grid-area: text; color: var(--muted); }
+.u2-badges .u2-chip { grid-area: chip; align-self: center; }
+.u2-badges li.off { opacity: 0.55; }
 @media (max-width: 400px) {
   .u2-main { padding-left: 12px; padding-right: 12px; }
   .ru-sentence { font-size: 1.1rem; }

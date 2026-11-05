@@ -66,4 +66,4 @@ def join(request: Request, code: str = Form(""), name: str = Form(""), grade: in
         sid, error = students.signup(conn, name, grade, login, password, bool(consent), ip, age14=bool(age14))
     if error:
         return again(error)
-    return _done(conn, sid, "/")
+    return _done(conn, sid, "/u2/today" if config.UMEDU2 and not config.CHEM_SITE else "/")

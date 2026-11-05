@@ -12,6 +12,7 @@
   <span class="btn btn-small">{{ 'Повторить →' if ru_ov.due else 'Открыть →' }}</span>
 </a>
 {% endif %}
+{% if not public_site %}
 {% if pending_check %}
 <a class="card check-banner" href="/check/{{ pending_check.id }}">
   <span class="check-emoji">{{ pending_check.emoji }}</span>
@@ -26,6 +27,7 @@
   <span class="btn btn-small">{{ 'Открыть' if plan.done else 'Начать' }} →</span>
 </a>
 {% endif %}
+{% endif %}
 
 <div class="grid grid-home">
 
@@ -36,6 +38,14 @@
     <span class="btn btn-small">Получить ссылку →</span>
   </a>
   {% endif %}
+  {% if public_site %}
+  <section class="card span2">
+    <div class="eyebrow">ОГЭ и ЕГЭ</div>
+    <h2>План на 15–30 минут в день</h2>
+    <p>Выбери экзамены, решай номера на сайте и смотри, как меняется прогноз. Серия дней и достижения — без монет и лавки.</p>
+    {% if umedu2 %}<a class="btn" href="/u2/today">К плану на сегодня →</a>{% endif %}
+  </section>
+  {% else %}
   <section class="card span2 hero-card">
     {% if current %}
     <div class="eyebrow">Сейчас изучаем · урок {{ current.num }}</div>
@@ -134,5 +144,6 @@
       {% else %}<li class="muted">Пока пусто — запусти первую программу!</li>{% endfor %}
     </ul>
   </section>
+  {% endif %}
 </div>
 {% endblock %}

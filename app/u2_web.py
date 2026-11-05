@@ -18,7 +18,7 @@ from .content import inf_gen, math_gen, oge_gen, oge_u2, oge16_gen, phys_gen
 from .content import robot as robot_content
 from .content.oge import OGE_NUMBERS
 from .content.ru import RULES as RU_RULES
-from . import u2_onsite
+from . import u2_badges, u2_onsite
 from .db import get_db
 from . import students
 from .main import back, need_sid, only_student, render
@@ -122,6 +122,7 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     cards = _cards(conn, sid, today)
     if not cards:
         return back("/u2/start")
+    u2_badges.sync(conn, sid, today)
     minutes = _split(cards, _minutes(conn, sid))
     plans = []
     for c in cards:
@@ -292,11 +293,13 @@ def u2_how(request: Request, conn=Depends(get_db), user=Depends(auth.current_use
 
 @router.get("/me", response_class=HTMLResponse)
 def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
-    sid = need_sid(conn, user)
+    sid, today = need_sid(conn, user), config.today()
     st = students.get_student(conn, sid)
-    return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, config.today()),
+    if user["role"] == "student":
+        u2_badges.sync(conn, sid, today)
+    return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, today),
                  minutes=_minutes(conn, sid), choices=MINUTE_CHOICES,
-                 gallery_on=account.granted(st) if st else False)
+                 gallery_on=account.granted(st) if st else False, badges=u2_badges.list_for(conn, sid))
 
 
 @router.post("/me/minutes")
@@ -342,7 +345,9 @@ def _catalog():
 def u2_start(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
     mine = {e["exam_id"]: e for e in kn.exams_of(conn, sid)}
-    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine, schedule=SCHEDULE)
+    st = students.get_student(conn, sid)
+    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine, schedule=SCHEDULE,
+                 grade=(st or {}).get("grade"))
 
 
 @router.post("/start")
@@ -567,6 +572,7 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
     k = after["kind"]
     delta = {"from": before["fc"][k], "to": after["fc"][k], "primary": round(after["fc"]["primary"] - before["fc"]["primary"], 1)}
     nxt = _next_step(exam, after["states"], today, key, _minutes(conn, sid))
+    u2_badges.sync(conn, sid, today)
     return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt, **ctx)
 
 
@@ -599,6 +605,7 @@ async def u2_ru_answer(exam_id: str, raw: str, request: Request, conn=Depends(ge
     with conn:
         kn.record(conn, sid, exam_id, key, 1.0 if ok else 0.0, today, seed=seed, given=given)
         kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today)
     return {"ok": ok, "pending": False, "rule_title": title, "rule_text": rule, **detail}
 
 
@@ -635,6 +642,7 @@ async def u2_play(exam_id: str, raw: str, request: Request, conn=Depends(get_db)
     with conn:
         kn.record(conn, sid, exam_id, key, 1.0 if passed else 0.0, today, seed=seed, given=str(data.get("code", ""))[:100])
         kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today)
     return {"ok": passed, "pending": False, "steps": steps, "solution": solution}
 
 
@@ -680,6 +688,8 @@ def u2_lab(lab_id: str, request: Request, conn=Depends(get_db), user=Depends(aut
     sid = need_sid(conn, user)
     lab = _lab_or_404(lab_id)
     enrolled = {e["exam_id"] for e in kn.exams_of(conn, sid)}
+    if user["role"] == "student":
+        u2_badges.sync(conn, sid, config.today(), lab=True)
     return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result=None,
                  transfer=labs.transfer_public(lab, enrolled), fipi=FIPI_BANK["ОГЭ"],
                  lab_json=labs.client_json(lab, random.randrange(1, 10 ** 6)))
@@ -720,6 +730,7 @@ async def u2_lab_transfer(lab_id: str, request: Request, conn=Depends(get_db), u
             kn.record(conn, sid, g["exam"], g["task"], 1.0 if g["ok"] else 0.0, today, given=g["given"] or None)
         for exam_id in before:
             kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today)
     deltas = []
     for exam_id, was in before.items():
         enr = next(e for e in enrolled_rows if e["exam_id"] == exam_id)
@@ -806,6 +817,7 @@ async def u2_mock_submit(exam_id: str, request: Request, conn=Depends(get_db), u
             kn.record(conn, sid, exam_id, it["t"]["key"], 1.0 if it["ok"] else 0.0, today, seed=it["seed"],
                       given=it["given"])
         kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today, mock=True)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)
     k = c["kind"]
     delta = {"from": before["fc"][k], "to": c["fc"][k], "primary": round(c["fc"]["primary"] - before["fc"]["primary"], 1)}

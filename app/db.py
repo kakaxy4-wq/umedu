@@ -450,6 +450,12 @@ CREATE TABLE IF NOT EXISTS lab_offer (          -- когда «Сегодня»
     day TEXT NOT NULL,
     PRIMARY KEY (student_id, lab_id)
 );
+CREATE TABLE IF NOT EXISTS u2_badge (           -- достижения umedu 2.0: серия и значки, без монет
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code TEXT NOT NULL,
+    earned_at TEXT NOT NULL,
+    PRIMARY KEY (student_id, code)
+);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

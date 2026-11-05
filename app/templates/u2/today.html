@@ -19,6 +19,7 @@
     {% for d in act.week %}<span class="{{ 'on' if d }}{{ ' now' if loop.index0 == act.weekday }}">{{ ['пн','вт','ср','чт','пт','сб','вс'][loop.index0] }}</span>{% endfor %}
   </div>
   <small>Цель недели: {{ act.goal }} дней — {% if act.week_days >= act.goal %}<b class="u2-ok">выполнена</b>{% else %}{{ act.week_days }} из {{ act.goal }}{% endif %}</small>
+  <p class="u2-hint"><a href="/u2/me#badges">Достижения</a> — серия дней и значки, без монет и лавки.</p>
 </section>
 {% if lab_offer %}
 <section class="u2-card" data-lab-offer="{{ lab_offer.id }}">

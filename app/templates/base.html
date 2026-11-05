@@ -45,13 +45,15 @@
     <span class="hud-item" title="Опыт">✨ <b>{{ me.xp }}</b></span>
   </div>
   {% endif %}
-  {% elif me %}
+  {% elif me and not public_site %}
   <div class="hud">
     <a href="/achievements" class="hud-item" title="Ранг: {{ me.level.title }}">{{ me.level.emoji }} <b>{{ me.level.title }}</b></a>
     <a href="/achievements" class="hud-item" title="Трофеи">🏆 <b>{{ me.xp }}</b></a>
     {% if not open_signup %}<a href="/shop" class="hud-item" title="Гемы — тратятся в магазине">💎 <b>{{ me.coins }}</b></a>{% endif %}
     <a href="/daily" class="hud-item {% if me.streak %}hot{% endif %}" title="Дней подряд с задачей дня">🔥 <b>{{ me.streak }}</b></a>
   </div>
+  {% elif me and umedu2 %}
+  <a class="hud-item" href="/u2/today">Сегодня</a>
   {% endif %}
 </header>
 <nav class="sidenav">
@@ -63,6 +65,7 @@
   {% set prize_links = [
     ("/achievements", "🏅", "Награды и рейтинг" if calm else "Бойцы и награды"), ("/season", "🎟️", "Пасс сезона"),
     ("/shop", "💎", "Магазин подарков"), ("/certificates", "🎓", "Сертификаты")] | rejectattr(0, "in", ["/shop"] if open_signup else []) | list %}
+  {% if public_site %}{% set prize_links = prize_links | rejectattr(0, "in", ["/achievements", "/season", "/shop"]) | list %}{% endif %}
   {% set more_links = [("/checks", "📝", "Проверки"), ("/portfolio", "🗂️", "Портфолио")] %}
   {% set ru_links = [
     ("/ru", "🏠", "Обзор"), ("/ru/review", "🔁", "Мои ошибки"), ("/ru/commas", "✍️", "Запятые"), ("/ru/spell", "⚡", "Арена букв"),
@@ -93,9 +96,9 @@
   <div class="nav-sep">Кабинет: {{ student_name or 'нет учеников' }}</div>
   {% else %}
   <a href="/" class="nav-home {{ 'active' if nav == '/' }}">🏠 Главная</a>
-  {% if 'python' in subj or 'russian' in subj %}<a href="/today" class="nav-home {{ 'active' if nav == '/today' }}">📅 План на сегодня</a>{% endif %}
+  {% if not public_site and ('python' in subj or 'russian' in subj) %}<a href="/today" class="nav-home {{ 'active' if nav == '/today' }}">📅 План на сегодня</a>{% endif %}
   {% endif %}
-  {% if 'python' in subj %}{{ group("py", "🐍 Python", py_links, not teacher) }}{% endif %}
+  {% if 'python' in subj and not public_site %}{{ group("py", "🐍 Python", py_links, not teacher) }}{% endif %}
   {% if 'russian' in subj %}{{ group("ru", "📖 Русский язык", ru_links, not teacher) }}{% endif %}
   {{ group("prize", "🏆 Награды", prize_links, False) }}
   {{ group("more", "Ещё", more_links, False) }}

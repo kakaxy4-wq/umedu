@@ -14,7 +14,7 @@ MAX_VALUE = 30000
 
 def _filters(r):
     """(мн. ч. «чисел, …», ед. ч. «число, …», условие на Python, проверка)."""
-    kind = r.choice(["mult", "end", "even", "two", "mult_end", "mult_not"])
+    kind = r.choice(["mult", "end", "even", "two", "mult_end", "mult_not", "digitsum", "first"])
     if kind == "mult":
         k = r.randint(3, 9)
         return "чисел, кратных %d" % k, "число, кратное %d" % k, "x %% %d == 0" % k, lambda x: x % k == 0
@@ -30,6 +30,14 @@ def _filters(r):
         k, d = r.choice([3, 7, 9]), r.randint(1, 9)
         return ("чисел, кратных %d и оканчивающихся на %d" % (k, d), "число, кратное %d и оканчивающееся на %d" % (k, d),
                 "x %% %d == 0 and x %% 10 == %d" % (k, d), lambda x: x % k == 0 and x % 10 == d)
+    if kind == "digitsum":
+        s = r.randint(5, 18)
+        return ("чисел, сумма цифр которых равна %d" % s, "число, сумма цифр которого равна %d" % s,
+                "sum(int(c) for c in str(x)) == %d" % s, lambda x, s=s: sum(map(int, str(x))) == s)
+    if kind == "first":
+        d = r.randint(1, 9)
+        return ("чисел, которые начинаются с цифры %d" % d, "число, которое начинается с цифры %d" % d,
+                "str(x)[0] == '%d'" % d, lambda x, d=d: str(x).startswith(str(d)))
     a, b = r.choice([(3, 9), (2, 4), (5, 10), (3, 6), (2, 6), (4, 8)])
     return ("чисел, кратных %d, но не кратных %d" % (a, b), "число, кратное %d, но не кратное %d" % (a, b),
             "x %% %d == 0 and x %% %d != 0" % (a, b), lambda x: x % a == 0 and x % b != 0)
@@ -41,6 +49,10 @@ AGGS = {
     "sum": ("сумму {pl}", "s = 0", "{c}", "s += x", "s", lambda xs: sum(xs), False),
     "max": ("наибольшее {sg}", "m = 0", "{c} and x > m", "m = x", "m", lambda xs: max(xs), True),
     "min": ("наименьшее {sg}", "m = %d" % (MAX_VALUE + 1), "{c} and x < m", "m = x", "m", lambda xs: min(xs), True),
+    "avg": ("среднее арифметическое {pl}. Результат округли до ближайшего целого", "s, cnt = 0, 0", "{c}",
+            "s += x; cnt += 1", "round(s / cnt)", lambda xs: round(sum(xs) / len(xs)), True),
+    "pair": ("количество {pl} и наибольшее из них", "cnt, m = 0, 0", "{c}", "cnt += 1; m = x if x > m else m",
+             "cnt, m", lambda xs: "%d %d" % (len(xs), max(xs)), True),
 }
 
 INPUT_N = ("Программа получает на вход количество чисел в последовательности, а затем сами числа — каждое с новой строки. "
@@ -75,8 +87,9 @@ def make(seed):
     zero = r.random() < 0.5
     need = "хотя бы одно " + sg if need_match else "хотя бы одно число"
     what = what.format(pl=pl, sg=sg)
+    tail = ("два числа через пробел: сначала количество, потом максимум" if agg == "pair" else "одно число — %s" % what)
     text = ("Напишите программу, которая в последовательности натуральных чисел определяет %s.\n\n%s\n\n"
-            "Программа должна вывести одно число — %s." % (what, (INPUT_ZERO if zero else INPUT_N).format(need=need), what))
+            "Программа должна вывести %s." % (what, (INPUT_ZERO if zero else INPUT_N).format(need=need), tail))
     c = upd_cond.format(c=cond)
     if zero:
         solution = "%s\nx = int(input())\nwhile x != 0:\n    if %s:\n        %s\n    x = int(input())\nprint(%s)" % (
@@ -94,9 +107,11 @@ def make(seed):
         tests.append({"stdin": stdin, "stdout": str(func([x for x in xs if pred(x)])), "hidden": i >= 2})
     hint = ("Заведи переменную до цикла, внутри цикла проверяй условие `%s`. %s" % (
         cond, "Цикл `while x != 0` — ввод заканчивается нулём." if zero else "Сначала прочитай n, потом n чисел в цикле `for`."))
+    steps = [hint, "Проверь программу на обоих примерах из условия: вывод должен совпасть.",
+             "Отдельно проверь короткий список: одно подходящее число и несколько неподходящих."]
     return {"id": "%s%d" % (PREFIX, seed), "seed": seed, "oge": NUM, "lesson": LESSON, "level": 2,
             "title": "ОГЭ №16: %s" % what, "text": text, "starter": "", "tests": tests, "hint": hint,
-            "solution": solution}
+            "solution": solution, "steps": steps}
 
 
 def seed_of(task_id):

@@ -279,12 +279,16 @@ def _alpha(r):
             % (a, na, aa, z, na, nb, za))
 
 
-OGE = Bank("oge-phys", {6: _gen(_density, _hydro, _power, _archimedes, _press_solid),
+from . import phys_choice as _choice  # noqa: E402
+
+OGE = Bank("oge-phys", {1: _choice.p1, 2: _choice.p2, 3: _choice.p3, 4: _choice.p4, 5: _choice.p5,
+                        6: _gen(_density, _hydro, _power, _archimedes, _press_solid),
                         7: _gen(_kinetic, _potential, _momentum, _avg_speed, _fall),
                         8: _gen(_heat, _melt, _fuel, _boil),
                         9: _gen(_ohm, _series, _parallel, _el_power, _joule, _wire),
                         10: _gen(_wave, _lens, _mirror, _ampere),
-                        11: _gen(_nucleus, _halflife, _alpha)}, {})
+                        11: _gen(_nucleus, _halflife, _alpha),
+                        12: _choice.p12, 13: _choice.p13, 14: _choice.p14, 15: _choice.p15, 16: _choice.p16}, {})
 
 
 # ================================================================== ЕГЭ

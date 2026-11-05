@@ -17,6 +17,19 @@
     {% for m in choices %}<button name="minutes" value="{{ m }}" aria-pressed="{{ 'true' if m == minutes else 'false' }}"{% if user.role != 'student' %} disabled{% endif %}>{{ m }} мин</button>{% endfor %}
   </form>
 </section>
+<section class="u2-card" id="badges">
+  <h2>Достижения</h2>
+  <p class="u2-hint">Серия дней и значки. Монет и лавки здесь нет.</p>
+  <ul class="u2-badges">
+    {% for b in badges %}
+    <li class="{{ 'on' if b.earned else 'off' }}">
+      <b>{{ b.title }}</b>
+      <small>{{ b.text }}</small>
+      <span class="u2-chip{% if not b.earned %} u2-chip-bad{% endif %}">{{ 'есть' if b.earned else 'ещё нет' }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
 <section class="u2-card">
   <h2>Как это работает</h2>
   <p class="u2-hint"><a href="/u2/how">Как считается прогноз и план на день</a> — простыми словами, с примером.</p>

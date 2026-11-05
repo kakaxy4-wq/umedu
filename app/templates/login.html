@@ -5,7 +5,7 @@
 <div class="login-card card">
   <div class="login-hero">{% if logo %}<img src="{{ logo }}" alt="" class="login-mark">{% else %}{{ brand }}{% endif %}</div>
   <h1>{{ wordmark(site_name) }}</h1>
-  <p class="muted">{{ "Подготовка к ОГЭ и ЕГЭ по химии" if chem_site else ("Подготовка к ОГЭ в игровом формате" if public_site else "Личный кабинет курса Python") }}</p>
+  <p class="muted">{{ "Подготовка к ОГЭ и ЕГЭ по химии" if chem_site else ("Подготовка к ОГЭ и ЕГЭ" if umedu2 else ("Подготовка к ОГЭ в игровом формате" if public_site else "Личный кабинет курса Python")) }}</p>
   {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
   <form method="post" action="/login" class="stack">
     <label>Логин<input name="username" autocomplete="username" autocapitalize="off" required autofocus></label>

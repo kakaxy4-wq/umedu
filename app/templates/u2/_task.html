@@ -1,5 +1,6 @@
 {# Условие сгенерированного варианта: абзацы, программа, таблица. Общее для тренажёра и мини-пробника. #}
 {% macro task_body(text, variant) %}
+  {% if variant.svg %}<figure class="u2-fig">{{ variant.svg|safe }}</figure>{% endif %}
   {% for para in text %}{% if para is none %}<pre class="u2-code">{{ variant.code }}</pre>{% else %}<p>{{ para }}</p>{% endif %}{% endfor %}
   {% if variant.table %}
   <div class="u2-scroll"><table class="u2-table">

@@ -253,6 +253,7 @@ def render(request, name, conn, user=None, **ctx):
         "signup": config.SIGNUP,
         "open_signup": config.OPEN_SIGNUP,
         "public_site": theme.THEME == "public",
+        "umedu2": config.UMEDU2,
         "source_url": config.SOURCE_URL,
         "logo": theme.LOGO,
     })
@@ -327,11 +328,23 @@ def upload_path(name):
     return path
 
 
+def after_login(user):
+    """Куда попадает человек после входа. На umedu 2.0 ученик сразу в плане дня; КодКвест и ХимЛаб — как раньше."""
+    if user["role"] == "teacher":
+        return "/teacher"
+    if config.CHEM_SITE:
+        return "/chem"
+    if config.UMEDU2:
+        return "/u2/today"
+    return "/"
+
+
 # ------------------------------------------------------------------ вход
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, conn=Depends(get_db)):
-    if auth.load_user(request, conn):
-        return back("/")
+    user = auth.load_user(request, conn)
+    if user:
+        return back(after_login(user))
     return render(request, "login.html", conn, error=None)
 
 
@@ -340,7 +353,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
     if auth.too_many_fails(ip):
         return render(request, "login.html", conn, error="Слишком много попыток. Подожди 15 минут.")
-    row = conn.execute("SELECT id, password_hash, active FROM users WHERE username = ?",
+    row = conn.execute("SELECT id, password_hash, active, role FROM users WHERE username = ?",
                        (username.strip().lower(),)).fetchone()
     if not row or not auth.verify_password(password, row["password_hash"]):
         auth.register_fail(ip)
@@ -348,7 +361,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     if not row["active"]:
         return render(request, "login.html", conn, error="Аккаунт в архиве. Напиши преподавателю.")
     token = auth.create_session(conn, row["id"])
-    resp = back("/")
+    resp = back(after_login(row))
     auth.set_cookie(resp, token)
     return resp
 
@@ -381,6 +394,8 @@ def home(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)
         return back("/teacher")
     if config.CHEM_SITE:
         return back("/chem")
+    if config.UMEDU2 and user["role"] == "student":
+        return back("/u2/today")
     sid = user["id"]
     lessons = game.lesson_list_with_state(conn, sid)
     upto = game.unlocked_upto(conn, sid)

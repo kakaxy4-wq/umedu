@@ -1,6 +1,7 @@
 """Публичный API приложения. Этап 1: чтение (конфиг, каталог). Этап 2: условие номера и проверка попытки
 без учётки. Этап 3: онбординг гостем, запись попыток и прогноз. Этап 4: регистрация и вход по почте
 (и по username — для старых учеников сайта), апгрейд гостя с сохранением прогресса, выход.
+Этап 5: план на сегодня и серия занятий.
 
 Гость — строка users с guest = 1 без пароля (войти на сайт им нельзя), знания считает тот же
 app/knowledge.py, что и на сайте. Попытку проверяет тот же движок, что тренажёр: вариант пересобирается
@@ -153,6 +154,32 @@ class ForecastOut(BaseModel):
     test: int | None = None
     test_low: int | None = None
     test_high: int | None = None
+
+
+class TodayTask(BaseModel):
+    n: int
+    minutes: int
+    why: str
+    times: int
+    title: str | None = None
+
+
+class ActivityOut(BaseModel):
+    streak: int                       # дней подряд, сегодняшний день ещё не потерян
+    today: bool                       # сегодня уже была попытка
+    weekday: int                      # 0 — понедельник; week лежит пн..вс
+    week: list[bool]
+    week_days: int
+    goal: int
+
+
+class TodayOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    exam_id: str
+    day: str                          # «сегодня» по часам сервера — граница серии
+    minutes: int
+    plan: list[TodayTask]
+    activity: ActivityOut
 
 
 def _flag(name, default=True):
@@ -368,6 +395,41 @@ def get_forecast(exam_id: str, conn=Depends(get_db), authorization: str | None =
         raise HTTPException(404)
     return ForecastOut(schema_version=SCHEMA_VERSION, exam_id=exam_id,
                        **kn.forecast(exam, kn.load_states(conn, uid, exam_id)))
+
+
+# --- этап 5: план на сегодня и серия занятий ---
+
+@router.get("/today/{exam_id}", response_model=TodayOut, response_model_exclude_none=True)
+def get_today(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    """План на сегодня по экзамену — тот же расчёт, что «Сегодня» на сайте: повторения с подошедшим
+    сроком, затем номера с наибольшим приростом баллов за минуту; в плане только номера, которые
+    приложение само выдаёт и проверяет (GENERATED). Рядом — серия занятий. Минуты — дневная норма
+    ученика (u2_prefs, по умолчанию 30); когда в приложении появится несколько предметов, делить их
+    будет клиент. Напоминание — на стороне приложения (FCM в первую версию не входит)."""
+    _trainer_gate()
+    token = _bearer(authorization)
+    if token is None:
+        raise HTTPException(401, "Нужна сессия (POST /api/v1/sessions)")
+    user = _api_user(conn, token)
+    if user is None:
+        raise HTTPException(401, SESSION_NOT_FOUND)
+    uid, _ = user
+    try:
+        exam = em.load(exam_id)
+    except FileNotFoundError:
+        raise HTTPException(404)
+    from .u2_web import GENERATED, _due, _minutes, _task_info   # локально: u2_web тянет main
+    if not GENERATED.get(exam_id):
+        raise HTTPException(404, "Для этого экзамена в приложении пока нет номеров")
+    today = config.today()
+    states = kn.load_states(conn, uid, exam_id)
+    minutes = _minutes(conn, uid)
+    plan = kn.plan(exam, states, minutes, today, due=_due(exam, states, today, minutes),
+                   only=set(GENERATED[exam_id]))
+    items = [TodayTask(n=it["n"], minutes=it["minutes"], why=it["why"], times=it["times"],
+                       title=_task_info(exam, it["n"])["title"]) for it in plan]
+    return TodayOut(schema_version=SCHEMA_VERSION, exam_id=exam_id, day=today.isoformat(),
+                    minutes=minutes, plan=items, activity=ActivityOut(**kn.activity(conn, uid, today)))
 
 
 # --- этап 4: регистрация и вход по почте, апгрейд гостя, выход ---

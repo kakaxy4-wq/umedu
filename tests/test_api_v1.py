@@ -476,3 +476,90 @@ def test_logout_deletes_token(client):  # noqa: F811
     assert _attempt(client, guest_token, _first_number(), 1, "1").status_code == 401
     assert client.delete("/api/v1/session", headers={"Authorization": "Bearer nope"}).status_code == 401
     assert client.delete("/api/v1/session").status_code == 401
+
+
+# ---- этап 5: план на сегодня и серия занятий ----
+
+def _today(client, token, exam=EXAM):
+    return client.get(f"/api/v1/today/{exam}", headers={"Authorization": "Bearer " + token})
+
+
+def _uid():
+    from app.db import connect
+    return connect().execute("SELECT user_id FROM api_sessions").fetchone()[0]
+
+
+def test_today_plan_for_new_guest(client):  # noqa: F811
+    from app.u2_web import GENERATED
+    token = _session(client)
+    r = _today(client, token)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["schema_version"] == 1 and body["exam_id"] == EXAM
+    assert body["day"] and body["minutes"] == 30            # дневная норма по умолчанию
+    assert body["plan"] and all(t["minutes"] > 0 for t in body["plan"])
+    live = set(GENERATED[EXAM])
+    assert all(t["n"] in live for t in body["plan"])        # приложение само выдаёт и проверяет эти номера
+    assert all(t["why"] for t in body["plan"])
+    act = body["activity"]
+    assert act["streak"] == 0 and act["today"] is False and act["week_days"] == 0
+    assert len(act["week"]) == 7 and act["goal"] > 0
+
+
+def test_today_leads_away_from_mastered_number(client):  # noqa: F811
+    """После освоения номера план ведёт дальше, а не гоняет по кругу первое."""
+    from app import knowledge as kn
+    from app.db import connect
+    token = _session(client)
+    first = _today(client, token).json()["plan"][0]["n"]
+    uid = _uid()
+    conn = connect()
+    for _ in range(6):                                      # p ≈ 1 − 0.65⁶ — номер перестаёт быть выгодным
+        with conn:
+            kn.record(conn, uid, EXAM, first, 1.0)
+    after = _today(client, token).json()["plan"]
+    assert after and after[0]["n"] != first
+
+
+def test_today_activity_after_attempt(client):  # noqa: F811
+    token = _session(client)
+    n, seed = _first_number(), 123456
+    assert _attempt(client, token, n, seed, str(_variant(n, seed)["answer"]), key="s5-attempt-1").status_code == 200
+    act = _today(client, token).json()["activity"]
+    assert act["today"] is True and act["streak"] == 1 and act["week_days"] == 1
+    assert sum(act["week"]) == 1
+
+
+def test_today_brings_back_stale_mastered_number(client):  # noqa: F811
+    """Освоенный номер, к которому 20 дней не возвращались, — «повторение» в начале плана; свежий — нет."""
+    from datetime import timedelta
+    from app import config
+    from app.db import connect
+    from app.u2_web import GENERATED
+    token = _session(client)
+    today = config.today()
+    stale, fresh = sorted(GENERATED[EXAM])[:2]
+    with connect() as conn:
+        for key, last in ((stale, today - timedelta(days=20)), (fresh, today)):
+            conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) "
+                         "VALUES (?, ?, ?, 0.9, 2, ?)", (_uid(), EXAM, key, last.isoformat()))
+    plan = _today(client, token).json()["plan"]
+    assert [t["n"] for t in plan if t["why"] == "повторение"] == [stale]
+    assert plan[0]["n"] == stale
+
+
+def test_today_requires_session(client):  # noqa: F811
+    assert client.get(f"/api/v1/today/{EXAM}").status_code == 401
+    assert _today(client, "nope").status_code == 401
+    assert _today(client, _session(client), exam="nope-2026").status_code == 404
+
+
+def test_today_exam_without_app_tasks_is_404(client):  # noqa: F811
+    # oge-rus-2026 есть в модели, но номеров, которые приложение само проверяет, там нет
+    assert _today(client, _session(client), exam="oge-rus-2026").status_code == 404
+
+
+def test_today_trainer_flag_pauses(client, monkeypatch):  # noqa: F811
+    from app import config
+    monkeypatch.setattr(config, "API_FLAG_TRAINER", False)
+    assert _today(client, _session(client)).status_code == 503

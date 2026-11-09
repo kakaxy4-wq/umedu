@@ -33,6 +33,7 @@ def test_yaml_has_only_live_paths():
     paths = {line.strip().rstrip(":") for line in lines if line.startswith("  /")}
     assert paths == {"/api/v1/config", "/api/v1/catalog", "/api/v1/tasks/{exam_id}/{n}", "/api/v1/attempts",
                      "/api/v1/sessions", "/api/v1/forecast/{exam_id}",
-                     "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/session"}
+                     "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/session",
+                     "/api/v1/today/{exam_id}"}
     served = {r.path for r in router.routes}
     assert paths <= served

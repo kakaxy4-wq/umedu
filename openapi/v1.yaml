@@ -3,9 +3,10 @@ info:
   title: umedu API
   version: "1.0.0"
   description: >
-    Живые пути этапов 1–3: конфиг, каталог, условие номера и проверка попытки, онбординг гостем,
-    запись попыток и прогноз. Попытка без токена ничего не пишет; с токеном сессии гостя — пишется
-    и идемпотентна (один ключ — одна попытка). Почта — этап 4. Не раньше, чем сервер на них ответит.
+    Живые пути этапов 1–4: конфиг, каталог, условие номера и проверка попытки, онбординг гостем,
+    запись попыток и прогноз, регистрация и вход по почте/username, выход. Попытка без токена ничего
+    не пишет; с токеном сессии гостя — пишется и идемпотентна (один ключ — одна попытка).
+    Вход VK ID/Яндекс ID и аккаунты до 14 лет (родитель) — не реализованы. Не раньше, чем сервер на них ответит.
 servers:
   - url: https://umedu.ru
 paths:
@@ -80,13 +81,13 @@ paths:
               $ref: "#/components/schemas/SessionIn"
       responses:
         "200":
-          description: Токен существующей сессии device_id (created: false).
+          description: "Токен существующей сессии device_id (created: false)."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Session"
         "201":
-          description: Новый гость (created: true).
+          description: "Новый гость (created: true)."
           content:
             application/json:
               schema:
@@ -151,12 +152,87 @@ paths:
           description: Неизвестный exam_id.
         "503":
           description: Тренажёр на паузе.
+  /api/v1/auth/register:
+    post:
+      operationId: postAuthRegister
+      summary: Регистрация по почте, 14+
+      description: >
+        Создаёт аккаунт ученика и возвращает токен входа. С заголовком "Bearer <токен сессии гостя>"
+        гость становится аккаунтом (created: false) — тот же user_id, знания и попытки на месте,
+        гостевой токен продолжает работать. С токеном уже вошедшего — новый отдельный аккаунт.
+        Младше 14 — 403 (аккаунт создаёт родитель на сайте, в API пока нет). Лимит — 10 регистраций
+        в час с адреса (429). Выключенный вход — 503 (флаг auth в /config).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterIn"
+      responses:
+        "200":
+          description: "Новый аккаунт (created: true) или апгрейд гостя (created: false)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auth"
+        "403":
+          description: Младше 14 — аккаунт создаёт родитель.
+        "409":
+          description: Эта почта или логин уже заняты.
+        "422":
+          description: Некорректная почта, короткий пароль или дата рождения из будущего.
+        "429":
+          description: Слишком много регистраций с адреса.
+        "503":
+          description: Вход на паузе.
+  /api/v1/auth/login:
+    post:
+      operationId: postAuthLogin
+      summary: Вход по почте или username
+      description: >
+        Те же учётные данные, что на сайте: почта или username ученика и пароль. Только ученики —
+        аккаунт преподавателя — 403. Неудачные попытки ограничены: 10 за 15 минут с адреса — 429.
+        Выключенный вход — 503.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginIn"
+      responses:
+        "200":
+          description: "Токен входа (created: false)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auth"
+        "401":
+          description: Неверный логин или пароль.
+        "403":
+          description: В приложении вход только для учеников.
+        "429":
+          description: Слишком много неудачных попыток — подождать 15 минут.
+        "503":
+          description: Вход на паузе.
+  /api/v1/session:
+    delete:
+      operationId: deleteSession
+      summary: Выход
+      description: >
+        Удаляет сессию по токену — и гостевую, и входа. Токен больше не работает.
+      security:
+        - guestSession: []
+      responses:
+        "204":
+          description: Сессия удалена.
+        "401":
+          description: Нет токена или сессия не найдена.
 components:
   securitySchemes:
     guestSession:
       type: http
       scheme: bearer
-      description: Токен из POST /api/v1/sessions; передаётся заголовком "Authorization: Bearer <токен>".
+      description: "Токен из POST /api/v1/sessions; передаётся заголовком Authorization: Bearer <токен>."
   schemas:
     Config:
       type: object
@@ -178,7 +254,7 @@ components:
     Flags:
       type: object
       additionalProperties: false
-      required: [trainer, trial, crash_reports, guests]
+      required: [trainer, trial, crash_reports, guests, auth]
       properties:
         trainer:
           type: boolean
@@ -187,6 +263,8 @@ components:
         crash_reports:
           type: boolean
         guests:
+          type: boolean
+        auth:
           type: boolean
     Notice:
       type: object
@@ -364,3 +442,49 @@ components:
           type: integer
         test_high:
           type: integer
+    RegisterIn:
+      type: object
+      additionalProperties: false
+      required: [email, password, birth_date]
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 6
+          maxLength: 254
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        birth_date:
+          type: string
+          format: date
+          description: Полных лет должно быть не меньше 14.
+    LoginIn:
+      type: object
+      additionalProperties: false
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          minLength: 3
+          maxLength: 254
+          description: Почта или username — те же учётные данные, что на сайте.
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+    Auth:
+      type: object
+      additionalProperties: false
+      required: [schema_version, token, created]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        token:
+          type: string
+          description: "Токен входа, заголовок Authorization: Bearer <токен>, для attempts/forecast/logout."
+        created:
+          type: boolean
+          description: True — новый аккаунт; False — апгрейд гостя или вход существующего.

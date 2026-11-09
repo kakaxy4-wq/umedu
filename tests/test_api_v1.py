@@ -1,4 +1,6 @@
 """GET /api/v1/config и /catalog — чтение, без записей, без поломки сайта."""
+import pytest
+
 from app import exam_model as em
 from app.api_v1 import catalog_payload
 from test_app import client  # noqa: F401
@@ -320,3 +322,157 @@ def test_teacher_lists_and_quota_ignore_guests(client):  # noqa: F811
     assert all(not s.get("guest") for s in students.list_students(conn, include_archived=True))
     # лимит мест не занят гостем: место ещё есть
     assert conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1 AND guest = 0").fetchone()[0] <= students.MAX_STUDENTS
+
+
+# ---- этап 4: регистрация и вход по почте, апгрейд гостя, выход ----
+
+@pytest.fixture(autouse=True)
+def _clean_auth_limits():
+    """Лимитеры этапа 4 живут в памяти процесса и переживают пересоздание БД между тестами."""
+    from app import api_v1, auth
+    api_v1._registers.clear()
+    auth._failed.clear()
+    yield
+    api_v1._registers.clear()
+    auth._failed.clear()
+
+
+ADULT = {"email": "anna@example.com", "password": "пароль-12345", "birth_date": "2005-05-15"}
+CHILD = {"email": "kid@example.com", "password": "пароль-12345", "birth_date": "2013-01-15"}
+
+
+def _register(client, body=ADULT, token=None):
+    headers = {"Authorization": "Bearer " + token} if token else None
+    return client.post("/api/v1/auth/register", json=body, headers=headers)
+
+
+def test_register_new_account(client):  # noqa: F811
+    from app.db import connect
+    r = _register(client)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["schema_version"] == 1 and body["created"] is True
+    row = connect().execute("SELECT username, email, guest, role FROM users WHERE email = 'anna@example.com'").fetchone()
+    assert row["username"] == "anna@example.com" and row["guest"] == 0 and row["role"] == "student"
+    forecast = client.get(f"/api/v1/forecast/{EXAM}", headers={"Authorization": "Bearer " + body["token"]})
+    assert forecast.status_code == 200               # токен логина работает как сессия
+
+
+def test_register_upgrades_guest_and_keeps_progress(client):  # noqa: F811
+    from app.db import connect
+    token = _session(client)
+    n, seed = _first_number(), 123456
+    answer = str(_variant(n, seed)["answer"])
+    before = client.get(f"/api/v1/forecast/{EXAM}", headers={"Authorization": "Bearer " + token}).json()["primary"]
+    assert _attempt(client, token, n, seed, answer).status_code == 200
+    r = _register(client, token=token)
+    assert r.status_code == 200 and r.json()["created"] is False
+    new_token = r.json()["token"]
+    row = connect().execute("SELECT username, email, guest FROM users WHERE email = 'anna@example.com'").fetchone()
+    assert row["username"] == "anna@example.com" and row["guest"] == 0
+    after = client.get(f"/api/v1/forecast/{EXAM}", headers={"Authorization": "Bearer " + new_token}).json()
+    assert after["primary"] > before                 # попытки гостя переехали вместе с аккаунтом
+    old = client.get(f"/api/v1/forecast/{EXAM}", headers={"Authorization": "Bearer " + token})
+    assert old.status_code == 200                    # гостевой токен продолжает работать
+
+
+def test_register_with_login_token_makes_new_account(client):  # noqa: F811
+    """Bearer от уже вошедшего — не апгрейд: гость нужен отдельный, чужой аккаунт не переименовывается."""
+    _register(client)
+    login_token = client.post("/api/v1/auth/login",
+                              json={"login": "anna@example.com", "password": ADULT["password"]}).json()["token"]
+    r = _register(client, {**ADULT, "email": "anna2@example.com"}, token=login_token)
+    assert r.status_code == 200 and r.json()["created"] is True
+
+
+def test_register_minor_is_403(client):  # noqa: F811
+    r = _register(client, CHILD)
+    assert r.status_code == 403
+    assert "родител" in r.json()["detail"]
+
+
+def test_register_bad_input(client):  # noqa: F811
+    assert _register(client, {**ADULT, "email": "не-почта"}).status_code == 422
+    assert _register(client, {**ADULT, "email": "a@b"}).status_code == 422
+    assert _register(client, {**ADULT, "password": "коротко"}).status_code == 422
+    assert _register(client, {**ADULT, "birth_date": "2099-01-01"}).status_code == 422
+
+
+def test_register_duplicate_email_409(client):  # noqa: F811
+    from app.db import connect
+    assert _register(client).status_code == 200
+    assert _register(client, {**ADULT, "password": "другой-пароль-1"}).status_code == 409
+    # старый ученик сайта с username = эта же почта тоже блокирует регистрацию
+    from app import auth
+    conn = connect()
+    with conn:
+        conn.execute("INSERT INTO users (username, password_hash, role, display_name) VALUES (?, ?, 'student', 'Старый')",
+                     ("boy@example.com", auth.hash_password("пароль-12345")))
+    assert _register(client, {**ADULT, "email": "boy@example.com"}).status_code == 409
+
+
+def test_login_by_email_and_by_username(client):  # noqa: F811
+    token = _session(client)
+    assert _register(client, token=token).status_code == 200
+    by_email = client.post("/api/v1/auth/login", json={"login": "anna@example.com", "password": ADULT["password"]})
+    assert by_email.status_code == 200 and by_email.json()["created"] is False
+    assert client.get(f"/api/v1/forecast/{EXAM}", headers={"Authorization": "Bearer " + by_email.json()["token"]}).status_code == 200
+    # старый ученик сайта: username + тот же пароль, что на сайте
+    from app.db import connect
+    from app import auth
+    conn = connect()
+    with conn:
+        conn.execute("INSERT INTO users (username, password_hash, role, display_name) VALUES (?, ?, 'student', 'Старый')",
+                     ("oldstudent", auth.hash_password("пароль-12345")))
+    by_name = client.post("/api/v1/auth/login", json={"login": "oldstudent", "password": "пароль-12345"})
+    assert by_name.status_code == 200
+    n = _first_number()
+    r = _attempt(client, by_name.json()["token"], n, 1, "1")
+    assert r.status_code == 200                      # попытки полноценного ученика пишутся тем же путём
+
+
+def test_login_wrong_password_and_teacher_403(client):  # noqa: F811
+    _register(client)
+    assert client.post("/api/v1/auth/login", json={"login": "anna@example.com", "password": "неверный-пароль"}).status_code == 401
+    assert client.post("/api/v1/auth/login", json={"login": "никто", "password": "пароль-12345"}).status_code == 401
+    from app.db import connect
+    from app import auth
+    conn = connect()
+    with conn:
+        conn.execute("INSERT INTO users (username, password_hash, role, display_name) VALUES (?, ?, 'teacher', 'Учитель')",
+                     ("teacher1", auth.hash_password("пароль-12345")))
+    assert client.post("/api/v1/auth/login", json={"login": "teacher1", "password": "пароль-12345"}).status_code == 403
+
+
+def test_login_rate_limit(client, monkeypatch):  # noqa: F811
+    from app import auth
+    monkeypatch.setattr(auth, "MAX_FAILS", 1)
+    body = {"login": "anna@example.com", "password": "неверный-пароль"}
+    assert client.post("/api/v1/auth/login", json=body).status_code == 401
+    assert client.post("/api/v1/auth/login", json=body).status_code == 429
+
+
+def test_register_rate_limit(client, monkeypatch):  # noqa: F811
+    from app import api_v1
+    monkeypatch.setattr(api_v1.config, "API_REGISTER_PER_HOUR", 1)
+    assert _register(client).status_code == 200
+    assert _register(client, {**ADULT, "email": "two@example.com"}).status_code == 429
+
+
+def test_auth_flag_pauses(client, monkeypatch):  # noqa: F811
+    from app import config
+    monkeypatch.setattr(config, "API_FLAG_AUTH", False)
+    assert client.get("/api/v1/config").json()["flags"]["auth"] is False
+    assert _register(client).status_code == 503
+    assert client.post("/api/v1/auth/login", json={"login": "a@example.com", "password": "пароль-12345"}).status_code == 503
+
+
+def test_logout_deletes_token(client):  # noqa: F811
+    login_token = _register(client).json()["token"]
+    guest_token = _session(client)
+    assert client.delete("/api/v1/session", headers={"Authorization": "Bearer " + login_token}).status_code == 204
+    assert client.delete("/api/v1/session", headers={"Authorization": "Bearer " + guest_token}).status_code == 204
+    assert client.get(f"/api/v1/forecast/{EXAM}", headers={"Authorization": "Bearer " + login_token}).status_code == 401
+    assert _attempt(client, guest_token, _first_number(), 1, "1").status_code == 401
+    assert client.delete("/api/v1/session", headers={"Authorization": "Bearer nope"}).status_code == 401
+    assert client.delete("/api/v1/session").status_code == 401

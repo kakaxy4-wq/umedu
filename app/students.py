@@ -97,7 +97,7 @@ def signup(conn, name, grade, login, password, consent, ip="?", age14=False, par
         return None, "Самому зарегистрироваться можно с 14 лет. Если тебе меньше — пусть родитель заведёт тебе аккаунт."
     if not consent:
         return None, "Отметь согласие на обработку данных — без него зарегистрироваться нельзя."
-    if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").fetchone()[0] >= MAX_STUDENTS:
+    if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1 AND guest = 0").fetchone()[0] >= MAX_STUDENTS:
         return None, "Сейчас все места заняты — загляни через пару дней."
     sid = create_student(conn, login, name, password)
     chosen = [s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"]
@@ -123,7 +123,7 @@ def get_student(conn, sid, include_archived=True):
 
 
 def list_students(conn, include_archived=False):
-    sql = "SELECT * FROM users WHERE role = 'student'" + ("" if include_archived else " AND active = 1")
+    sql = "SELECT * FROM users WHERE role = 'student' AND guest = 0" + ("" if include_archived else " AND active = 1")
     return [dict(r) for r in conn.execute(sql + " ORDER BY active DESC, display_name COLLATE NOCASE")]
 
 

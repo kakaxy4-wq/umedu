@@ -57,6 +57,8 @@ API_HARD_MIN_BUILD = int(os.environ.get("CQ_API_HARD_MIN_BUILD", "1"))
 API_FLAG_TRAINER = os.environ.get("CQ_API_FLAG_TRAINER", "1") != "0"
 API_FLAG_TRIAL = os.environ.get("CQ_API_FLAG_TRIAL", "1") != "0"
 API_FLAG_CRASH_REPORTS = os.environ.get("CQ_API_FLAG_CRASH_REPORTS", "1") != "0"
+API_FLAG_GUESTS = os.environ.get("CQ_API_FLAG_GUESTS", "1") != "0"
+API_SESSIONS_PER_HOUR = int(os.environ.get("CQ_API_SESSIONS_PER_HOUR", "20"))
 API_NOTICE_KIND = os.environ.get("CQ_API_NOTICE_KIND", "").strip()
 API_NOTICE_TEXT = os.environ.get("CQ_API_NOTICE_TEXT", "").strip()
 

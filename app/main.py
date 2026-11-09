@@ -220,7 +220,7 @@ def subject_id(conn, user):
     sid = user.get("current_student_id")
     if sid and students.get_student(conn, sid):
         return sid
-    first = conn.execute("SELECT id FROM users WHERE role = 'student' AND active = 1 ORDER BY id LIMIT 1").fetchone()
+    first = conn.execute("SELECT id FROM users WHERE role = 'student' AND active = 1 AND guest = 0 ORDER BY id LIMIT 1").fetchone()
     return first[0] if first else None
 
 

@@ -494,6 +494,11 @@ def _minus(t):
     return re.sub(r"(?<!\w)-(?=\d)", "−", t)
 
 
+def _tidy(t):
+    """Пробел перед точкой и другими знаками после формулы не нужен: «x² .» → «x².»."""
+    return re.sub(r"\s+([.,;:!?])", r"\1", t)
+
+
 class Bank:
     """Генераторы одного экзамена: make / public / check, как у oge_gen."""
 
@@ -501,13 +506,20 @@ class Bank:
         self.prefix, self.GENERATORS, self.TITLES = prefix, gens, titles
 
     def make(self, num, seed):
-        v = self.GENERATORS[num](random.Random("%s-%d-%d" % (self.prefix, num, seed)))
-        v.update({"num": num, "seed": seed, "text": _minus(v["text"]), "explain": _minus(v["explain"])})
+        from .solve_steps import ensure
+        r = random.Random("%s-%d-%d" % (self.prefix, num, seed))
+        gen = self.GENERATORS[num]
+        v = gen(r, seed) if getattr(gen, "wants_seed", False) else gen(r)
+        v["text"], v["explain"] = _tidy(_minus(v["text"])), _tidy(_minus(v["explain"]))
+        if v.get("steps"):
+            v["steps"] = [_tidy(_minus(s)) for s in v["steps"]]
+        ensure(v)
+        v.update({"num": num, "seed": seed})
         return v
 
     @staticmethod
     def public(v):
-        return {k: v[k] for k in ("num", "seed", "text", "table", "code") if k in v}
+        return {k: v[k] for k in ("num", "seed", "text", "table", "code", "svg") if k in v}
 
     @staticmethod
     def check(v, given):
@@ -569,8 +581,10 @@ def b20(r):
     return o14(r) if r.random() < 0.5 else p10(r)
 
 
-OGE = Bank("oge-math", {6: o6, 7: o7, 8: o8, 9: o9, 10: o10, 12: o12, 13: o13, 14: o14, 15: o15, 16: o16, 17: o17,
-                        19: o19},
+from .math_plots import o1, o11, o18, o2, o3, o4, o5  # noqa: E402 — сюжеты с рисунками
+
+OGE = Bank("oge-math", {1: o1, 2: o2, 3: o3, 4: o4, 5: o5, 6: o6, 7: o7, 8: o8, 9: o9, 10: o10, 11: o11, 12: o12,
+                        13: o13, 14: o14, 15: o15, 16: o16, 17: o17, 18: o18, 19: o19},
            {6: "Действия с дробями", 7: "Числа и координатная прямая", 8: "Степени и корни", 9: "Уравнения",
             10: "Вероятность", 11: "Графики функций", 12: "Расчёты по формулам", 13: "Неравенства",
             14: "Прогрессии в задачах", 15: "Треугольники", 16: "Окружность", 17: "Площади фигур",

@@ -10,18 +10,75 @@
 </div>
 {% if user.role != 'student' %}<p class="u2-hint">Режим просмотра: ответы преподавателя не записываются.</p>{% endif %}
 
-{% if generated %}
+{% if mode == 'gen' %}
 <section class="u2-card u2-task">
   {{ task_body(text, variant) }}
 </section>
+{% elif mode == 'ru' %}
+<section class="u2-card u2-task">
+  <p class="u2-hint">{% if ru.kind == 'comma' %}Коснись промежутка, где нужна запятая. Бывает, что запятые не нужны.{% elif ru.kind == 'basis' %}Касайся слов: один раз — подлежащее, второй — сказуемое, третий — снять.{% else %}Выбери верный вариант.{% endif %}</p>
+  <div class="u2-ru" data-u2-ru data-seed="{{ seed }}" data-exam="{{ c.id }}" data-num="{{ t.key }}"></div>
+  <script type="application/json" id="u2-ru-item">{{ ru|tojson }}</script>
+</section>
+{% elif mode == 'robot' %}
+<section class="u2-card u2-task">
+  <p>{{ robot.text }}</p>
+</section>
+<div id="robot-app" class="robot-app" data-seed="{{ seed }}" data-exam="{{ c.id }}" data-num="{{ t.key }}">
+  <script type="application/json" id="robot-fields">{{ fields|tojson }}</script>
+  <script type="application/json" id="robot-starter">{{ starter|tojson }}</script>
+  <section class="u2-card robot-board">
+    <div class="robot-tabs" role="tablist"></div>
+    <div class="robot-svg" aria-label="Поле Робота"></div>
+  </section>
+  <section class="u2-card robot-code">
+    <div class="cb-bar">
+      <button type="button" class="u2-btn" data-robot-run>Запустить</button>
+      <button type="button" class="u2-btn" data-robot-check>Проверить на всех полях</button>
+      <button type="button" class="u2-btn ghost" data-robot-reset>Сначала</button>
+      <span class="cb-status" data-robot-status></span>
+    </div>
+    <textarea data-robot-code spellcheck="false" autocapitalize="off">{{ starter }}</textarea>
+    <div class="robot-result" data-robot-result hidden></div>
+  </section>
+</div>
+<details class="u2-card"><summary>Команды Робота</summary>
+  <ul class="u2-help">{% for py, what, ku in help %}<li><code>{{ py }}</code> — {{ what }}</li>{% endfor %}</ul>
+</details>
+<section class="u2-card" data-robot-answer hidden>
+  <h2>Эталон</h2>
+  <pre class="u2-code" data-robot-sol-py></pre>
+</section>
+{% elif mode == 'code' %}
+<section class="u2-card u2-task">
+  {% for para in code.text.split('\n\n') %}<p>{{ para }}</p>{% endfor %}
+  <div class="examples-io">
+    {% for ex in code.examples %}
+    <div class="io"><div><small>Ввод</small><pre>{{ ex.stdin }}</pre></div><div><small>Вывод</small><pre>{{ ex.stdout }}</pre></div></div>
+    {% endfor %}
+  </div>
+</section>
+<div class="codebox" data-mode="task" data-u2-code data-seed="{{ seed }}" data-exam="{{ c.id }}" data-num="{{ t.key }}" data-tests='{{ code.tests|tojson }}'>
+  <textarea spellcheck="false" autocapitalize="off" aria-label="Код на Python"></textarea>
+</div>
+<section class="u2-card" id="u2-solution" hidden>
+  <h2>Эталон</h2>
+  <pre class="u2-code"></pre>
+</section>
 {% endif %}
 
-{% if res %}
+{% if res and res.pending %}
+<section class="u2-card u2-res bad">
+  <h2>Пока не то</h2>
+  <p>Подсказка: {% for para in res.hint %}{{ para }}{% endfor %}</p>
+  <p class="u2-hint">Вторая попытка этого варианта. Если снова мимо — разберём полностью, и попытка запишется.</p>
+</section>
+{% elif res %}
 <section class="u2-card u2-res {{ 'ok' if res.ok else 'bad' }}">
-  {% if generated %}
+  {% if mode == 'gen' %}
   <h2>{{ 'Верно' if res.ok else 'Неверно' }}</h2>
   <p>Твой ответ: <b>{{ given or '—' }}</b>{% if not res.ok %} · верный: <b>{{ res.answer }}</b>{% endif %}</p>
-  <p class="u2-hint">{{ res.explain }}</p>
+  {% if res.steps %}<ol class="u2-steps">{% for step in res.steps %}<li>{% for para in step %}{{ para }}{% endfor %}</li>{% endfor %}</ol>{% endif %}
   {% else %}
   <h2>Записано: {{ res.score }} из {{ res.max }}</h2>
   {% endif %}
@@ -29,26 +86,37 @@
     · первичный {{ '+' if delta.primary >= 0 }}{{ delta.primary|string|replace('.', ',')|replace('-', '−') }}</p>
   <div class="u2-actions">
     {% if next_key is not none %}<a class="u2-btn" href="/u2/train/{{ c.id }}/{{ next_key }}">Дальше по плану: №{{ next_key }}</a>{% endif %}
-    <a class="u2-btn ghost" href="/u2/train/{{ c.id }}/{{ t.key }}">{{ 'Ещё вариант' if generated else 'Ещё раз этот номер' }}</a>
+    <a class="u2-btn ghost" href="/u2/train/{{ c.id }}/{{ t.key }}">{{ 'Ещё вариант' if mode != 'self' else 'Ещё раз этот номер' }}</a>
   </div>
 </section>
-{% elif user.role == 'student' %}
-<form method="post" action="/u2/train/{{ c.id }}/{{ t.key }}" class="u2-card">
-  <input type="hidden" name="csrf" value="{{ user.csrf }}">
-  {% if generated %}
-  <input type="hidden" name="seed" value="{{ seed }}">
-  <div class="u2-pick-row">
-    <label>Ответ <input name="answer" autocomplete="off" autocapitalize="off" spellcheck="false" required autofocus></label>
-    <button class="u2-btn">Проверить</button>
-  </div>
-  {% else %}
-  <p>Реши задание {{ t.label }} из <a href="{{ bank }}" target="_blank" rel="noopener">открытого банка ФИПИ</a> или своего сборника,
-    сверь с ответом и отметь, сколько баллов получил бы на экзамене.</p>
-  <div class="u2-score" role="group" aria-label="Баллы">
-    {% for s in range(t.points + 1) %}<button name="score" value="{{ s }}" class="u2-btn{{ ' ghost' if s < t.points }}">{{ s }}</button>{% endfor %}
-  </div>
-  <p class="u2-hint">Честная отметка важнее высокой: от неё зависит прогноз и план.</p>
-  {% endif %}
-</form>
 {% endif %}
+
+{% if user.role == 'student' and not (res and not res.pending) %}
+  {% if mode == 'gen' or (res and res.pending) %}
+  <form method="post" action="/u2/train/{{ c.id }}/{{ t.key }}" class="u2-card">
+    <input type="hidden" name="csrf" value="{{ user.csrf }}">
+    <input type="hidden" name="seed" value="{{ seed }}">
+    {% if res and res.pending %}<input type="hidden" name="hint" value="1">{% endif %}
+    <div class="u2-pick-row">
+      <label>Ответ <input name="answer" autocomplete="off" autocapitalize="off" spellcheck="false" required autofocus value="{{ given or '' }}"></label>
+      <button class="u2-btn">Проверить</button>
+    </div>
+  </form>
+  {% elif mode == 'self' and not res %}
+  <form method="post" action="/u2/train/{{ c.id }}/{{ t.key }}" class="u2-card">
+    <input type="hidden" name="csrf" value="{{ user.csrf }}">
+    <p>Реши задание {{ t.label }} из <a href="{{ bank }}" target="_blank" rel="noopener">открытого банка ФИПИ</a> или своего сборника,
+      сверь с ответом и отметь, сколько баллов получил бы на экзамене.</p>
+    <div class="u2-score" role="group" aria-label="Баллы">
+      {% for s in range(t.points + 1) %}<button name="score" value="{{ s }}" class="u2-btn{{ ' ghost' if s < t.points }}">{{ s }}</button>{% endfor %}
+    </div>
+    <p class="u2-hint">Честная отметка важнее высокой: от неё зависит прогноз и план.</p>
+  </form>
+  {% endif %}
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if mode == 'ru' %}<script src="/static/js/u2-ru.js?v={{ v }}"></script>{% endif %}
+{% if mode == 'robot' %}<script src="/static/js/runner.js?v={{ v }}"></script><script src="/static/js/u2-robot.js?v={{ v }}"></script>{% endif %}
+{% if mode == 'code' %}<script src="/static/js/runner.js?v={{ v }}"></script><script src="/static/js/u2-code.js?v={{ v }}"></script>{% endif %}
 {% endblock %}

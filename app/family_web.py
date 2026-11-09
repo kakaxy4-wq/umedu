@@ -7,7 +7,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import auth, certificates, config, family, forecast, game, parent_bot, russian, students, subjects, theme
+from . import account, auth, certificates, config, family, forecast, game, parent_bot, russian, students, subjects, theme
 from .db import get_db
 from .content.checks import CHECK_BY_ID
 from .main import FamilyLogin, back, cert_signer, oge_progress, render
@@ -106,6 +106,7 @@ def _family_only(request, conn):
     fam = family.load(request, conn)
     if not fam:
         raise FamilyLogin()
+    family.touch(conn, fam["id"])
     return fam
 
 
@@ -195,7 +196,7 @@ def family_home(request: Request, conn=Depends(get_db)):
         kids.append({"st": st, "me": game.stats(conn, sid), "days": days,
                      "fc": forecast.forecast(oge_progress(conn, sid)) if "python" in subjects.of(st) else None})
     return render(request, "family/home.html", conn, None, fam=fam, kids=kids, tg=parent_bot.enabled(),
-                  tg_sent=request.query_params.get("tg"))
+                  has_minor=any(k["st"]["minor"] for k in kids), tg_sent=request.query_params.get("tg"))
 
 
 @router.post("/family/telegram")
@@ -223,7 +224,7 @@ def family_child(sid: int, request: Request, conn=Depends(get_db)):
     fam = _family_only(request, conn)
     st = family.child(conn, fam["id"], sid)
     return render(request, "parent.html", conn, None, fam=fam, in_family=True, cert_base="/family/child/%d" % sid,
-                  **_parent_ctx(conn, st))
+                  gallery_on=account.granted(st), **_parent_ctx(conn, st))
 
 
 @router.get("/family/child/{sid}/certificate/{kind}/{ref}", response_class=HTMLResponse)
@@ -245,6 +246,89 @@ def family_unlink(sid: int, request: Request, csrf: str = Form(""), conn=Depends
     with conn:
         family.unlink(conn, fam["id"], sid)
     return back("/family")
+
+
+@router.post("/family/child/{sid}/gallery")
+def family_child_gallery(sid: int, request: Request, gallery: str = Form(""), csrf: str = Form(""),
+                         conn=Depends(get_db)):
+    """Ник в галерее за ребёнка младше 14 лет ставит только родитель."""
+    fam = _family_only(request, conn)
+    family.check_csrf(fam, csrf)
+    st = family.child(conn, fam["id"], sid)
+    if not st["minor"]:
+        raise HTTPException(403, "Ученику с 14 лет эту галочку ставит он сам.")
+    account.set_gallery(conn, st["id"], gallery == "1", account.BY_PARENT)
+    return back("/family/child/%d" % sid)
+
+
+def _parent_delete_page(request, conn, fam, *, child=None, error=None):
+    minors = account.exclusive_minors(conn, fam["id"])
+    if child:
+        heading = "Удалить аккаунт %s" % child["display_name"]
+        lead = ("Аккаунт ребёнка, его ответы, прогресс, проекты и согласие удалятся сразу и без восстановления. "
+                "Сделать это можете вы: ребёнку меньше 14 лет.")
+        action = "/family/child/%d/delete" % child["id"]
+        names = []
+    else:
+        heading = "Удалить кабинет родителя"
+        lead = "Кабинет родителя удалится сразу: имя, логин, пароль и согласие. Восстановить нельзя."
+        action = "/family/delete"
+        names = [s["display_name"] for s in minors]
+    return render(request, "account/delete_form.html", conn, None, fam=fam, heading=heading, lead=lead,
+                  action=action, error=error, minors=names, warn_minors=not child, need_login=False,
+                  confirm_text="Я понимаю, что данные будут удалены без восстановления",
+                  password_label="Ваш пароль", blocked=None, done=False)
+
+
+@router.get("/family/delete", response_class=HTMLResponse)
+def family_delete_page(request: Request, conn=Depends(get_db)):
+    fam = _family_only(request, conn)
+    return _parent_delete_page(request, conn, fam)
+
+
+@router.post("/family/delete", response_class=HTMLResponse)
+def family_delete(request: Request, password: str = Form(""), confirm: str = Form(""), csrf: str = Form(""),
+                  conn=Depends(get_db)):
+    fam = _family_only(request, conn)
+    family.check_csrf(fam, csrf)
+    if confirm != "1":
+        return _parent_delete_page(request, conn, fam, error="Подтвердите удаление — поставьте галочку.")
+    stored = conn.execute("SELECT password_hash FROM parents WHERE id = ?", (fam["id"],)).fetchone()
+    if not account.password_ok(stored["password_hash"] if stored else "", password):
+        return _parent_delete_page(request, conn, fam, error="Неверный пароль.")
+    account.delete_parent(conn, fam["id"])
+    resp = render(request, "account/deleted.html", conn, None, parent=True, child_name="")
+    family.drop_session(conn, request, resp)
+    resp.delete_cookie(family.COOKIE, path="/", secure=config.COOKIE_SECURE, httponly=True, samesite="lax")
+    resp.delete_cookie(auth.COOKIE, path="/", secure=config.COOKIE_SECURE, httponly=True, samesite="lax")
+    return resp
+
+
+@router.get("/family/child/{sid}/delete", response_class=HTMLResponse)
+def family_child_delete_page(sid: int, request: Request, conn=Depends(get_db)):
+    fam = _family_only(request, conn)
+    st = family.child(conn, fam["id"], sid)
+    if not st["minor"]:
+        raise HTTPException(403, "Ученик с 14 лет удаляет аккаунт сам.")
+    return _parent_delete_page(request, conn, fam, child=st)
+
+
+@router.post("/family/child/{sid}/delete", response_class=HTMLResponse)
+def family_child_delete(sid: int, request: Request, password: str = Form(""), confirm: str = Form(""),
+                        csrf: str = Form(""), conn=Depends(get_db)):
+    fam = _family_only(request, conn)
+    family.check_csrf(fam, csrf)
+    st = family.child(conn, fam["id"], sid)
+    if not st["minor"]:
+        raise HTTPException(403, "Ученик с 14 лет удаляет аккаунт сам.")
+    if confirm != "1":
+        return _parent_delete_page(request, conn, fam, child=st, error="Подтвердите удаление — поставьте галочку.")
+    stored = conn.execute("SELECT password_hash FROM parents WHERE id = ?", (fam["id"],)).fetchone()
+    if not account.password_ok(stored["password_hash"] if stored else "", password):
+        return _parent_delete_page(request, conn, fam, child=st, error="Неверный пароль.")
+    name = st["display_name"]
+    account.delete_student(conn, st["id"])
+    return render(request, "account/deleted.html", conn, None, fam=fam, parent=False, child_name=name)
 
 
 # ------------------------------------------------------------------ родитель заводит аккаунт ребёнку (младше 14 — только так)
@@ -293,13 +377,16 @@ def new_child(request: Request, pname: str = Form(""), plogin: str = Form(""), p
     return resp
 
 
+def _legal(conn):
+    return dict(operator=config.OPERATOR, contact=config.CONTACT, version=family.CONSENT_VERSION,
+                gallery_version=account.GALLERY_CONSENT_VERSION, student_name="", tg_bot=parent_bot.enabled())
+
+
 @router.get("/consent", response_class=HTMLResponse)
 def consent(request: Request, conn=Depends(get_db)):
-    return render(request, "consent.html", conn, None, operator=config.OPERATOR, contact=config.CONTACT,
-                  version=family.CONSENT_VERSION, student_name="", tg_bot=parent_bot.enabled())
+    return render(request, "consent.html", conn, None, **_legal(conn))
 
 
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy(request: Request, conn=Depends(get_db)):
-    return render(request, "privacy.html", conn, None, operator=config.OPERATOR, contact=config.CONTACT,
-                  version=family.CONSENT_VERSION, student_name="", tg_bot=parent_bot.enabled())
+    return render(request, "privacy.html", conn, None, **_legal(conn))

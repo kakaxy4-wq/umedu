@@ -6,6 +6,7 @@
   <a class="btn" href="/portfolio/new">+ Новый проект</a>
 </div>
 <p class="muted">Здесь живут твои проекты: открытки, квесты, игры, боты. Публичным проектом можно поделиться ссылкой — друзья увидят код и смогут запустить его прямо в браузере. Все публичные проекты: <a href="/gallery">галерея</a>.</p>
+{% if user.role == 'student' %}<p class="muted small"><a href="/account">Ник в галерее и удаление аккаунта</a></p>{% endif %}
 <div class="project-grid">
   {% for p in projects %}
   <div class="card project">

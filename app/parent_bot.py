@@ -12,6 +12,7 @@ settings, чтобы не повторяться после перезапуск
 import asyncio
 import json
 import logging
+import random
 import secrets
 import time
 import urllib.request
@@ -24,22 +25,32 @@ log = logging.getLogger("codequest.parent_bot")
 
 CODE_TTL = timedelta(hours=1)
 POLL_TIMEOUT = 25
+# Пауза после неудачного опроса: 30 с, дальше вдвое до 10 минут (плюс немного случайности), после успеха — снова 30 с.
+BACKOFF_START = 30
+BACKOFF_MAX = 600
 _me = {}
+_last_error = {"error": ""}               # последняя ошибка Bot API — для сводного предупреждения опроса
 
 
 def enabled():
     return config.PARENT_BOT and bool(config.TELEGRAM_TOKEN)
 
 
-def call(method, **params):
-    """Запрос к Bot API. None — если не получилось (ошибка не должна ронять сайт; токен в лог не пишем)."""
+def call(method, quiet=False, **params):
+    """Запрос к Bot API. None — если не получилось (ошибка не должна ронять сайт; токен в лог не пишем).
+
+    quiet=True — ошибку не логировать: её учитывает вызывающий (опрос getUpdates считает неудачи подряд сам).
+    """
     url = "https://api.telegram.org/bot%s/%s" % (config.TELEGRAM_TOKEN, method)
     req = urllib.request.Request(url, data=json.dumps(params).encode(), headers={"Content-Type": "application/json"})
     try:
         return json.loads(urllib.request.urlopen(req, timeout=params.get("timeout", 0) + 15).read())
     except Exception as e:
-        log.warning("telegram %s failed: %s %s", method, type(e).__name__, getattr(e, "code", ""))
+        _last_error["error"] = "%s %s" % (type(e).__name__, getattr(e, "code", "") or "")
+        if not quiet:
+            log.warning("telegram %s failed: %s", method, _last_error["error"].strip())
         return None
+
 
 
 def send(chat_id, text):
@@ -99,8 +110,10 @@ def handle(conn, update):
 def poll_once(conn):
     """Забрать новые сообщения и ответить. Номер последнего обновления — в settings."""
     offset = int(get_setting(conn, "tg_offset") or 0)
-    r = call("getUpdates", offset=offset, timeout=POLL_TIMEOUT, allowed_updates=["message"])
+    r = call("getUpdates", quiet=True, offset=offset, timeout=POLL_TIMEOUT, allowed_updates=["message"])
     if not r or not r.get("ok"):
+        if r is not None:                  # Telegram ответил, но не ok (например, 409 — токен читает кто-то ещё)
+            _last_error["error"] = "api %s %s" % (r.get("error_code", ""), r.get("description", ""))
         return False
     for u in r["result"]:
         with conn:
@@ -114,7 +127,19 @@ def poll_once(conn):
     return True
 
 
+def next_delay(failures):
+    """Пауза перед следующей попыткой после failures неудач подряд (failures >= 1)."""
+    base = min(BACKOFF_MAX, BACKOFF_START * 2 ** (failures - 1))
+    return base + random.uniform(0, base / 10)
+
+
+def should_warn(failures):
+    """Предупреждаем на 1-й, 2-й, 4-й, 8-й… неудаче подряд, чтобы долгий сбой сети не засорял журнал."""
+    return failures & (failures - 1) == 0
+
+
 async def poller():
+    failures = 0
     while True:
         conn = connect()
         try:
@@ -124,8 +149,17 @@ async def poller():
             ok = False
         finally:
             conn.close()
-        if not ok:
-            await asyncio.sleep(30)        # сеть или токен — не долбим API
+        if ok:
+            if failures:
+                log.info("telegram getUpdates снова работает после %d неудач подряд", failures)
+            failures = 0
+            continue
+        failures += 1
+        delay = next_delay(failures)       # сеть или токен — не долбим API
+        if should_warn(failures):
+            log.warning("telegram getUpdates failed (%d подряд): %s; повтор через %d с",
+                        failures, _last_error["error"].strip() or "unknown", delay)
+        await asyncio.sleep(delay)
 
 
 # ------------------------------------------------------------------ отчёт

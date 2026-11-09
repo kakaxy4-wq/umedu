@@ -5,7 +5,7 @@
 <div class="login-card card">
   <div class="login-hero">{% if logo %}<img src="{{ logo }}" alt="" class="login-mark">{% else %}{{ brand }}{% endif %}</div>
   <h1>{{ wordmark(site_name) }}</h1>
-  <p class="muted">{{ "Подготовка к ОГЭ и ЕГЭ по химии" if chem_site else ("Подготовка к ОГЭ в игровом формате" if public_site else "Личный кабинет курса Python") }}</p>
+  <p class="muted">{{ "Подготовка к ОГЭ и ЕГЭ по химии" if chem_site else ("Подготовка к ОГЭ и ЕГЭ" if umedu2 else ("Подготовка к ОГЭ в игровом формате" if public_site else "Личный кабинет курса Python")) }}</p>
   {% if error %}<div class="alert bad">{{ error }}</div>{% endif %}
   <form method="post" action="/login" class="stack">
     <label>Логин<input name="username" autocomplete="username" autocapitalize="off" required autofocus></label>
@@ -17,5 +17,6 @@
   {% if public_site %}<p class="muted small"><a href="/welcome">Что это за платформа →</a></p>{% endif %}
   {% if source_url %}<p class="muted small"><a href="{{ source_url }}" target="_blank" rel="noopener">Исходный код сайта</a> — открыт под AGPL-3.0</p>{% endif %}
   {% if not chem_site %}<p class="muted small"><a href="/gallery">Посмотреть публичное портфолио →</a></p>{% endif %}
+  <p class="muted small"><a href="/delete-account">Удалить аккаунт</a></p>
 </div>
 {% endblock %}

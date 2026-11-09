@@ -444,6 +444,18 @@ CREATE TABLE IF NOT EXISTS skill_attempt (     -- каждая попытка: �
 );
 CREATE INDEX IF NOT EXISTS idx_skill_attempt ON skill_attempt(student_id, exam_id, id);
 CREATE INDEX IF NOT EXISTS idx_skill_attempt_day ON skill_attempt(student_id, day);
+CREATE TABLE IF NOT EXISTS lab_offer (          -- когда «Сегодня» уже предлагало опыт: не чаще раза в 3 дня
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lab_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    PRIMARY KEY (student_id, lab_id)
+);
+CREATE TABLE IF NOT EXISTS u2_badge (           -- достижения umedu 2.0: серия и значки, без монет
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code TEXT NOT NULL,
+    earned_at TEXT NOT NULL,
+    PRIMARY KEY (student_id, code)
+);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,
@@ -505,6 +517,11 @@ USER_COLUMNS = [
     ("grade", "INTEGER"),
     ("price", "INTEGER NOT NULL DEFAULT 0"),
     ("consent", "TEXT NOT NULL DEFAULT ''"),  # «редакция политики · когда» — при открытой регистрации
+    ("minor", "INTEGER NOT NULL DEFAULT 0"),  # 1 — аккаунт завёл родитель, ученику меньше 14 лет
+    ("gallery_ok", "INTEGER NOT NULL DEFAULT 0"),
+    ("gallery_consent_at", "TEXT"),           # когда поставили галочку «ник в галерее»; пусто — согласия нет
+    ("gallery_consent_version", "TEXT NOT NULL DEFAULT ''"),
+    ("gallery_consent_by", "TEXT NOT NULL DEFAULT ''"),  # «ученик» или «родитель»
 ]
 
 # Цены — в гемах 💎 (10 за занятие, 10 за домашку): пицца ≈ месяц занятий, новая игра ≈ четверть.
@@ -610,6 +627,7 @@ PARENT_COLUMNS = [
     ("tg_chat_id", "TEXT"),          # чат родителя с ботом — для еженедельного отчёта
     ("tg_code", "TEXT"),             # одноразовый код ссылки t.me/<бот>?start=<код>
     ("tg_code_at", "TEXT"),
+    ("last_seen_at", "TEXT"),        # последний вход в кабинет — для удаления через год
 ]
 
 
@@ -630,6 +648,20 @@ def _ensure_user_columns(conn):
             conn.execute("ALTER TABLE users ADD COLUMN %s %s" % (name, ddl))
 
 
+def _backfill_minor(conn):
+    """Ученик, которого завёл родитель, — младше 14. Старые строки помечаем один раз по тексту согласия."""
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if "users" not in tables or "settings" not in tables:
+        return
+    cols = _columns(conn, "users")
+    if "minor" not in cols or "consent" not in cols:
+        return
+    if conn.execute("SELECT 1 FROM settings WHERE key = 'minor_backfill'").fetchone():
+        return
+    conn.execute("UPDATE users SET minor = 1 WHERE role = 'student' AND consent LIKE '%родитель #%' AND minor = 0")
+    conn.execute("INSERT INTO settings (key, value) VALUES ('minor_backfill', '1')")
+
+
 def init_db():
     conn = connect()
     conn.isolation_level = None  # транзакциями миграции управляем сами
@@ -644,6 +676,7 @@ def init_db():
             conn.executemany("INSERT INTO rewards (emoji, title, cost) VALUES (?, ?, ?)", DEFAULT_REWARDS)
             conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('economy_v2', '1')")
         _economy_v2(conn)
+        _backfill_minor(conn)
         conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('schema_version', ?)", (str(SCHEMA_VERSION),))
     conn.close()
 

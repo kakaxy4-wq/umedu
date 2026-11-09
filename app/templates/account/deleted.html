@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Аккаунт удалён{% endblock %}
+{% block body_class %}{% if not fam %}login-page{% endif %}{% endblock %}
+{% block content %}
+<div class="{% if not fam %}login-card card{% endif %}">
+{% if fam %}{% include "family/_bar.html" %}{% endif %}
+<h1>Аккаунт удалён</h1>
+{% if child_name %}<p>Аккаунт «{{ child_name }}» удалён. Восстановить его нельзя.</p>
+{% elif parent %}<p>Кабинет родителя удалён. Если в нём были дети младше 14 лет без другого родителя, их аккаунты удалены тоже. Восстановить нельзя.</p>
+{% else %}<p>Аккаунт удалён. Восстановить его нельзя.</p>{% endif %}
+<p>Резервные копии базы и журналы сервера хранятся отдельно и не дольше 30 дней.</p>
+{% if fam %}<p><a class="btn" href="/family">В кабинет</a></p>
+{% else %}<p><a class="btn" href="/">На главную</a></p>{% endif %}
+</div>
+{% endblock %}

@@ -109,6 +109,25 @@
 
 <h2>Последние успехи</h2>
 <ul class="feed">{% for e in recent %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% else %}<li class="muted">Пока пусто — всё впереди!</li>{% endfor %}</ul>
+{% if in_family and st.minor %}
+<section class="card">
+  <h2>Ник в галерее</h2>
+  <form method="post" action="/family/child/{{ st.id }}/gallery" class="stack">
+    {{ fam_csrf(fam) }}
+    <p><label><input type="checkbox" name="gallery" value="1"{% if gallery_on %} checked{% endif %}> Показывать ник ребёнка в галерее</label></p>
+    {% set nick = st.display_name %}
+    {% include "account/_gallery_note.html" %}
+    <button class="btn btn-small">Сохранить</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Удаление аккаунта ребёнка</h2>
+  <p>Ребёнку меньше 14 лет, поэтому аккаунт удаляете вы. Пропадут ответы, прогресс, проекты и согласие.</p>
+  <p><a class="btn btn-ghost" href="/family/child/{{ st.id }}/delete">Удалить аккаунт {{ st.display_name }}</a></p>
+</section>
+{% elif in_family %}
+<p class="muted small">Ник в галерее и удаление аккаунта ученик включает сам: ему уже есть 14 лет.</p>
+{% endif %}
 {% if in_family %}
 <form method="post" action="/family/child/{{ st.id }}/unlink" class="muted small" data-confirm="Убрать {{ st.display_name }} из кабинета? Вернуть можно по ссылке от преподавателя.">{{ fam_csrf(fam) }}<button class="btn btn-small btn-ghost">Убрать из моего кабинета</button></form>
 {% else %}

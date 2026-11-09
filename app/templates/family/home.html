@@ -36,7 +36,8 @@
 </section>
 {% endif %}
 {% if open_signup %}<p><a class="btn btn-ghost" href="/family/new-child">➕ Завести аккаунт ребёнку</a></p>{% endif %}
+{% if has_minor %}<p class="muted small">Ребёнку младше 14 лет ник в галерее включаете вы — на странице ребёнка. Там же можно удалить его аккаунт.</p>{% endif %}
 <p class="muted small">Ещё один ребёнок занимается здесь же? Откройте его ссылку для родителей — она добавит его в этот кабинет.
-  <a href="/privacy">Как мы обращаемся с данными</a>.</p>
+  <a href="/privacy">Как мы обращаемся с данными</a> · <a href="/family/delete">удалить мой кабинет</a>.</p>
 </div>
 {% endblock %}

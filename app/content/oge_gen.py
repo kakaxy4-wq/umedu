@@ -310,13 +310,19 @@ GENERATORS = {1: g1, 2: g2, 3: g3, 4: g4, 5: g5, 6: g6, 7: g7, 8: g8, 9: g9, 10:
 
 
 def make(num, seed):
+    from .solve_steps import ensure
     v = GENERATORS[num](random.Random("%d-%d" % (num, seed)))
+    v["text"] = re.sub(r"\s+([.,;:!?])", r"\1", v["text"])
+    v["explain"] = re.sub(r"\s+([.,;:!?])", r"\1", v.get("explain") or "")
+    if v.get("steps"):
+        v["steps"] = [re.sub(r"\s+([.,;:!?])", r"\1", s) for s in v["steps"]]
+    ensure(v)
     v.update({"num": num, "seed": seed})
     return v
 
 
 def public(v):
-    return {k: v[k] for k in ("num", "seed", "text", "table", "code") if k in v}
+    return {k: v[k] for k in ("num", "seed", "text", "table", "code", "svg") if k in v}
 
 
 def check(v, given):

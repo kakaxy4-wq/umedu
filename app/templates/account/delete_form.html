@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Удаление аккаунта{% endblock %}
+{% block body_class %}{% if need_login %}login-page{% endif %}{% endblock %}
+{% block content %}
+<div class="{% if need_login %}login-card card{% endif %}">
+{% if fam %}{% include "family/_bar.html" %}{% endif %}
+<h1>{{ heading }}</h1>
+{% if error %}<p class="pill bad">{{ error }}</p>{% endif %}
+<p>{{ lead }}</p>
+{% if minors %}
+<p>Вместе с кабинетом удалим аккаунты детей младше 14 лет: <b>{{ minors|join(', ') }}</b>. Другого родителя у них нет.</p>
+{% elif warn_minors %}
+<p>Если вы родитель и в кабинете есть дети младше 14 лет без другого родителя, их аккаунты удалятся вместе с вашим.</p>
+{% endif %}
+<h2>Что удалим</h2>
+<ul>
+  <li>аккаунт: имя или ник, логин и пароль;</li>
+  <li>ответы, решения, прогресс, прогноз балла, проекты и загруженные файлы;</li>
+  <li>запись о согласии на обработку данных и о показе ника.</li>
+</ul>
+<h2>Что храним дольше</h2>
+{% include "account/_kept.html" %}
+<p>Неактивный аккаунт мы и сами удаляем через год после последнего входа или занятия.</p>
+{% if blocked %}
+<p>{{ blocked }}</p>
+<p><a href="/delete-account">Страница удаления</a></p>
+{% else %}
+<form method="post" action="{{ action }}" class="stack">
+  {% if user %}<input type="hidden" name="csrf" value="{{ user.csrf }}">{% endif %}
+  {% if fam %}{{ fam_csrf(fam) }}{% endif %}
+  {% if need_login %}
+  <label class="hp" aria-hidden="true">Сайт<input name="website" tabindex="-1" autocomplete="off"></label>
+  <label>Кто удаляет аккаунт
+    <select name="who">
+      <option value="student" {{ 'selected' if who != 'parent' }}>Ученик (с 14 лет)</option>
+      <option value="parent" {{ 'selected' if who == 'parent' }}>Родитель</option>
+    </select>
+  </label>
+  <label>Логин <input name="username" autocomplete="username" autocapitalize="off" required></label>
+  {% endif %}
+  <label>{{ password_label }} <input type="password" name="password" autocomplete="current-password" required></label>
+  <label class="check"><input type="checkbox" name="confirm" value="1" required> <span>{{ confirm_text }}</span></label>
+  <button class="btn">Удалить</button>
+</form>
+{% endif %}
+<p class="small muted"><a href="/privacy">Политика обработки персональных данных</a>
+  · <a href="/consent">согласие</a>
+  {% if contact %}· <a href="{{ contact }}">написать оператору</a>{% endif %}
+  {% if not need_login %}· запрос без входа в кабинет — <a href="/delete-account">страница удаления</a>{% endif %}
+</p>
+{% if need_login %}<p class="small">Нет доступа к логину — напишите оператору{% if operator %}: {{ operator }}{% endif %}{% if contact %}, <a href="{{ contact }}">{{ contact }}</a>{% endif %}. Ответим в течение 10 рабочих дней.</p>{% endif %}
+</div>
+{% endblock %}

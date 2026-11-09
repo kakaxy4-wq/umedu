@@ -6,7 +6,7 @@
 """
 import hmac
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException, Request
 
@@ -14,7 +14,8 @@ from . import auth, config, students
 
 COOKIE = "cq_family"
 SESSION_DAYS = 60
-CONSENT_VERSION = "2026-10-29"            # меняется вместе с текстом /privacy и /consent
+CONSENT_VERSION = "2026-10-30"            # меняется вместе с текстом /privacy и /consent
+# Согласие на ник в галерее — отдельное, редакция в app/account.py (GALLERY_CONSENT_VERSION).
 MAX_CHILDREN = 6
 
 
@@ -80,6 +81,23 @@ def load(request: Request, conn):
         "SELECT p.id, p.username, p.display_name, p.tg_chat_id, s.csrf FROM parent_sessions s JOIN parents p ON p.id = s.parent_id "
         "WHERE s.token_hash = ? AND s.expires_at > ? AND p.active = 1", (auth._token_hash(token), _now())).fetchone()
     return dict(row) if row else None
+
+
+def touch(conn, pid):
+    """Последний вход родителя — не чаще раза в 5 минут. Нужен, чтобы через год удалить пустой кабинет."""
+    now = config.now()
+    row = conn.execute("SELECT last_seen_at FROM parents WHERE id = ?", (pid,)).fetchone()
+    if row and row[0]:
+        try:
+            seen = datetime.fromisoformat(row[0])
+            if seen.tzinfo is None:
+                seen = seen.replace(tzinfo=now.tzinfo)
+            if now - seen < timedelta(minutes=5):
+                return
+        except ValueError:
+            pass
+    with conn:
+        conn.execute("UPDATE parents SET last_seen_at = ? WHERE id = ?", (now.isoformat(timespec="seconds"), pid))
 
 
 def check_csrf(parent, token):

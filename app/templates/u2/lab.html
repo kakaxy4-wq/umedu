@@ -1,0 +1,115 @@
+{% extends "u2/base.html" %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block main_class %} lab-wide{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/labs.css?v={{ v }}">{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/lab">← Лаборатория</a>
+{% if result %}
+<h1 class="u2-h1">{{ lab.title }}</h1>
+<section class="u2-card u2-res">
+  <h2>Перенос на экзамен</h2>
+  {% for it in result["items"] %}
+  <p><b>{{ 'Верно' if it.ok else 'Неверно' }}.</b> {{ it.label }}</p>
+  <p>{{ it.text }}</p>
+  <p>Твой ответ: <b>{{ it.given or '—' }}</b></p>
+  {% if not it.ok %}<p class="u2-hint">{{ it.explain }}</p>{% endif %}
+  {% endfor %}
+  {% for d in result.deltas %}
+  <p class="u2-delta">{{ d.title }}: {% if d.kind == 'grade' %}«{{ d.was }}» → «{{ d.now }}»{% else %}{{ d.was }} → {{ d.now }}{% endif %}</p>
+  {% endfor %}
+  <div class="lab-actions">
+    <a class="u2-btn" href="/u2/today">На сегодня</a>
+    <a class="u2-btn ghost" href="/u2/lab/{{ lab.id }}">Ещё раз этот опыт</a>
+  </div>
+</section>
+{% else %}
+<h1 class="u2-h1">{{ lab.title }}</h1>
+{% if user.role != 'student' %}<p class="u2-hint">Режим просмотра: ответы преподавателя не записываются.</p>{% endif %}
+<ol class="lab-crumbs" aria-label="Шаги опыта">
+  <li data-crumb="question" class="on">Вопрос</li>
+  <li data-crumb="predict">Предсказание</li>
+  <li data-crumb="experiment">Опыт</li>
+  <li data-crumb="compare">Сравнение</li>
+  <li data-crumb="law">Закон</li>
+  <li data-crumb="transfer">Перенос</li>
+</ol>
+<div class="lab-run">
+  <section data-step="question">
+    <p class="lab-q"><span>{{ lab.question }}</span></p>
+    <button type="button" class="u2-btn" data-next="predict">Дальше</button>
+  </section>
+  <section data-step="predict" hidden>
+    <p>{{ lab.predict.prompt }}</p>
+    <div class="lab-opts" role="radiogroup" aria-label="Предсказание">
+      {% for o in lab.predict.options %}
+      <label class="lab-opt"><input type="radio" name="predict" value="{{ o.id }}"> <span>{{ o.text }}</span></label>
+      {% endfor %}
+    </div>
+    <p id="lab-predict-err" class="u2-hint" role="status"></p>
+    <button type="button" class="u2-btn" data-next="experiment">Это моё предсказание</button>
+  </section>
+  <section data-step="experiment" hidden>
+    <p class="u2-hint">{{ lab.experiment_hint }}</p>
+    <canvas id="lab-scene" class="lab-scene" role="img" aria-label="Схема опыта"></canvas>
+    <div id="lab-controls" class="lab-controls"></div>
+    <div id="lab-meters" class="lab-meters" aria-live="polite" aria-atomic="true"></div>
+    <div class="lab-actions">
+      <button type="button" class="u2-btn" id="lab-record">Записать показание</button>
+    </div>
+    <div class="lab-table-wrap">
+      <table class="u2-table lab-table" id="lab-table"><thead></thead><tbody></tbody></table>
+    </div>
+    <svg id="lab-graph" class="lab-graph" viewBox="0 0 320 180" role="img" aria-label="График по точкам"></svg>
+    <p id="lab-need" class="u2-hint"></p>
+    <button type="button" class="u2-btn" id="lab-to-compare" data-next="compare" disabled>К сравнению</button>
+  </section>
+  <section data-step="compare" hidden>
+    <h2>Сравнение</h2>
+    <p id="lab-pred-text"></p>
+    <p id="lab-pred-why" class="u2-hint"></p>
+    <label class="lab-q">{{ lab.grade.prompt }}
+      <input id="lab-value" inputmode="decimal" autocomplete="off" aria-label="Ответ, {{ lab.grade.unit }}">
+    </label>
+    <button type="button" class="u2-btn" id="lab-check">Проверить</button>
+    <p id="lab-check-out" class="u2-hint" aria-live="polite"></p>
+    <button type="button" class="u2-btn" id="lab-to-law" data-next="law" disabled>К закону</button>
+  </section>
+  <section data-step="law" hidden>
+    <h2>Закон</h2>
+    <p class="lab-law">{{ lab.law }}</p>
+    <p>{{ lab.law_text }}</p>
+    <p id="lab-from-data"></p>
+    <p><b>Частая ошибка.</b> {{ lab.trap }}</p>
+    <p class="u2-hint">Похожие номера есть в <a href="{{ fipi }}" target="_blank" rel="noopener">открытом банке ФИПИ</a>. Числа ниже — наши, не из банка.</p>
+    <button type="button" class="u2-btn" data-next="transfer">К заданиям</button>
+  </section>
+  <section data-step="transfer" hidden>
+    <h2>Перенос</h2>
+    {% if transfer and user.role == 'student' %}
+    <p class="u2-hint">Два-три коротких задания. Верный ответ попадёт в прогноз по этому номеру.</p>
+    <form method="post" action="/u2/lab/{{ lab.id }}/transfer">
+      <input type="hidden" name="csrf" value="{{ user.csrf }}">
+      {% for t in transfer %}
+      <label class="lab-q"><b>{{ t.label }}</b><span>{{ t.text }}</span>
+        <input name="a{{ loop.index0 }}" inputmode="decimal" autocomplete="off" required aria-label="{{ t.label }}">
+      </label>
+      {% endfor %}
+      <button class="u2-btn">Записать ответы</button>
+    </form>
+    {% elif user.role != 'student' %}
+    <p class="u2-hint">Записать попытку может ученик в своём кабинете.</p>
+    {% else %}
+    <p>Чтобы ответы попали в прогноз, добавь экзамен по физике.</p>
+    <a class="u2-btn" href="/u2/start">Выбрать экзамен</a>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if not result %}
+<script type="application/json" id="lab-config">{{ lab_json|safe }}</script>
+<script src="/static/js/labs/engine.js?v={{ v }}"></script>
+<script src="/static/js/labs/{{ lab.scene }}.js?v={{ v }}"></script>
+{% endif %}
+{% endblock %}

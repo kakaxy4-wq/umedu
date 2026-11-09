@@ -11,11 +11,14 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import auth, config, oge_drill
+from . import account, auth, config, labs, oge_drill, russian
 from . import exam_model as em
 from . import knowledge as kn
-from .content import inf_gen, math_gen, oge_gen, phys_gen
+from .content import inf_gen, math_gen, oge_gen, oge_u2, oge16_gen, phys_gen
+from .content import robot as robot_content
 from .content.oge import OGE_NUMBERS
+from .content.ru import RULES as RU_RULES
+from . import u2_badges, u2_onsite
 from .db import get_db
 from . import students
 from .main import back, need_sid, only_student, render
@@ -36,7 +39,7 @@ FIPI_BANK = {"ОГЭ": "https://fipi.ru/oge/otkrytyy-bank-zadaniy-oge", "ЕГЭ"
 # номера, для которых сайт сам выдаёт варианты и проверяет ответ; остальные — самопроверка по банку ФИПИ
 BANKS = {"oge-math-2026": math_gen.OGE, "ege-math-profile-2026": math_gen.EGE_PROFILE, "ege-inf-2026": inf_gen.EGE,
          "ege-math-base-2026": math_gen.EGE_BASE, "oge-phys-2026": phys_gen.OGE, "ege-phys-2026": phys_gen.EGE}
-GENERATED = {"oge-inf-2026": set(oge_gen.GENERATORS), **{e: set(b.GENERATORS) for e, b in BANKS.items()}}
+GENERATED = dict(u2_onsite.SHORT)
 TITLES = {"oge-inf-2026": {n: t[0] for n, t in OGE_NUMBERS.items()}, **{e: b.TITLES for e, b in BANKS.items()}}
 TABS = [("today", "Сегодня"), ("subjects", "Предметы"), ("progress", "Прогресс"), ("me", "Я")]
 
@@ -119,16 +122,19 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     cards = _cards(conn, sid, today)
     if not cards:
         return back("/u2/start")
+    u2_badges.sync(conn, sid, today)
     minutes = _split(cards, _minutes(conn, sid))
     plans = []
     for c in cards:
         if minutes.get(c["id"]):
-            items = kn.plan(c["exam"], c["states"], minutes[c["id"]], today, due=_due(c["exam"], c["states"], today, minutes[c["id"]]))
+            due = _due(c["exam"], c["states"], today, minutes[c["id"]])
+            items = _plan(c["exam"], c["states"], minutes[c["id"]], today, due)
             for it in items:
                 it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})
     return _page(request, conn, user, "today", "u2/today.html", cards=cards, plans=plans,
-                 total=sum(p["minutes"] for p in plans), act=kn.activity(conn, sid, today), intro=_intro(cards, plans))
+                 total=sum(p["minutes"] for p in plans), act=kn.activity(conn, sid, today), intro=_intro(cards, plans),
+                 lab_offer=_lab_offer(conn, sid, cards, today))
 
 
 def _intro(cards, plans):
@@ -287,9 +293,13 @@ def u2_how(request: Request, conn=Depends(get_db), user=Depends(auth.current_use
 
 @router.get("/me", response_class=HTMLResponse)
 def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
-    sid = need_sid(conn, user)
-    return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, config.today()),
-                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES)
+    sid, today = need_sid(conn, user), config.today()
+    st = students.get_student(conn, sid)
+    if user["role"] == "student":
+        u2_badges.sync(conn, sid, today)
+    return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, today),
+                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES,
+                 gallery_on=account.granted(st) if st else False, badges=u2_badges.list_for(conn, sid))
 
 
 @router.post("/me/minutes")
@@ -335,7 +345,9 @@ def _catalog():
 def u2_start(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
     mine = {e["exam_id"]: e for e in kn.exams_of(conn, sid)}
-    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine, schedule=SCHEDULE)
+    st = students.get_student(conn, sid)
+    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine, schedule=SCHEDULE,
+                 grade=(st or {}).get("grade"))
 
 
 @router.post("/start")
@@ -436,9 +448,17 @@ def _task_info(exam, key):
             "points": task["points"], "group": group or part}
 
 
+def _plan(exam, states, minutes, today, due=()):
+    """План дня только из номеров, которые решаются на сайте, — для экзаменов, где это уже возможно."""
+    only = u2_onsite.onsite(exam["id"])
+    if only is not None:
+        due = [n for n in due if n in only]
+    return kn.plan(exam, states, minutes, today, due=due, only=only)
+
+
 def _next_step(exam, states, today, after, minutes):
     """Следующий номер по плану на сегодня, кроме только что решённого."""
-    for st in kn.plan(exam, states, minutes, today):
+    for st in _plan(exam, states, minutes, today):
         if st["n"] != after:
             return st["n"]
     return None
@@ -448,8 +468,9 @@ def _train_ctx(conn, sid, enr, key, today):
     exam = em.load(enr["exam_id"])
     states = kn.load_states(conn, sid, exam["id"])
     st = kn.decay(states.get(key), today)
+    mode = u2_onsite.mode_of(exam["id"], key)
     return {"c": _card(enr, states, today), "t": _task_info(exam, key), "p": st["p"], "tries": st.get("n", 0),
-            "bank": FIPI_BANK.get(exam["exam"]), "generated": key in GENERATED.get(exam["id"], ())}
+            "bank": FIPI_BANK.get(exam["exam"]), "generated": mode == "gen", "mode": mode}
 
 
 @router.get("/train/{exam_id}/{raw}", response_class=HTMLResponse)
@@ -459,11 +480,10 @@ def u2_train(exam_id: str, raw: str, request: Request, seed: int = 0, conn=Depen
     enr = _enrolled(conn, sid, exam_id)
     key = _task_key(em.load(exam_id), raw)
     ctx = _train_ctx(conn, sid, enr, key, today)
-    if ctx["generated"]:
+    if ctx["mode"] != "self":
         if not 0 < seed < 10 ** 7:
-            return back(f"/u2/train/{exam_id}/{key}?seed={random.randrange(1, 10 ** 6)}")
-        v = _variant(exam_id, key, seed)
-        ctx.update(seed=seed, variant=oge_gen.public(v), text=oge_drill.rich(v["text"]))
+            return back(f"/u2/train/{exam_id}/{key}?seed={_fresh_seed()}")
+        ctx.update(_play_ctx(exam_id, key, seed))
     return _page(request, conn, user, "today", "u2/train.html", res=None, **ctx)
 
 
@@ -478,30 +498,64 @@ def _budget(conn, sid, today, n=1):
 
 
 def _variant(exam_id, key, seed):
+    if exam_id == "oge-inf-2026" and key in oge_u2.GENERATORS:
+        return oge_u2.make(key, seed)
     bank = BANKS.get(exam_id)
     return bank.make(key, seed) if bank else oge_gen.make(key, seed)
 
 
+def _fresh_seed():
+    return random.randrange(1, 10 ** 6)
+
+
+def _play_ctx(exam_id, key, seed):
+    """Условие номера, которое можно показать до ответа."""
+    mode = u2_onsite.mode_of(exam_id, key)
+    if mode == "gen":
+        v = _variant(exam_id, key, seed)
+        return {"seed": seed, "variant": oge_gen.public(v), "text": oge_drill.rich(v["text"])}
+    if mode == "ru":
+        item = u2_onsite.ru_item(exam_id, key, seed)
+        return {"seed": seed, "ru": russian.public(item)}
+    if mode == "robot":
+        task = robot_content.TASKS[seed % len(robot_content.TASKS)]
+        return {"seed": seed, "robot": robot_content.public(task), "fields": robot_content.fields_for(task, seed),
+                "help": robot_content.COMMANDS_HELP, "starter": task["starter"]}
+    v = oge16_gen.make(seed)
+    return {"seed": seed, "code": {"text": v["text"], "examples": [t for t in v["tests"] if not t["hidden"]],
+                                   "tests": v["tests"], "id": v["id"]}}
+
+
+def _steps_view(v):
+    return [oge_drill.rich(s) for s in v.get("steps") or []]
+
+
 @router.post("/train/{exam_id}/{raw}", response_class=HTMLResponse)
 def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0), answer: str = Form(""),
-                    score: int = Form(-1), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+                    score: int = Form(-1), hint: int = Form(0), conn=Depends(get_db), user=Depends(auth.check_csrf)):
     only_student(user)
     sid, today = user["id"], config.today()
     enr = _enrolled(conn, sid, exam_id)
     exam = em.load(exam_id)
     key = _task_key(exam, raw)
-    _budget(conn, sid, today)
     before = _card(enr, kn.load_states(conn, sid, exam_id), today)
     if key in GENERATED.get(exam_id, ()):
         if not 0 < seed < 10 ** 7:
             raise HTTPException(400)
-        if exam_id in BANKS:
-            v = BANKS[exam_id].make(key, seed)
-            res = {"ok": BANKS[exam_id].check(v, answer[:100]), "answer": v["answer"], "explain": v["explain"], "xp": 0}
-        else:
-            res = oge_drill.answer(conn, sid, key, seed, answer[:100])  # заодно — статистика и трофеи старого тренажёра
-        got, given = (1.0 if res["ok"] else 0.0), answer.strip()[:100]
+        v = _variant(exam_id, key, seed)
+        ok = BANKS[exam_id].check(v, answer[:100]) if exam_id in BANKS else oge_gen.check(v, answer[:100])
+        if not ok and hint != 1:
+            ctx = _train_ctx(conn, sid, enr, key, today)
+            ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
+            return _page(request, conn, user, "today", "u2/train.html",
+                         res={"ok": False, "pending": True, "hint": oge_drill.rich(v["steps"][0])}, **ctx)
+        _budget(conn, sid, today)
+        if exam_id not in BANKS and key in oge_gen.GENERATORS:
+            oge_drill.answer(conn, sid, key, seed, answer[:100])   # трофеи старого тренажёра
+        got, given = (1.0 if ok else 0.0), answer.strip()[:100]
+        res = {"ok": ok, "answer": v["answer"], "explain": v["explain"], "steps": _steps_view(v), "xp": 0}
     else:
+        _budget(conn, sid, today)
         mx = em.points(exam)[key]
         if not 0 <= score <= mx:
             raise HTTPException(400, f"Баллы — от 0 до {mx}")
@@ -513,13 +567,183 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         kn.log_forecast(conn, sid, exam_id, today)
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:
-        v = _variant(exam_id, key, seed)
-        ctx.update(seed=seed, variant=oge_gen.public(v), text=oge_drill.rich(v["text"]), given=answer[:100])
+        ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
     after = ctx["c"]
     k = after["kind"]
     delta = {"from": before["fc"][k], "to": after["fc"][k], "primary": round(after["fc"]["primary"] - before["fc"]["primary"], 1)}
     nxt = _next_step(exam, after["states"], today, key, _minutes(conn, sid))
+    u2_badges.sync(conn, sid, today)
     return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt, **ctx)
+
+
+@router.post("/api/ru/{exam_id}/{raw}")
+async def u2_ru_answer(exam_id: str, raw: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    """Ответ в тренажёре русского внутри /u2. Первая ошибка — подсказка и не пишется в журнал."""
+    only_student(user)
+    sid, today = user["id"], config.today()
+    _enrolled(conn, sid, exam_id)
+    exam = em.load(exam_id)
+    key = _task_key(exam, raw)
+    if u2_onsite.mode_of(exam_id, key) != "ru":
+        raise HTTPException(404)
+    data = await request.json()
+    try:
+        seed = int(data.get("seed", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(400)
+    if not 0 < seed < 10 ** 7:
+        raise HTTPException(400)
+    item = u2_onsite.ru_item(exam_id, key, seed)
+    if str(data.get("id", "")) != item["id"]:
+        raise HTTPException(400)
+    ok, detail = u2_onsite.check_ru(item, data.get("answer"))
+    title, rule = RU_RULES[item["rule"]]
+    if not ok and int(data.get("hint") or 0) != 1:
+        return {"ok": False, "pending": True, "hint": u2_onsite.rule_hint(item), "rule_title": title}
+    _budget(conn, sid, today)
+    given = json.dumps(data.get("answer"), ensure_ascii=False)[:100]
+    with conn:
+        kn.record(conn, sid, exam_id, key, 1.0 if ok else 0.0, today, seed=seed, given=given)
+        kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today)
+    return {"ok": ok, "pending": False, "rule_title": title, "rule_text": rule, **detail}
+
+
+@router.post("/api/play/{exam_id}/{raw}")
+async def u2_play(exam_id: str, raw: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    """Робот и №16: проверка в браузере, как в старых тренажёрах. В журнал — со второй ошибки или с верного ответа."""
+    only_student(user)
+    sid, today = user["id"], config.today()
+    _enrolled(conn, sid, exam_id)
+    exam = em.load(exam_id)
+    key = _task_key(exam, raw)
+    mode = u2_onsite.mode_of(exam_id, key)
+    if mode not in ("robot", "code"):
+        raise HTTPException(404)
+    data = await request.json()
+    try:
+        seed = int(data.get("seed", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(400)
+    if not 0 < seed < 10 ** 7:
+        raise HTTPException(400)
+    passed = bool(data.get("passed"))
+    if mode == "robot":
+        task = robot_content.TASKS[seed % len(robot_content.TASKS)]
+        hint, steps = task["hint"], [task["hint"], "Проверь программу на короткой стене и на длинной.",
+                                     "Крась клетку в том же цикле, где идёшь вдоль стены."]
+        solution = {"py": task["solution"], "ku": task["kumir"]}
+    else:
+        v = oge16_gen.make(seed)
+        hint, steps, solution = v["steps"][0], v["steps"], {"py": v["solution"]}
+    if not passed and int(data.get("hint") or 0) != 1:
+        return {"ok": False, "pending": True, "hint": hint}
+    _budget(conn, sid, today)
+    with conn:
+        kn.record(conn, sid, exam_id, key, 1.0 if passed else 0.0, today, seed=seed, given=str(data.get("code", ""))[:100])
+        kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today)
+    return {"ok": passed, "pending": False, "steps": steps, "solution": solution}
+
+
+def _lab_offer(conn, sid, cards, today):
+    """Если номер, к которому привязан опыт, проседает — одна карточка на «Сегодня». Не чаще раза в 3 дня."""
+    sagging = {}
+    for c in cards:
+        mastery = _mastery(c["exam"], c["states"], kn.streaks(conn, sid, c["id"]), today)
+        sagging[c["id"]] = [(it["key"], it["p"]) for it in mastery["sagging"] if isinstance(it["key"], int)]
+    offered = {r["lab_id"]: date.fromisoformat(r["day"]) for r in conn.execute(
+        "SELECT lab_id, day FROM lab_offer WHERE student_id = ?", (sid,))}
+    pick = labs.pick_offer(sagging, offered, today)
+    if not pick:
+        return None
+    with conn:
+        conn.execute("INSERT INTO lab_offer (student_id, lab_id, day) VALUES (?, ?, ?) "
+                     "ON CONFLICT(student_id, lab_id) DO UPDATE SET day = excluded.day",
+                     (sid, pick["id"], today.isoformat()))
+    exam = em.load(pick["exam_id"])
+    pick["exam_title"] = "%s · %s" % (exam["exam"], exam["subject"])
+    pick["task_title"] = _task_info(exam, pick["task"])["title"]
+    return pick
+
+
+def _lab_or_404(lab_id):
+    try:
+        return labs.get(lab_id)
+    except KeyError:
+        raise HTTPException(404)
+
+
+@router.get("/lab", response_class=HTMLResponse)
+def u2_labs(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    need_sid(conn, user)
+    items = []
+    for lab in labs.all_labs():
+        items.append({**lab, "exams_label": labs.exams_label(lab)})
+    return _page(request, conn, user, "today", "u2/lab_list.html", labs=items)
+
+
+@router.get("/lab/{lab_id}", response_class=HTMLResponse)
+def u2_lab(lab_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    sid = need_sid(conn, user)
+    lab = _lab_or_404(lab_id)
+    enrolled = {e["exam_id"] for e in kn.exams_of(conn, sid)}
+    if user["role"] == "student":
+        u2_badges.sync(conn, sid, config.today(), lab=True)
+    return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result=None,
+                 transfer=labs.transfer_public(lab, enrolled), fipi=FIPI_BANK["ОГЭ"],
+                 lab_json=labs.client_json(lab, random.randrange(1, 10 ** 6)))
+
+
+@router.post("/lab/{lab_id}/check")
+def u2_lab_check(lab_id: str, kind: str = Form(...), predict: str = Form(""), value: str = Form(""),
+                 user=Depends(auth.check_csrf)):
+    only_student(user)
+    lab = _lab_or_404(lab_id)
+    if kind == "predict":
+        return labs.check_predict(lab, predict)
+    if kind == "reading":
+        return labs.check_reading(lab, value)
+    raise HTTPException(400, "Неизвестный шаг")
+
+
+@router.post("/lab/{lab_id}/transfer", response_class=HTMLResponse)
+async def u2_lab_transfer(lab_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    sid, today = only_student(user), config.today()
+    lab = _lab_or_404(lab_id)
+    enrolled_rows = kn.exams_of(conn, sid)
+    enrolled = {e["exam_id"] for e in enrolled_rows}
+    items = labs.visible_transfer(lab, enrolled)
+    if not items:
+        raise HTTPException(400, "Сначала выбери экзамен по физике")
+    form = await request.form()
+    answers = [str(form.get("a%d" % i, ""))[:100] for i in range(len(items))]
+    graded = labs.grade_transfer(items, answers)
+    _budget(conn, sid, today, len(graded))
+    before = {}
+    for g in graded:
+        if g["exam"] not in before:
+            enr = next(e for e in enrolled_rows if e["exam_id"] == g["exam"])
+            before[g["exam"]] = _card(enr, kn.load_states(conn, sid, g["exam"]), today)
+    with conn:
+        for g in graded:
+            kn.record(conn, sid, g["exam"], g["task"], 1.0 if g["ok"] else 0.0, today, given=g["given"] or None)
+        for exam_id in before:
+            kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today)
+    deltas = []
+    for exam_id, was in before.items():
+        enr = next(e for e in enrolled_rows if e["exam_id"] == exam_id)
+        after = _card(enr, kn.load_states(conn, sid, exam_id), today)
+        k = after["kind"]
+        deltas.append({"title": after["title"], "kind": k, "was": was["fc"][k], "now": after["fc"][k]})
+    shown = []
+    for g in graded:
+        name = "ОГЭ" if g["exam"].startswith("oge") else "ЕГЭ"
+        shown.append({"label": "%s №%s" % (name, g["task"]), "text": g["text"], "ok": g["ok"],
+                      "given": g["given"], "explain": "" if g["ok"] else g["explain"]})
+    return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result={"items": shown, "deltas": deltas},
+                 transfer=[], fipi=FIPI_BANK["ОГЭ"], lab_json="")
 
 
 # ================================================================== мини-пробник
@@ -593,6 +817,7 @@ async def u2_mock_submit(exam_id: str, request: Request, conn=Depends(get_db), u
             kn.record(conn, sid, exam_id, it["t"]["key"], 1.0 if it["ok"] else 0.0, today, seed=it["seed"],
                       given=it["given"])
         kn.log_forecast(conn, sid, exam_id, today)
+    u2_badges.sync(conn, sid, today, mock=True)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)
     k = c["kind"]
     delta = {"from": before["fc"][k], "to": c["fc"][k], "primary": round(c["fc"]["primary"] - before["fc"]["primary"], 1)}

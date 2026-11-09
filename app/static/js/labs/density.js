@@ -1,0 +1,44 @@
+// Весы и брусок: масса растёт с объёмом, плотность — свойство вещества.
+(function () {
+  var NAMES = { 2700: "Al", 7800: "Fe", 8900: "Cu", 1000: "вода", 800: "керосин" };
+  LabEngine.scene("density", function (g, v) {
+    var c = v.colors, w = v.w, h = v.h;
+    g.fillStyle = c.bg;
+    g.fillRect(0, 0, w, h);
+    var rho = v.controls.rho || 2700;
+    var vol = v.controls.V || 40;
+    var side = 36 + Math.sqrt(vol) * 3.2;
+    side = Math.min(side, h * 0.42);
+    var bx = w * 0.32 - side / 2, by = h * 0.62 - side;
+    g.fillStyle = c.ultra;
+    g.globalAlpha = 0.35 + Math.min(0.65, rho / 12000);
+    g.fillRect(bx, by, side, side * 0.72);
+    g.globalAlpha = 1;
+    g.strokeStyle = c.text;
+    g.lineWidth = 2;
+    g.strokeRect(bx, by, side, side * 0.72);
+    g.fillStyle = c.lime;
+    g.font = "700 16px Golos Text, sans-serif";
+    g.textAlign = "center";
+    g.fillText(NAMES[rho] || "?", bx + side / 2, by + side * 0.4);
+    var sx = w * 0.62, sy = h * 0.58;
+    g.fillStyle = c.card;
+    g.strokeStyle = c.text;
+    g.lineWidth = 3;
+    var sw = Math.min(180, w * 0.32);
+    g.fillRect(sx, sy, sw, 64);
+    g.strokeRect(sx, sy, sw, 64);
+    g.fillStyle = c.ink;
+    g.fillRect(sx + 10, sy + 14, Math.min(160, w * 0.32) - 20, 36);
+    g.fillStyle = c.lime;
+    g.font = "700 20px Golos Text, sans-serif";
+    g.textAlign = "right";
+    var mass = v.shown.m != null ? v.shown.m : v.out.m;
+    g.fillText(Math.round(mass) + " г", sx + Math.min(160, w * 0.32) - 16, sy + 38);
+    g.fillStyle = c.muted;
+    g.font = "13px Golos Text, sans-serif";
+    g.textAlign = "center";
+    g.fillText("V = " + Math.round(vol) + " см³", bx + side / 2, by - 10);
+    g.fillText("весы", sx + 70, sy + 84);
+  });
+})();

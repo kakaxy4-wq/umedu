@@ -87,15 +87,18 @@ def gain_per_minute(exam, task, states, today=None):
     return (1 - p) * task["points"] * LEARN_RATE / task_minutes(task)
 
 
-def plan(exam, states, minutes=30, today=None, due=()):
+def plan(exam, states, minutes=30, today=None, due=(), only=None):
     """План на день: сначала повторения с подошедшим сроком (due — номера), затем номера с наибольшим
     ожидаемым приростом баллов за минуту. Отдача убывает: после каждой запланированной тренировки p номера
     условно растёт на LEARN_RATE · (1 − p), так что слабый номер может встать в план несколько раз (до MAX_REPS),
     но только пока он выгоднее остальных. Возвращает [{'n', 'minutes', 'gain', 'why', 'times'}] в порядке
     первого появления номера."""
     by_n = {t["n"]: t for t in em.tasks(exam)}
+    allowed = None if only is None else set(only)
     out, left = {}, minutes
     for n in due:
+        if allowed is not None and n not in allowed:
+            continue
         t = by_n.get(n)
         if t and task_minutes(t) <= left:
             out[n] = {"n": n, "minutes": task_minutes(t), "gain": 0.0, "why": "повторение", "times": 1}
@@ -105,7 +108,8 @@ def plan(exam, states, minutes=30, today=None, due=()):
         best, best_g = None, 0.0
         for t in by_n.values():
             m = task_minutes(t)
-            if t["n"] in due or m > left or out.get(t["n"], {}).get("times", 0) >= MAX_REPS:
+            if (allowed is not None and t["n"] not in allowed) or t["n"] in due or m > left \
+                    or out.get(t["n"], {}).get("times", 0) >= MAX_REPS:
                 continue
             g = (1 - p[t["n"]]) * t["points"] * LEARN_RATE / m
             if g > best_g:

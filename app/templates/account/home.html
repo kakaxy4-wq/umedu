@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Аккаунт и данные{% endblock %}
+{% block content %}
+<h1>Аккаунт и данные</h1>
+<p>Имя: <b>{{ subject.display_name }}</b> · логин: <b>{{ subject.username }}</b></p>
+{% if subject.minor %}
+<section class="card">
+  <h2>Ник в галерее</h2>
+  <p>Тебе меньше 14 лет. Показ ника в галерее включает родитель в своём кабинете. Сам ты эту галочку не ставишь.</p>
+</section>
+<section class="card">
+  <h2>Удаление</h2>
+  <p>Аккаунт удаляет родитель — из своего кабинета или на <a href="/delete-account">странице удаления</a>, войдя как родитель.</p>
+</section>
+{% else %}
+{% if not chem_site %}
+<section class="card">
+  <h2>Ник в галерее</h2>
+  {% include "account/_gallery_form.html" %}
+</section>
+{% endif %}
+<section class="card">
+  <h2>Удаление аккаунта</h2>
+  <p>Можно удалить аккаунт самому. Пропадут ответы, прогресс, проекты и согласие. Это нельзя отменить.</p>
+  <p><a class="btn btn-ghost" href="/account/delete">Удалить аккаунт</a></p>
+</section>
+{% endif %}
+<p class="small"><a href="/privacy">Как мы храним данные</a></p>
+{% endblock %}

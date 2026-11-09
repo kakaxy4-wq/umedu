@@ -475,6 +475,26 @@ CREATE TABLE IF NOT EXISTS class_member (
     joined_at TEXT NOT NULL,
     PRIMARY KEY (class_id, student_id)
 );
+-- API приложения: гости без учётки (app/api_v1.py). Гость — строка users с guest = 1, чтобы
+-- знания (skill_state) и попытки работали без изменений, а преподаватель гостей в списках не видел.
+CREATE TABLE IF NOT EXISTS api_sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_hash TEXT,                  -- повтор с тем же device_id продолжает того же гостя
+    created_at TEXT NOT NULL,
+    last_seen_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_api_sessions_device ON api_sessions(device_hash);
+CREATE TABLE IF NOT EXISTS api_attempt_keys (      -- один ключ идемпотентности — одна записанная попытка
+    idempotency_key TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    task_key TEXT NOT NULL,
+    seed INTEGER NOT NULL,
+    answer TEXT NOT NULL,
+    response TEXT NOT NULL,            -- замороженный JSON ответа: повтор возвращает его дословно
+    created_at TEXT NOT NULL
+);
 """
 
 # Таблицы, которые в v1 были «общими на одного ученика» и в v2 получили student_id.
@@ -522,6 +542,7 @@ USER_COLUMNS = [
     ("gallery_consent_at", "TEXT"),           # когда поставили галочку «ник в галерее»; пусто — согласия нет
     ("gallery_consent_version", "TEXT NOT NULL DEFAULT ''"),
     ("gallery_consent_by", "TEXT NOT NULL DEFAULT ''"),  # «ученик» или «родитель»
+    ("guest", "INTEGER NOT NULL DEFAULT 0"),  # 1 — гость API без учётки; в списках учеников не показывается
 ]
 
 # Цены — в гемах 💎 (10 за занятие, 10 за домашку): пицца ≈ месяц занятий, новая игра ≈ четверть.

@@ -168,7 +168,7 @@ def teacher_student_create(request: Request, display_name: str = Form(...), full
     display_name = display_name.strip()[:40]
     if not display_name:
         raise HTTPException(400, "Нужно имя ученика")
-    if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").fetchone()[0] >= students.MAX_STUDENTS:
+    if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1 AND guest = 0").fetchone()[0] >= students.MAX_STUDENTS:
         raise HTTPException(400, "Слишком много учеников. Отправь кого-нибудь в архив.")
     login_name = username.strip().lower() or students.suggest_login(conn, display_name)
     if not students.valid_login(login_name):

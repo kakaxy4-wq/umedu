@@ -18,10 +18,11 @@
 Учеников удобнее добавлять на сайте: «👥 Ученики» → «Добавить ученика».
 """
 import getpass
+import re
 import shutil
 import sqlite3
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app import auth, config, students
 from app.db import connect, init_db
@@ -161,9 +162,38 @@ def cmd_backup():
     src.backup(out)
     out.close()
     src.close()
-    # храним последние 30 копий
-    for old in sorted(dest_dir.glob("codequest-*.db"))[:-30]:
-        old.unlink()
+    # ротация: все за последние 7 дней + новейший файл на каждую ISO-неделю
+    # (деплойные копии *-YYYYMMDD-1547*.db не трогаем отдельно — они попадают в окно 7 дней
+    # или в недельный keeper, если старше; явного удаления «свежих деплойных» нет)
+    keep_after = datetime.now() - timedelta(days=7)
+    files = sorted(dest_dir.glob("codequest-*.db"))
+    keep = set()
+    by_week = {}
+    for f in files:
+        m = re.search(r"(\d{8})-(\d{6})", f.name)
+        if m:
+            try:
+                ts = datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S")
+            except ValueError:
+                ts = datetime.fromtimestamp(f.stat().st_mtime)
+        else:
+            ts = datetime.fromtimestamp(f.stat().st_mtime)
+        if ts >= keep_after:
+            keep.add(f)
+        else:
+            week = ts.isocalendar()[:2]  # (год, неделя)
+            prev = by_week.get(week)
+            if prev is None or ts > prev[0]:
+                by_week[week] = (ts, f)
+    for _ts, f in by_week.values():
+        keep.add(f)
+    # никогда не удалять бэкапы выкатки 0.98
+    for f in files:
+        if "20261105-1547" in f.name:
+            keep.add(f)
+    for f in files:
+        if f not in keep:
+            f.unlink()
     print("Копия: %s" % dest)
 
 

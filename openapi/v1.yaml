@@ -3,9 +3,9 @@ info:
   title: umedu API
   version: "1.0.0"
   description: >
-    Живые пути этапов 1–2: конфиг, каталог, условие номера и проверка попытки.
-    Попытка проверяется без учётки и не пишется в базу: онбординг гостем, запись попыток
-    и прогноз — этап 3, почта — этап 4. Не раньше, чем сервер на них ответит.
+    Живые пути этапов 1–3: конфиг, каталог, условие номера и проверка попытки, онбординг гостем,
+    запись попыток и прогноз. Попытка без токена ничего не пишет; с токеном сессии гостя — пишется
+    и идемпотентна (один ключ — одна попытка). Почта — этап 4. Не раньше, чем сервер на них ответит.
 servers:
   - url: https://umedu.ru
 paths:
@@ -64,14 +64,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Task"
+  /api/v1/sessions:
+    post:
+      operationId: postSession
+      summary: Онбординг гостем
+      description: >
+        Создаёт гостя без учётки и возвращает токен. Повтор с тем же device_id выдаёт новый токен
+        тому же гостю — знания и попытки на месте (created: false). Лимит — 20 сессий в час с адреса (429).
+        Выключенный онбординг — 503 (флаг guests в /config).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionIn"
+      responses:
+        "200":
+          description: Токен существующей сессии device_id (created: false).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "201":
+          description: Новый гость (created: true).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "429":
+          description: Слишком много сессий с адреса.
+        "503":
+          description: Онбординг гостей на паузе.
   /api/v1/attempts:
     post:
       operationId: postAttempt
       summary: Проверка попытки
       description: >
-        Ключ идемпотентности придумывает клиент (UUID). Один ключ — одна попытка: проверка
-        детерминирована, повтор с тем же ключом вернёт тот же вердикт. Учётки на этапе 2 нет,
-        в базу ничего не пишется; очередь попыток — на телефоне.
+        Ключ идемпотентности придумывает клиент (UUID). Один ключ — одна попытка: повтор с тем же
+        ключом возвращает сохранённый вердикт; тот же ключ с другим запросом — 422.
+        Без заголовка Authorization попытка ничего не пишет (очередь попыток — на телефоне).
+        С заголовком "Bearer <токен сессии гостя>" попытка пишется в знания гостя и идёт в прогноз.
+      security:
+        - guestSession: []
       requestBody:
         required: true
         content:
@@ -80,12 +114,49 @@ paths:
               $ref: "#/components/schemas/AttemptIn"
       responses:
         "200":
-          description: Вердикт, верный ответ и разбор. Нет записи в базу.
+          description: Вердикт, верный ответ и разбор.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AttemptOut"
+        "401":
+          description: Токен передан, но сессии нет или она удалена — создать новую.
+        "422":
+          description: Ключ идемпотентности уже использован с другим запросом.
+  /api/v1/forecast/{exam_id}:
+    get:
+      operationId: getForecast
+      summary: Прогноз балла гостя
+      description: >
+        Ожидаемый первичный балл, вилка 80% и отметка или тестовый балл по шкале экзамена — тот же
+        расчёт, что на сайте. Только с токеном сессии гостя; без него — 401. Выключенный тренажёр — 503.
+      security:
+        - guestSession: []
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Прогноз по попыткам гостя (пока попыток нет — стартовые значения).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Forecast"
+        "401":
+          description: Нет токена или сессия не найдена.
+        "404":
+          description: Неизвестный exam_id.
+        "503":
+          description: Тренажёр на паузе.
 components:
+  securitySchemes:
+    guestSession:
+      type: http
+      scheme: bearer
+      description: Токен из POST /api/v1/sessions; передаётся заголовком "Authorization: Bearer <токен>".
   schemas:
     Config:
       type: object
@@ -107,13 +178,15 @@ components:
     Flags:
       type: object
       additionalProperties: false
-      required: [trainer, trial, crash_reports]
+      required: [trainer, trial, crash_reports, guests]
       properties:
         trainer:
           type: boolean
         trial:
           type: boolean
         crash_reports:
+          type: boolean
+        guests:
           type: boolean
     Notice:
       type: object
@@ -242,3 +315,52 @@ components:
           type: array
           items:
             type: string
+    SessionIn:
+      type: object
+      additionalProperties: false
+      required: [device_id]
+      properties:
+        device_id:
+          type: string
+          minLength: 8
+          maxLength: 128
+    Session:
+      type: object
+      additionalProperties: false
+      required: [schema_version, token, created]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        token:
+          type: string
+        created:
+          type: boolean
+    Forecast:
+      type: object
+      additionalProperties: false
+      required: [schema_version, exam_id, primary, low, high]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        primary:
+          type: number
+        low:
+          type: integer
+        high:
+          type: integer
+        grade:
+          type: integer
+        grade_low:
+          type: integer
+        grade_high:
+          type: integer
+        test:
+          type: integer
+        test_low:
+          type: integer
+        test_high:
+          type: integer

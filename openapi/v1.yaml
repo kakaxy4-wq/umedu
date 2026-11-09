@@ -3,10 +3,11 @@ info:
   title: umedu API
   version: "1.0.0"
   description: >
-    Живые пути этапов 1–4: конфиг, каталог, условие номера и проверка попытки, онбординг гостем,
-    запись попыток и прогноз, регистрация и вход по почте/username, выход. Попытка без токена ничего
-    не пишет; с токеном сессии гостя — пишется и идемпотентна (один ключ — одна попытка).
-    Вход VK ID/Яндекс ID и аккаунты до 14 лет (родитель) — не реализованы. Не раньше, чем сервер на них ответит.
+    Живые пути этапов 1–5: конфиг, каталог, условие номера и проверка попытки, онбординг гостем,
+    запись попыток и прогноз, регистрация и вход по почте/username, выход, план на сегодня и серия.
+    Попытка без токена ничего не пишет; с токеном сессии гостя — пишется и идемпотентна (один ключ —
+    одна попытка). Вход VK ID/Яндекс ID и аккаунты до 14 лет (родитель) — не реализованы. Не раньше,
+    чем сервер на них ответит.
 servers:
   - url: https://umedu.ru
 paths:
@@ -227,6 +228,37 @@ paths:
           description: Сессия удалена.
         "401":
           description: Нет токена или сессия не найдена.
+  /api/v1/today/{exam_id}:
+    get:
+      operationId: getToday
+      summary: План на сегодня и серия занятий
+      description: >
+        Тот же расчёт, что «Сегодня» на сайте: повторения с подошедшим сроком, затем номера с
+        наибольшим приростом баллов за минуту; в плане только номера, которые приложение само
+        выдаёт и проверяет. minutes — дневная норма (по умолчанию 30); делить её между предметами
+        будет клиент. activity — серия дней и неделя пн–вс; напоминание о занятии — на стороне
+        приложения. Выключенный тренажёр — 503.
+      security:
+        - guestSession: []
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: План дня по попыткам ученика (новому гостю — стартовый план) и серия.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Today"
+        "401":
+          description: Нет токена или сессия не найдена.
+        "404":
+          description: "Неизвестный exam_id или у экзамена нет номеров для приложения."
+        "503":
+          description: Тренажёр на паузе.
 components:
   securitySchemes:
     guestSession:
@@ -487,4 +519,72 @@ components:
           description: "Токен входа, заголовок Authorization: Bearer <токен>, для attempts/forecast/logout."
         created:
           type: boolean
+    TodayTask:
+      type: object
+      additionalProperties: false
+      required: [n, minutes, why, times]
+      properties:
+        n:
+          type: integer
+          description: Номер экзамена; условие даёт GET /tasks/{exam_id}/{n}, проверка — POST /attempts.
+        minutes:
+          type: integer
+        why:
+          type: string
+          description: "«повторение» — подошёл срок повторения; иначе — наибольший прирост баллов за минуту."
+        times:
+          type: integer
+          description: Сколько тренировок номера в плане сегодня.
+        title:
+          type: string
+          description: Название номера, как на сайте; может не быть — тогда показывать «№n».
+    Activity:
+      type: object
+      additionalProperties: false
+      required: [streak, today, weekday, week, week_days, goal]
+      properties:
+        streak:
+          type: integer
+          description: Дней подряд; сегодняшний день ещё не потерян, пока он не кончился.
+        today:
+          type: boolean
+          description: Сегодня уже была попытка.
+        weekday:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: "0 — понедельник; week лежит пн..вс."
+        week:
+          type: array
+          items:
+            type: boolean
+          description: Была ли попытка в каждый день текущей недели, с понедельника.
+        week_days:
+          type: integer
+        goal:
+          type: integer
+          description: Цель недели — сколько дней с попытками нужно.
+    Today:
+      type: object
+      additionalProperties: false
+      required: [schema_version, exam_id, day, minutes, plan, activity]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        day:
+          type: string
+          format: date
+          description: «Сегодня» по часам сервера — граница серии.
+        minutes:
+          type: integer
+          description: Дневная норма ученика (u2_prefs, по умолчанию 30).
+        plan:
+          type: array
+          items:
+            $ref: "#/components/schemas/TodayTask"
+        activity:
+          $ref: "#/components/schemas/Activity"
           description: True — новый аккаунт; False — апгрейд гостя или вход существующего.

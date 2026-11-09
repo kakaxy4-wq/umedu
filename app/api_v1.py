@@ -1,8 +1,11 @@
-"""Публичный API приложения. Этап 1: только чтение, записи в users нет.
+"""Публичный API приложения. Этап 1: чтение (конфиг, каталог), записи в users нет.
+Этап 2: условие номера и проверка попытки без учётки.
 
-Каталог и флаги собираются из кода и JSON экзаменов, не из живых учеников.
+Попытку проверяет тот же движок, что тренажёр сайта: вариант пересобирается из (exam_id, номер, seed),
+поэтому повтор с тем же ключом идемпотентности даёт тот же вердикт. Ученика на этапе 2 ещё нет
+(онбординг гостем — этап 3), так что попытка ничего не пишет в базу.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from . import exam_model as em
@@ -12,6 +15,7 @@ router = APIRouter(prefix="/api/v1")
 
 SCHEMA_VERSION = 1
 NOTICE_PAUSED = "Эта часть на паузе. Ответы, которые ты уже дал, на месте"
+TRAIN_PAUSED = "Тренажёр на паузе. Ответы, которые ты уже дал, на месте"
 
 # live — у предмета есть номера, где сервер сам выдаёт вариант и проверяет ответ (u2_web.GENERATED).
 # Остальные soon: там пока только самопроверка по банку ФИПИ. Баллы — из app/content/exams, не из памяти.
@@ -57,6 +61,34 @@ class ExamTrackOut(BaseModel):
 class CatalogOut(BaseModel):
     schema_version: int = SCHEMA_VERSION
     tracks: list[ExamTrackOut]
+
+
+class TaskOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    exam_id: str
+    n: int
+    seed: int
+    text: str
+    table: list[list[str]] | None = None
+    code: str | None = None
+    svg: str | None = None
+
+
+class AttemptIn(BaseModel):
+    idempotency_key: str = Field(min_length=8, max_length=128)
+    exam_id: str
+    n: int
+    seed: int = Field(gt=0, lt=10 ** 7)
+    answer: str = Field(min_length=1, max_length=100)
+
+
+class AttemptOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    idempotency_key: str
+    ok: bool
+    answer: str
+    explain: str = ""
+    steps: list[str] = []
 
 
 def _flag(name, default=True):
@@ -112,3 +144,37 @@ def get_config():
 @router.get("/catalog", response_model=CatalogOut)
 def get_catalog():
     return catalog_payload()
+
+
+def _trainer_gate():
+    if not _flag("API_FLAG_TRAINER"):
+        raise HTTPException(503, TRAIN_PAUSED)
+
+
+def _engine(exam_id, n, seed):
+    """Вариант и банк проверки — тот же движок, что тренажёр сайта. Чужой экзамен или номер — 404."""
+    from .content import oge_gen
+    from .u2_web import BANKS, GENERATED, _variant   # локально: u2_web тянет main, а main подключает этот роутер
+    if exam_id not in GENERATED or n not in GENERATED[exam_id]:
+        raise HTTPException(404)
+    return _variant(exam_id, n, seed), BANKS.get(exam_id), oge_gen
+
+
+@router.get("/tasks/{exam_id}/{n}", response_model=TaskOut, response_model_exclude_none=True)
+def get_task(exam_id: str, n: int, seed: int = Query(gt=0, lt=10 ** 7)):
+    """Условие номера по варианту: без ответа, разбора и шагов — их даёт только попытка."""
+    _trainer_gate()
+    v, _, _ = _engine(exam_id, n, seed)
+    return TaskOut(exam_id=exam_id, n=n, seed=seed, text=v["text"],
+                   table=v.get("table"), code=v.get("code"), svg=v.get("svg"))
+
+
+@router.post("/attempts", response_model=AttemptOut)
+def post_attempt(body: AttemptIn):
+    """Проверка попытки: ответ до 100 символов, как на сайте. В базу не пишется — очередь и её ключи на клиенте."""
+    _trainer_gate()
+    v, bank, oge_gen = _engine(body.exam_id, body.n, body.seed)
+    ok = bank.check(v, body.answer) if bank else oge_gen.check(v, body.answer)
+    return AttemptOut(schema_version=SCHEMA_VERSION, idempotency_key=body.idempotency_key, ok=ok,
+                      answer=str(v.get("answer", "")), explain=v.get("explain") or "",
+                      steps=[str(s) for s in v.get("steps") or []])

@@ -64,3 +64,96 @@ def test_notice_from_env(client, monkeypatch):  # noqa: F811
     assert body["flags"]["trainer"] is False
     assert body["notice"]["kind"] == "paused"
     assert "на месте" in body["notice"]["text"]
+
+
+# ---- этап 2: условие номера и проверка попытки без учётки ----
+
+EXAM = "oge-math-2026"
+
+
+def _first_number():
+    from app.u2_web import GENERATED
+    return sorted(GENERATED[EXAM])[0]
+
+
+def _variant(n, seed):
+    from app.u2_web import _variant
+    return _variant(EXAM, n, seed)
+
+
+def test_task_is_condition_without_answer(client):  # noqa: F811
+    n = _first_number()
+    r = client.get(f"/api/v1/tasks/{EXAM}/{n}?seed=123456")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["schema_version"] == 1
+    assert (body["exam_id"], body["n"], body["seed"]) == (EXAM, n, 123456)
+    assert body["text"]
+    assert set(body) <= {"schema_version", "exam_id", "n", "seed", "text", "table", "code", "svg"}
+    assert not any(k in body for k in ("answer", "explain", "steps"))
+
+
+def test_attempt_right_and_wrong(client):  # noqa: F811
+    n = _first_number()
+    answer = str(_variant(n, 123456)["answer"])
+    payload = {"idempotency_key": "k" * 16, "exam_id": EXAM, "n": n, "seed": 123456}
+    ok = client.post("/api/v1/attempts", json={**payload, "answer": answer})
+    assert ok.status_code == 200
+    body = ok.json()
+    assert body["ok"] is True and body["answer"] == answer and body["idempotency_key"] == "k" * 16
+    wrong = client.post("/api/v1/attempts", json={**payload, "answer": "999999"})
+    assert wrong.status_code == 200
+    assert wrong.json()["ok"] is False and wrong.json()["answer"] == answer
+
+
+def test_same_key_same_verdict(client):  # noqa: F811
+    """Один ключ идемпотентности — одна попытка: проверка детерминирована по (exam_id, n, seed)."""
+    payload = {"idempotency_key": "retry-key-1", "exam_id": EXAM, "n": _first_number(),
+               "seed": 424242, "answer": "0"}
+    assert client.post("/api/v1/attempts", json=payload).json() \
+        == client.post("/api/v1/attempts", json=payload).json()
+
+
+def test_attempt_writes_nothing(client):  # noqa: F811
+    from app.db import connect
+    conn = connect()
+    n = _first_number()
+    payload = {"idempotency_key": "k" * 16, "exam_id": EXAM, "n": n, "seed": 123456, "answer": "1"}
+
+    def state():
+        users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        return users, tables
+
+    before = state()
+    assert client.get(f"/api/v1/tasks/{EXAM}/{n}?seed=123456").status_code == 200
+    assert client.post("/api/v1/attempts", json=payload).status_code == 200
+    assert state() == before
+
+
+def test_unknown_exam_and_number_are_404(client):  # noqa: F811
+    assert client.get("/api/v1/tasks/oge-rus-2026/1?seed=1").status_code == 404   # русский пока только самопроверка
+    assert client.get(f"/api/v1/tasks/{EXAM}/99?seed=1").status_code == 404
+    assert client.get("/api/v1/tasks/nope-2026/1?seed=1").status_code == 404
+    r = client.post("/api/v1/attempts", json={"idempotency_key": "k" * 12, "exam_id": "oge-rus-2026",
+                                              "n": 1, "seed": 1, "answer": "1"})
+    assert r.status_code == 404
+
+
+def test_seed_and_answer_bounds(client):  # noqa: F811
+    assert client.get(f"/api/v1/tasks/{EXAM}/1?seed=0").status_code == 422
+    assert client.get(f"/api/v1/tasks/{EXAM}/1?seed=10000000").status_code == 422
+    base = {"idempotency_key": "k" * 12, "exam_id": EXAM, "n": 1}
+    assert client.post("/api/v1/attempts", json={**base, "seed": 0, "answer": "1"}).status_code == 422
+    assert client.post("/api/v1/attempts", json={**base, "seed": 1, "answer": "1" * 101}).status_code == 422
+    assert client.post("/api/v1/attempts", json={**base, "seed": 1, "answer": ""}).status_code == 422
+    assert client.post("/api/v1/attempts", json={**base, "seed": 1, "answer": "1"}).status_code == 200
+
+
+def test_trainer_flag_pauses_stage2(client, monkeypatch):  # noqa: F811
+    from app import config
+    monkeypatch.setattr(config, "API_FLAG_TRAINER", False)
+    assert client.get(f"/api/v1/tasks/{EXAM}/1?seed=1").status_code == 503
+    r = client.post("/api/v1/attempts", json={"idempotency_key": "k" * 12, "exam_id": EXAM,
+                                              "n": 1, "seed": 1, "answer": "1"})
+    assert r.status_code == 503

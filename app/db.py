@@ -485,6 +485,14 @@ CREATE TABLE IF NOT EXISTS api_sessions (
     last_seen_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_api_sessions_device ON api_sessions(device_hash);
+-- этап 4: сессии входа по почте/username (Bearer). Уникальная почта — индексом в init_db,
+-- т.к. ALTER TABLE не умеет UNIQUE, а колонку email SCHEMA на старой базе ещё не добавила
+CREATE TABLE IF NOT EXISTS api_logins (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    last_seen_at TEXT
+);
 CREATE TABLE IF NOT EXISTS api_attempt_keys (      -- один ключ идемпотентности — одна записанная попытка
     idempotency_key TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -543,6 +551,7 @@ USER_COLUMNS = [
     ("gallery_consent_version", "TEXT NOT NULL DEFAULT ''"),
     ("gallery_consent_by", "TEXT NOT NULL DEFAULT ''"),  # «ученик» или «родитель»
     ("guest", "INTEGER NOT NULL DEFAULT 0"),  # 1 — гость API без учётки; в списках учеников не показывается
+    ("email", "TEXT"),                        # почта для входа в приложение (этап 4 API); пусто — вход по username
 ]
 
 # Цены — в гемах 💎 (10 за занятие, 10 за домашку): пицца ≈ месяц занятий, новая игра ≈ четверть.
@@ -692,6 +701,8 @@ def init_db():
     with conn:
         conn.executescript(SCHEMA)
         _ensure_user_columns(conn)   # на новой базе users только что создана по SCHEMA — без поздних колонок
+        # индекс после колонки email: на новой базе она из USER_COLUMNS, на старой — из ALTER TABLE
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL")
         _ensure_parent_columns(conn)
         if conn.execute("SELECT COUNT(*) FROM rewards").fetchone()[0] == 0:
             conn.executemany("INSERT INTO rewards (emoji, title, cost) VALUES (?, ?, ?)", DEFAULT_REWARDS)

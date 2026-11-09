@@ -1,19 +1,27 @@
 """Публичный API приложения. Этап 1: чтение (конфиг, каталог). Этап 2: условие номера и проверка попытки
-без учётки. Этап 3: онбординг гостем, запись попыток и прогноз.
+без учётки. Этап 3: онбординг гостем, запись попыток и прогноз. Этап 4: регистрация и вход по почте
+(и по username — для старых учеников сайта), апгрейд гостя с сохранением прогресса, выход.
 
 Гость — строка users с guest = 1 без пароля (войти на сайт им нельзя), знания считает тот же
 app/knowledge.py, что и на сайте. Попытку проверяет тот же движок, что тренажёр: вариант пересобирается
 из (exam_id, номер, seed). С токеном сессии попытка пишется; ключ идемпотентности хранится в
 api_attempt_keys — повтор с тем же ключом возвращает сохранённый ответ и второй раз попытку не пишет.
+
+Регистрация по решению владельца (29.10.2026): 14 лет и старше — сам; младше 14 — аккаунт создаёт
+и подтверждает родитель, в API такой путь пока только отказ с подсказкой. VK ID и Яндекс ID — позже,
+нужны приложения у VK/Яндекса (client_id/secret), Telegram для входа не делаем.
 """
 import hashlib
+import re
 import secrets
 import sqlite3
 import time
+from datetime import date
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
+from . import auth
 from . import exam_model as em
 from . import knowledge as kn
 from . import config
@@ -25,7 +33,10 @@ SCHEMA_VERSION = 1
 NOTICE_PAUSED = "Эта часть на паузе. Ответы, которые ты уже дал, на месте"
 TRAIN_PAUSED = "Тренажёр на паузе. Ответы, которые ты уже дал, на месте"
 GUESTS_PAUSED = "Онбординг гостей на паузе. Уже созданные сессии работают"
+AUTH_PAUSED = "Вход на паузе. Уже созданные сессии работают"
 SESSION_NOT_FOUND = "Сессия не найдена — создай новую (POST /api/v1/sessions)"
+_MINOR = "Младше 14 аккаунт создаёт родитель — пока на сайте (umedu.ru)"
+_EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 # live — у предмета есть номера, где сервер сам выдаёт вариант и проверяет ответ (u2_web.GENERATED).
 # Остальные soon: там пока только самопроверка по банку ФИПИ. Баллы — из app/content/exams, не из памяти.
@@ -39,6 +50,7 @@ class FlagSet(BaseModel):
     trial: bool = True
     crash_reports: bool = True
     guests: bool = True
+    auth: bool = True
 
 
 class Notice(BaseModel):
@@ -112,6 +124,23 @@ class SessionOut(BaseModel):
     created: bool                     # False — device_id уже был: это тот же гость, прогресс на месте
 
 
+class RegisterIn(BaseModel):
+    email: str = Field(min_length=6, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+    birth_date: date                  # младше 14 — через родителя, в API пока отказ
+
+
+class LoginIn(BaseModel):
+    login: str = Field(min_length=3, max_length=254)   # почта или username, как на сайте
+    password: str = Field(min_length=1, max_length=128)
+
+
+class AuthOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    token: str
+    created: bool                     # True — новый аккаунт; False — апгрейд гостя или вход
+
+
 class ForecastOut(BaseModel):
     schema_version: int = SCHEMA_VERSION
     exam_id: str
@@ -167,6 +196,7 @@ def config_payload():
             trial=_flag("API_FLAG_TRIAL"),
             crash_reports=_flag("API_FLAG_CRASH_REPORTS"),
             guests=_flag("API_FLAG_GUESTS"),
+            auth=_flag("API_FLAG_AUTH"),
         ),
         notice=notice,
     )
@@ -226,10 +256,16 @@ def _bearer(authorization):
     return authorization[7:].strip()
 
 
-def _guest_id(conn, token):
-    row = conn.execute("SELECT s.user_id FROM api_sessions s JOIN users u ON u.id = s.user_id "
-                       "WHERE s.token_hash = ? AND u.active = 1", (_token_hash(token),)).fetchone()
-    return row[0] if row else None
+def _api_user(conn, token):
+    """Кто за токеном: гость (api_sessions) или вход по почте (api_logins). (user_id, таблица) или None."""
+    th = _token_hash(token)
+    row = conn.execute("SELECT s.user_id, 'api_sessions' FROM api_sessions s JOIN users u ON u.id = s.user_id "
+                       "WHERE s.token_hash = ? AND u.active = 1", (th,)).fetchone()
+    if row:
+        return row[0], "api_sessions"
+    row = conn.execute("SELECT l.user_id, 'api_logins' FROM api_logins l JOIN users u ON u.id = l.user_id "
+                       "WHERE l.token_hash = ? AND u.active = 1", (th,)).fetchone()
+    return (row[0], "api_logins") if row else None
 
 
 @router.post("/sessions", response_model=SessionOut)
@@ -284,9 +320,10 @@ def post_attempt(body: AttemptIn, conn=Depends(get_db), authorization: str | Non
     token = _bearer(authorization)
     if token is None:
         return out
-    uid = _guest_id(conn, token)
-    if uid is None:
+    user = _api_user(conn, token)
+    if user is None:
         raise HTTPException(401, SESSION_NOT_FOUND)
+    uid, table = user
     fingerprint = (body.exam_id, str(body.n), body.seed, body.answer)
     row = conn.execute("SELECT exam_id, task_key, seed, answer, response FROM api_attempt_keys "
                        "WHERE idempotency_key = ?", (body.idempotency_key,)).fetchone()
@@ -309,7 +346,7 @@ def post_attempt(body: AttemptIn, conn=Depends(get_db), authorization: str | Non
             kn.record(conn, uid, body.exam_id, body.n, 1.0 if ok else 0.0, seed=body.seed, given=body.answer)
         except KeyError:
             raise HTTPException(404)
-        conn.execute("UPDATE api_sessions SET last_seen_at = ? WHERE token_hash = ?", (now, _token_hash(token)))
+        conn.execute("UPDATE %s SET last_seen_at = ? WHERE token_hash = ?" % table, (now, _token_hash(token)))
     return out
 
 
@@ -320,13 +357,126 @@ def get_forecast(exam_id: str, conn=Depends(get_db), authorization: str | None =
     _trainer_gate()
     token = _bearer(authorization)
     if token is None:
-        raise HTTPException(401, "Нужна сессия гостя (POST /api/v1/sessions)")
-    uid = _guest_id(conn, token)
-    if uid is None:
+        raise HTTPException(401, "Нужна сессия (POST /api/v1/sessions)")
+    user = _api_user(conn, token)
+    if user is None:
         raise HTTPException(401, SESSION_NOT_FOUND)
+    uid, _ = user
     try:
         exam = em.load(exam_id)
     except FileNotFoundError:
         raise HTTPException(404)
     return ForecastOut(schema_version=SCHEMA_VERSION, exam_id=exam_id,
                        **kn.forecast(exam, kn.load_states(conn, uid, exam_id)))
+
+
+# --- этап 4: регистрация и вход по почте, апгрейд гостя, выход ---
+
+_registers = {}                           # ip -> [время регистрации]
+
+
+def _register_limited(ip):
+    now = time.time()
+    _registers[ip] = [t for t in _registers.get(ip, []) if now - t < 3600]
+    return len(_registers[ip]) >= config.API_REGISTER_PER_HOUR
+
+
+def _age(birth_date):
+    today = config.today()
+    return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+
+def _display_name(email):
+    return email.split("@", 1)[0][:30] or "Ученик"
+
+
+def _new_login_token(conn, uid, now):
+    """Сессия входа (api_logins). Протухших сессий сайта-аналога нет — токен бессрочный, удаляем вместе с аккаунтом."""
+    token = secrets.token_urlsafe(32)
+    conn.execute("INSERT INTO api_logins (token_hash, user_id, created_at, last_seen_at) VALUES (?, ?, ?, ?)",
+                 (_token_hash(token), uid, now, now))
+    return token
+
+
+@router.post("/auth/register", response_model=AuthOut)
+def post_register(body: RegisterIn, request: Request, conn=Depends(get_db),
+                  authorization: str | None = Header(default=None)):
+    """Регистрация по почте, 14+. С Bearer гостя — апгрейд: тот же user_id, знания и попытки на месте.
+    Без — новый аккаунт. Токен от старой гостевой сессии продолжает работать."""
+    if not _flag("API_FLAG_AUTH"):
+        raise HTTPException(503, AUTH_PAUSED)
+    ip = request.client.host if request.client else "?"
+    if _register_limited(ip):
+        raise HTTPException(429, "Слишком много регистраций с одного адреса — попробуй позже")
+    _registers.setdefault(ip, []).append(time.time())
+    email = body.email.strip().lower()
+    if not _EMAIL_RE.fullmatch(email):
+        raise HTTPException(422, "Некорректная почта")
+    if body.birth_date > config.today():
+        raise HTTPException(422, "Дата рождения из будущего")
+    if _age(body.birth_date) < 14:
+        raise HTTPException(403, _MINOR)
+    password_hash = auth.hash_password(body.password)
+    now = config.now().isoformat(timespec="seconds")
+    guest = None
+    token = _bearer(authorization)
+    if token:
+        user = _api_user(conn, token)
+        if user:
+            guest = conn.execute("SELECT id FROM users WHERE id = ? AND guest = 1", (user[0],)).fetchone()
+    with conn:
+        if guest:
+            uid = guest[0]
+            try:
+                conn.execute("UPDATE users SET username = ?, email = ?, password_hash = ?, display_name = ?, "
+                             "guest = 0 WHERE id = ?", (email, email, password_hash, _display_name(email), uid))
+            except sqlite3.IntegrityError:
+                raise HTTPException(409, "Эта почта или логин уже заняты")
+            created = False                   # аккаунт у гостя уже был — прогресс просто получает имя
+        else:
+            try:
+                uid = conn.execute(
+                    "INSERT INTO users (username, password_hash, role, display_name, email, guest, created_at) "
+                    "VALUES (?, ?, 'student', ?, ?, 0, ?)",
+                    (email, password_hash, _display_name(email), email, now)).lastrowid
+            except sqlite3.IntegrityError:
+                raise HTTPException(409, "Эта почта или логин уже заняты")
+            created = True
+        token = _new_login_token(conn, uid, now)
+    return AuthOut(schema_version=SCHEMA_VERSION, token=token, created=created)
+
+
+@router.post("/auth/login", response_model=AuthOut)
+def post_login(body: LoginIn, request: Request, conn=Depends(get_db)):
+    """Вход по почте или username с паролем — те же учётные данные, что на сайте. Только ученики."""
+    if not _flag("API_FLAG_AUTH"):
+        raise HTTPException(503, AUTH_PAUSED)
+    ip = request.client.host if request.client else "?"
+    if auth.too_many_fails(ip):
+        raise HTTPException(429, "Слишком много попыток. Подожди 15 минут.")
+    login = body.login.strip().lower()
+    row = conn.execute("SELECT * FROM users WHERE (email = ? OR username = ?) AND active = 1",
+                       (login, login)).fetchone()
+    if row and row["role"] != "student":
+        raise HTTPException(403, "В приложении вход только для учеников")
+    if not row or not auth.verify_password(body.password, row["password_hash"]):
+        auth.register_fail(ip)
+        raise HTTPException(401, "Неверный логин или пароль")
+    now = config.now().isoformat(timespec="seconds")
+    with conn:
+        token = _new_login_token(conn, row["id"], now)
+    return AuthOut(schema_version=SCHEMA_VERSION, token=token, created=False)
+
+
+@router.delete("/session", status_code=204)
+def delete_session(conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    """Выход: токен больше не работает — ни гостевой, ни логин."""
+    token = _bearer(authorization)
+    if token is None:
+        raise HTTPException(401, "Нужна сессия")
+    th = _token_hash(token)
+    with conn:
+        if not conn.execute("DELETE FROM api_sessions WHERE token_hash = ?", (th,)).rowcount:
+            if not conn.execute("DELETE FROM api_logins WHERE token_hash = ?", (th,)).rowcount:
+                raise HTTPException(401, SESSION_NOT_FOUND)
+    return Response(status_code=204)

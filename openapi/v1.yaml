@@ -1,0 +1,244 @@
+openapi: 3.0.3
+info:
+  title: umedu API
+  version: "1.0.0"
+  description: >
+    Живые пути этапов 1–2: конфиг, каталог, условие номера и проверка попытки.
+    Попытка проверяется без учётки и не пишется в базу: онбординг гостем, запись попыток
+    и прогноз — этап 3, почта — этап 4. Не раньше, чем сервер на них ответит.
+servers:
+  - url: https://umedu.ru
+paths:
+  /api/v1/config:
+    get:
+      operationId: getConfig
+      summary: Флаги и минимальная сборка
+      responses:
+        "200":
+          description: Текущий конфиг. Нет записи в базу.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+  /api/v1/catalog:
+    get:
+      operationId: getCatalog
+      summary: Экзамены и предметы
+      responses:
+        "200":
+          description: Каталог из кода. Нет записи в базу.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Catalog"
+  /api/v1/tasks/{exam_id}/{n}:
+    get:
+      operationId: getTask
+      summary: Условие номера по варианту
+      description: >
+        Вариант пересобирается из (exam_id, номер, seed) — детерминировано, как в тренажёре сайта.
+        В ответе нет ответа и разбора: их отдаёт только попытка. Выключенный тренажёр — 503.
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: n
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: seed
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 9999999
+      responses:
+        "200":
+          description: Условие номера. Нет записи в базу.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /api/v1/attempts:
+    post:
+      operationId: postAttempt
+      summary: Проверка попытки
+      description: >
+        Ключ идемпотентности придумывает клиент (UUID). Один ключ — одна попытка: проверка
+        детерминирована, повтор с тем же ключом вернёт тот же вердикт. Учётки на этапе 2 нет,
+        в базу ничего не пишется; очередь попыток — на телефоне.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttemptIn"
+      responses:
+        "200":
+          description: Вердикт, верный ответ и разбор. Нет записи в базу.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttemptOut"
+components:
+  schemas:
+    Config:
+      type: object
+      additionalProperties: false
+      required: [schema_version, hard_min_build, flags, notice]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        hard_min_build:
+          type: integer
+          minimum: 1
+        flags:
+          $ref: "#/components/schemas/Flags"
+        notice:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/Notice"
+    Flags:
+      type: object
+      additionalProperties: false
+      required: [trainer, trial, crash_reports]
+      properties:
+        trainer:
+          type: boolean
+        trial:
+          type: boolean
+        crash_reports:
+          type: boolean
+    Notice:
+      type: object
+      additionalProperties: false
+      required: [kind, text]
+      properties:
+        kind:
+          type: string
+          enum: [paused, info]
+        text:
+          type: string
+    Catalog:
+      type: object
+      additionalProperties: false
+      required: [schema_version, tracks]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Track"
+    Track:
+      type: object
+      additionalProperties: false
+      required: [id, title, year, subjects]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        year:
+          type: integer
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subject"
+    Subject:
+      type: object
+      additionalProperties: false
+      required: [id, exam_id, title, status, required, max_points]
+      properties:
+        id:
+          type: string
+        exam_id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [live, soon]
+        required:
+          type: boolean
+        max_points:
+          type: integer
+          minimum: 1
+    Task:
+      type: object
+      additionalProperties: false
+      required: [schema_version, exam_id, n, seed, text]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+        seed:
+          type: integer
+          minimum: 1
+          maximum: 9999999
+        text:
+          type: string
+        table:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        code:
+          type: string
+        svg:
+          type: string
+    AttemptIn:
+      type: object
+      additionalProperties: false
+      required: [idempotency_key, exam_id, n, seed, answer]
+      properties:
+        idempotency_key:
+          type: string
+          minLength: 8
+          maxLength: 128
+        exam_id:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+        seed:
+          type: integer
+          minimum: 1
+          maximum: 9999999
+        answer:
+          type: string
+          minLength: 1
+          maxLength: 100
+    AttemptOut:
+      type: object
+      additionalProperties: false
+      required: [schema_version, idempotency_key, ok, answer, explain, steps]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        idempotency_key:
+          type: string
+        ok:
+          type: boolean
+        answer:
+          type: string
+        explain:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string

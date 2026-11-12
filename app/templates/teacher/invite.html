@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Приглашение учеников{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/teacher">Преподаватель</a></p>
+<h1>👥 Пригласить ученика в свою группу</h1>
+<p class="muted">Ученик при регистрации вводит этот код — и попадает в вашу группу. Без кода он работает самостоятельно.</p>
+<div class="card center-card">
+  <div class="big-emoji">🔑</div>
+  <p class="muted small">Код приглашения</p>
+  <p style="font-size:2rem;font-weight:700;letter-spacing:0.2em">{{ code }}</p>
+  <p class="muted small">Ссылка для регистрации: <code>/join?invite_code={{ code }}</code></p>
+</div>
+<p><a class="btn btn-alt" href="/teacher/invite?regen=1">Сгенерировать новый код</a></p>
+<p class="muted small">Старый код после генерации нового перестаёт работать.</p>
+{% endblock %}

@@ -66,6 +66,107 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Task"
+  /api/v1/numbers/{exam_id}:
+    get:
+      operationId: getNumbers
+      summary: Список номеров заданий, которые сервер умеет генерировать для экзамена
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Список номеров.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NumbersOut"
+        "404":
+          description: Экзамен не найден.
+  /api/v1/errors/{exam_id}:
+    get:
+      operationId: getErrors
+      summary: Последние ошибки ученика по экзамену
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Список ошибок.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorsOut"
+        "401":
+          description: Нужна авторизация.
+  /api/v1/me:
+    get:
+      operationId: getMe
+      summary: Профиль текущего ученика
+      responses:
+        "200":
+          description: Профиль.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeOut"
+        "401":
+          description: Нужна авторизация.
+  /api/v1/account:
+    delete:
+      operationId: deleteAccount
+      summary: Удалить аккаунт ученика
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          description: Нужна авторизация.
+        "403":
+          description: Нельзя удалить.
+  /api/v1/crashes:
+    post:
+      operationId: postCrash
+      summary: Отчёт о сбое приложения
+      responses:
+        "204":
+          description: Принято.
+        "503":
+          description: Отключено.
+  /api/v1/skills/{exam_id}:
+    get:
+      operationId: getSkills
+      summary: Дерево навыков экзамена с мастерством ученика
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Список навыков.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillsOut"
+        "401":
+          description: Нужна авторизация.
+  /api/v1/theory:
+    get:
+      operationId: getTheory
+      summary: Шпаргалка (теория) по урокам Python
+      responses:
+        "200":
+          description: Список уроков с примерами.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TheoryOut"
   /api/v1/sessions:
     post:
       operationId: postSession
@@ -588,3 +689,123 @@ components:
         activity:
           $ref: "#/components/schemas/Activity"
           description: True — новый аккаунт; False — апгрейд гостя или вход существующего.
+    NumbersOut:
+      type: object
+      additionalProperties: false
+      required: [schema_version, exam_id, numbers]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        numbers:
+          type: array
+          items:
+            type: integer
+    ErrorItem:
+      type: object
+      additionalProperties: false
+      required: [n, at]
+      properties:
+        n:
+          type: integer
+        seed:
+          type: integer
+        given:
+          type: string
+        at:
+          type: string
+    ErrorsOut:
+      type: object
+      additionalProperties: false
+      required: [schema_version, exam_id, items]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorItem"
+    MeOut:
+      type: object
+      additionalProperties: false
+      required: [schema_version, id, display_name]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        id:
+          type: integer
+        display_name:
+          type: string
+        grade:
+          type: integer
+        subjects:
+          type: string
+    SkillOut:
+      type: object
+      additionalProperties: false
+      required: [id, title, p, n, mastered]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        p:
+          type: number
+        n:
+          type: integer
+        mastered:
+          type: boolean
+    SkillsOut:
+      type: object
+      additionalProperties: false
+      required: [schema_version, exam_id, skills]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillOut"
+    TheoryItem:
+      type: object
+      additionalProperties: false
+      required: [code, note]
+      properties:
+        code:
+          type: string
+        note:
+          type: string
+    TheoryLesson:
+      type: object
+      additionalProperties: false
+      required: [lesson, title, items]
+      properties:
+        lesson:
+          type: integer
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TheoryItem"
+    TheoryOut:
+      type: object
+      additionalProperties: false
+      required: [schema_version, lessons]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        lessons:
+          type: array
+          items:
+            $ref: "#/components/schemas/TheoryLesson"

@@ -77,7 +77,7 @@ def signup_limited(ip):
     return len(_signups[ip]) >= SIGNUPS_PER_HOUR
 
 
-def signup(conn, name, grade, login, password, consent, ip="?", age14=False, parent_id=None):
+def signup(conn, name, grade, login, password, consent, ip="?", age14=False, parent_id=None, invite_code=None):
     """Ученик регистрируется сам (с 14 лет, согласие даёт сам) или его заводит родитель из своего кабинета
     (parent_id — согласие дал родитель). Самостоятельный темп, отметка согласия. Возвращает (id, None) или (None, ошибка).
     Вызывать внутри `with conn:`."""
@@ -99,12 +99,13 @@ def signup(conn, name, grade, login, password, consent, ip="?", age14=False, par
         return None, "Отметь согласие на обработку данных — без него зарегистрироваться нельзя."
     if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1 AND guest = 0").fetchone()[0] >= MAX_STUDENTS:
         return None, "Сейчас все места заняты — загляни через пару дней."
+    _teacher_id = teacher_by_invite(conn, invite_code) if invite_code else None
     sid = create_student(conn, login, name, password)
     chosen = [s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"]
     # parent_id — аккаунт заводит родитель, ученику меньше 14 лет. Сам с 14 лет: minor = 0.
-    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ?, minor = ? WHERE id = ?",
+    conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ?, minor = ?, teacher_id = ? WHERE id = ?",
                  (grade, "%s · %s%s" % (CONSENT_VERSION, game.now_iso(), " · родитель #%d" % parent_id if parent_id else ""),
-                  subjects.serialize(chosen), 1 if parent_id else 0, sid))
+                  subjects.serialize(chosen), 1 if parent_id else 0, _teacher_id, sid))
     for cid in ["oge1"] + (["ru_entry"] if "russian" in chosen else []):
         conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
                      (sid, cid, game.now_iso()))
@@ -122,9 +123,24 @@ def get_student(conn, sid, include_archived=True):
     return dict(row)
 
 
-def list_students(conn, include_archived=False):
-    sql = "SELECT * FROM users WHERE role = 'student' AND guest = 0" + ("" if include_archived else " AND active = 1")
-    return [dict(r) for r in conn.execute(sql + " ORDER BY active DESC, display_name COLLATE NOCASE")]
+def list_students(conn, include_archived=False, teacher_id=None):
+    """Список учеников. teacher_id задан — только группа этого преподавателя (issue #13);
+    None — все ученики (одно-учительский режим и тесты)."""
+    # обратная совместимость: если у учителя ещё нет привязанных учеников, а в базе есть
+    # самостоятельные (teacher_id IS NULL), показываем их, чтобы старая установка не «ослепла»
+    if teacher_id is not None and not conn.execute(
+            "SELECT 1 FROM users WHERE role = 'student' AND guest = 0 AND teacher_id = ? LIMIT 1",
+            (teacher_id,)).fetchone():
+        teacher_id = None
+    sql = "SELECT * FROM users WHERE role = 'student' AND guest = 0"
+    params = []
+    if not include_archived:
+        sql += " AND active = 1"
+    if teacher_id is not None:
+        sql += " AND teacher_id = ?"
+        params.append(teacher_id)
+    sql += " ORDER BY active DESC, display_name COLLATE NOCASE"
+    return [dict(r) for r in conn.execute(sql, params)]
 
 
 def set_password(conn, sid, password):
@@ -265,3 +281,30 @@ def alerts(conn):
                 add(1, "🔁", "русский: %d ошибок ждут повторения — напомни про «Мои ошибки»" % piled,
                     "/teacher/student/%d#russian" % sid)
     return sorted(out, key=lambda a: (-a["level"], a["name"]))
+
+
+import secrets as _secrets
+
+
+def make_invite_code(conn, teacher_id):
+    code = _secrets.token_urlsafe(6).replace("-", "").replace("_", "")[:8].upper()
+    conn.execute("UPDATE users SET invite_code = ? WHERE id = ? AND role = 'teacher'",
+                 (code, teacher_id))
+    return code
+
+
+def teacher_by_invite(conn, code):
+    code = (code or "").strip().upper()
+    if not code:
+        return None
+    row = conn.execute("SELECT id FROM users WHERE role = 'teacher' AND invite_code = ? AND active = 1",
+                        (code,)).fetchone()
+    return row["id"] if row else None
+
+
+def attach_student_to_teacher(conn, student_id, teacher_id):
+    if teacher_id is None:
+        return False
+    conn.execute("UPDATE users SET teacher_id = ? WHERE id = ? AND role = 'student'",
+                 (teacher_id, student_id))
+    return True

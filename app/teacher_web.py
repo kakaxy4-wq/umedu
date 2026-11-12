@@ -29,7 +29,7 @@ def teacher_checks(request: Request, student: int = 0, conn=Depends(get_db), use
         select_student(conn, user, student)
     sid = need_sid(conn, user)
     states, results = check_states(conn, sid)
-    everyone = students.list_students(conn)
+    everyone = students.list_students(conn, teacher_id=user["id"])
     matrix = {(r["student_id"], r["check_id"]): r for r in conn.execute(
         "SELECT student_id, check_id, right_count, total FROM check_results")}
     grade = (students.get_student(conn, sid) or {"grade": None})["grade"] if sid else None
@@ -146,9 +146,22 @@ def teacher_select(student_id: int = Form(...), next: str = Form("/teacher"), co
     return back(safe_next(next, "/teacher"))
 
 
+
+@router.get("/teacher/invite", response_class=HTMLResponse)
+def teacher_invite(request: Request, regen: int = 0, conn=Depends(get_db), user=Depends(auth.teacher_required)):
+    if regen:
+        code = students.make_invite_code(conn, user["id"])
+        conn.commit()
+    else:
+        code = conn.execute("SELECT invite_code FROM users WHERE id = ?", (user["id"],)).fetchone()["invite_code"]
+        if not code:
+            code = students.make_invite_code(conn, user["id"])
+            conn.commit()
+    return render(request, "teacher/invite.html", conn, user, code=code)
+
 @router.get("/teacher/students", response_class=HTMLResponse)
 def teacher_students(request: Request, archived: int = 0, conn=Depends(get_db), user=Depends(auth.teacher_required)):
-    rows = [students.overview(conn, s["id"]) for s in students.list_students(conn, include_archived=bool(archived))]
+    rows = [students.overview(conn, s["id"]) for s in students.list_students(conn, include_archived=bool(archived), teacher_id=user["id"])]
     return render(request, "teacher/students.html", conn, user, rows=rows, archived=archived,
                   board=students.leaderboard(conn), board_on=students.leaderboard_enabled(conn),
                   limit=students.MAX_STUDENTS)
@@ -293,7 +306,7 @@ def teacher_home(request: Request, conn=Depends(get_db), user=Depends(auth.teach
                   current_guide=has_guide(upto), next_lesson_at=students.get_student(conn, sid)["next_lesson_at"] or "",
                   state=conn.execute("SELECT * FROM lesson_state WHERE student_id = ? AND num = ?", (sid, upto)).fetchone(),
                   alerts=students.alerts(conn),
-                  roster=[students.overview(conn, s["id"]) for s in students.list_students(conn)])
+                  roster=[students.overview(conn, s["id"]) for s in students.list_students(conn, teacher_id=user["id"])])
 
 
 @router.get("/teacher/analytics", response_class=HTMLResponse)
@@ -303,7 +316,7 @@ def teacher_analytics(request: Request, conn=Depends(get_db), user=Depends(auth.
 
 @router.get("/teacher/weekly", response_class=HTMLResponse)
 def teacher_weekly(request: Request, sent: int = -1, conn=Depends(get_db), user=Depends(auth.teacher_required)):
-    summary = weekly.build(conn)
+    summary = weekly.build(conn, teacher_id=user["id"])
     return render(request, "teacher/weekly.html", conn, user, w=summary, text=weekly.text(summary),
                   configured=weekly.configured(), sent=sent, last_sent=get_setting(conn, "weekly_sent"))
 

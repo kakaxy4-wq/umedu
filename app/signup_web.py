@@ -37,7 +37,7 @@ def join_page(request: Request, code: str = "", conn=Depends(get_db)):
 @router.post("/join", response_class=HTMLResponse)
 def join(request: Request, code: str = Form(""), name: str = Form(""), grade: int = Form(0), login: str = Form(""),
          password: str = Form(""), consent: str = Form(""), age14: str = Form(""), website: str = Form(""),
-         conn=Depends(get_db)):
+         invite_code: str = Form(""), conn=Depends(get_db)):
     ip = _ip(request)
     if config.CHEM_SITE and config.SIGNUP:
         def again(error):
@@ -57,13 +57,14 @@ def join(request: Request, code: str = Form(""), name: str = Form(""), grade: in
 
     def again(error):
         return render(request, "join.html", conn, None, grades=students.GRADES, suggested=password,
-                      form={"name": name, "grade": grade, "login": login, "consent": consent, "age14": age14}, error=error)
+                      form={"name": name, "grade": grade, "login": login, "consent": consent, "age14": age14,
+                            "invite_code": invite_code}, error=error)
     if website:                            # скрытое поле: человек его не видит, бот заполняет
         return again("Не получилось. Обнови страницу и попробуй ещё раз.")
     if students.signup_limited(ip):
         return again("С этого адреса уже много регистраций. Попробуй через час.")
     with conn:
-        sid, error = students.signup(conn, name, grade, login, password, bool(consent), ip, age14=bool(age14))
+        sid, error = students.signup(conn, name, grade, login, password, bool(consent), ip, age14=bool(age14), invite_code=invite_code)
     if error:
         return again(error)
     return _done(conn, sid, "/u2/today" if config.UMEDU2 and not config.CHEM_SITE else "/")

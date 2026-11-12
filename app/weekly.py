@@ -59,12 +59,12 @@ def _forecast(conn, st):
     return fc if fc["known"] else None
 
 
-def build(conn, today=None):
+def build(conn, teacher_id=None, today=None):
     today = today or config.today()
     since = (today - timedelta(days=6)).isoformat()
     alerts = students.alerts(conn)
     rows = []
-    for st in students.list_students(conn):
+    for st in students.list_students(conn, teacher_id=teacher_id):
         w = student_week(conn, st, since)
         w["alerts"] = [a for a in alerts if a["student_id"] == st["id"]]
         rows.append(w)

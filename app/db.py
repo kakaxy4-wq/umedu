@@ -552,6 +552,8 @@ USER_COLUMNS = [
     ("gallery_consent_by", "TEXT NOT NULL DEFAULT ''"),  # «ученик» или «родитель»
     ("guest", "INTEGER NOT NULL DEFAULT 0"),  # 1 — гость API без учётки; в списках учеников не показывается
     ("email", "TEXT"),                        # почта для входа в приложение (этап 4 API); пусто — вход по username
+    ("teacher_id", "INTEGER"),                # NULL — самостоятельный ученик; иначе репетитор, ведущий группу (issue #13)
+    ("invite_code", "TEXT"),                  # одноразовый код приглашения в группу преподавателя
 ]
 
 # Цены — в гемах 💎 (10 за занятие, 10 за домашку): пицца ≈ месяц занятий, новая игра ≈ четверть.
@@ -703,6 +705,7 @@ def init_db():
         _ensure_user_columns(conn)   # на новой базе users только что создана по SCHEMA — без поздних колонок
         # индекс после колонки email: на новой базе она из USER_COLUMNS, на старой — из ALTER TABLE
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_users_teacher ON users(teacher_id)")
         _ensure_parent_columns(conn)
         if conn.execute("SELECT COUNT(*) FROM rewards").fetchone()[0] == 0:
             conn.executemany("INSERT INTO rewards (emoji, title, cost) VALUES (?, ?, ?)", DEFAULT_REWARDS)

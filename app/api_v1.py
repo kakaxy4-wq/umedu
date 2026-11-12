@@ -98,6 +98,63 @@ class TaskOut(BaseModel):
     svg: str | None = None
 
 
+class NumbersOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    exam_id: str
+    numbers: list[int]
+
+
+class ErrorItem(BaseModel):
+    n: int
+    seed: int | None = None
+    given: str | None = None
+    at: str
+
+
+class ErrorsOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    exam_id: str
+    items: list[ErrorItem]
+
+
+class MeOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    id: int
+    display_name: str
+    grade: int | None = None
+    subjects: str | None = None
+
+
+class SkillOut(BaseModel):
+    id: str
+    title: str
+    p: float
+    n: int
+    mastered: bool
+
+
+class SkillsOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    exam_id: str
+    skills: list[SkillOut]
+
+
+class TheoryItem(BaseModel):
+    code: str
+    note: str
+
+
+class TheoryLesson(BaseModel):
+    lesson: int
+    title: str
+    items: list[TheoryItem]
+
+
+class TheoryOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    lessons: list[TheoryLesson]
+
+
 class AttemptIn(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=128)
     exam_id: str
@@ -265,6 +322,90 @@ def get_task(exam_id: str, n: int, seed: int = Query(gt=0, lt=10 ** 7)):
 # --- этап 3: онбординг гостем, запись попыток, прогноз ---
 
 _sessions = {}                            # ip -> [время создания сессии]
+
+
+@router.get("/numbers/{exam_id}", response_model=NumbersOut)
+def get_numbers(exam_id: str):
+    """Список номеров заданий, которые сервер умеет генерировать для экзамена (этап 6)."""
+    from .u2_web import GENERATED
+    nums = sorted(GENERATED.get(exam_id, ()))
+    if not nums:
+        raise HTTPException(404, "Экзамен не найден или не поддерживается")
+    return NumbersOut(exam_id=exam_id, numbers=nums)
+
+
+@router.get("/errors/{exam_id}", response_model=ErrorsOut)
+def get_errors(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    """Последние ошибки ученика по экзамену (этап 6)."""
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
+    rows = conn.execute(
+        "SELECT task_key, seed, given, day FROM skill_attempt "
+        "WHERE student_id = ? AND exam_id = ? AND score < 1 ORDER BY id DESC LIMIT 20",
+        (user["id"], exam_id)).fetchall()
+    items = []
+    for r in rows:
+        try:
+            n = int(r["task_key"])
+        except (ValueError, TypeError):
+            continue
+        items.append(ErrorItem(n=n, seed=r["seed"], given=r["given"], at=r["day"]))
+    return ErrorsOut(exam_id=exam_id, items=items)
+
+
+@router.get("/me", response_model=MeOut)
+def get_me(conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
+    return MeOut(id=user["id"], display_name=user.get("display_name", ""), grade=user.get("grade"),
+                 subjects=user.get("subjects"))
+
+
+@router.delete("/account", status_code=204)
+def delete_account(conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
+    from . import account
+    if not account.delete_student(conn, user["id"]):
+        raise HTTPException(403, "Нельзя удалить этот аккаунт")
+    return None
+
+
+@router.post("/crashes", status_code=204)
+def post_crash(payload: dict, conn=Depends(get_db)):
+    if not _flag("API_FLAG_CRASH_REPORTS"):
+        raise HTTPException(503, "Отключено")
+    from . import crash_report
+    clean = crash_report.sanitize(payload or {})
+    # хранение не требуется — достаточно принять; при необходимости логируем
+    import logging
+    logging.getLogger("umedu.crash").info("crash report: %s", clean)
+    return None
+
+
+@router.get("/skills/{exam_id}", response_model=SkillsOut)
+def get_skills(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
+    from . import skills as skillmod
+    summ = skillmod.progress_summary(conn, user["id"], exam_id)
+    out = [SkillOut(id=sid, title=info["title"], p=info["p"], n=info["n"], mastered=info["mastered"])
+           for sid, info in summ.items()]
+    return SkillsOut(exam_id=exam_id, skills=out)
+
+
+@router.get("/theory", response_model=TheoryOut)
+def get_theory():
+    from .content.cheatsheet import CHEATSHEET
+    lessons = []
+    for block in CHEATSHEET:
+        items = [TheoryItem(code=c, note=n) for c, n in block.get("items", [])]
+        lessons.append(TheoryLesson(lesson=block["lesson"], title=block["title"], items=items))
+    return TheoryOut(lessons=lessons)
 
 
 def _session_limited(ip):

@@ -15,10 +15,14 @@ _TRACES = (("events", "user_id"), ("xp_events", "student_id"), ("task_attempts",
            ("oge_drill", "student_id"), ("ru_attempts", "student_id"))
 
 
-def _students(conn):
-    return [dict(r) for r in conn.execute(
-        "SELECT id, display_name, last_seen_at, created_at FROM users WHERE role = 'student' AND active = 1 "
-        "ORDER BY display_name COLLATE NOCASE")]
+def _students(conn, teacher_id=None):
+    sql = "SELECT id, display_name, last_seen_at, created_at FROM users WHERE role = 'student' AND active = 1"
+    params = []
+    if teacher_id is not None:
+        sql += " AND teacher_id = ?"
+        params.append(teacher_id)
+    sql += " ORDER BY display_name COLLATE NOCASE"
+    return [dict(r) for r in conn.execute(sql, params)]
 
 
 def active_days(conn, since=None):
@@ -48,12 +52,12 @@ def _first_hits(conn):
     }
 
 
-def report(conn):
+def report(conn, teacher_id=None):
     today = config.today()
     since = (today - timedelta(days=WINDOW - 1)).isoformat()
     week = (today - timedelta(days=6)).isoformat()
     fortnight = (today - timedelta(days=13)).isoformat()
-    studs = _students(conn)
+    studs = _students(conn, teacher_id=teacher_id)
     ids = {s["id"] for s in studs}
     all_days = active_days(conn)
     n = len(studs)

@@ -274,7 +274,7 @@ def render(request, name, conn, user=None, **ctx):
             ctx["ru_due"] = len(russian.due_items(conn, sid))
         ctx["notices"] = game.pop_notices(conn, sid) if user["role"] == "student" else []
         if user["role"] == "teacher":
-            ctx["all_students"] = students.list_students(conn)
+            ctx["all_students"] = students.list_students(conn, teacher_id=(user["id"] if (user and user.get("role") == "teacher") else None))
             ctx["pending_hw"] = conn.execute("SELECT COUNT(*) FROM submissions WHERE status = 'pending'").fetchone()[0]
             ctx["pending_buy"] = conn.execute("SELECT COUNT(*) FROM purchases WHERE status = 'requested'").fetchone()[0]
             ctx["pending_reviews"] = ctx["pending_hw"] + ctx["pending_buy"]

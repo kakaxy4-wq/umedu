@@ -747,7 +747,7 @@ def test_russian_content_is_consistent():
     from app.content.checks import CHECK_BY_ID
     assert len(ru.COMMA_ITEMS) >= 30 and len(ru.SPELL_ITEMS) >= 50
     assert all(i["rule"] in ru.RULES for i in ru.ITEMS.values())
-    assert all(i["answer"] in i["options"] and "_" in i["text"] or i["text"].startswith("(не)") for i in ru.SPELL_ITEMS)
+    assert all(i["answer"] in i["options"] and ("_" in i["text"] or i["text"].startswith("(не)") or i["rule"] == "fig") for i in ru.SPELL_ITEMS)
     assert all("_" not in ru.spelled(i) and "(" not in ru.spelled(i) for i in ru.SPELL_ITEMS)
     assert any(not i["gaps"] for i in ru.COMMA_ITEMS)                    # есть «ловушки» без запятых
     assert CHECK_BY_ID["ru_entry"]["subject"] == "russian"
@@ -1550,7 +1550,6 @@ def test_open_signup(client, monkeypatch):
     assert "Зарегистрироваться бесплатно" in client.get("/login").text
     page = client.get("/join").text
     assert 'name="consent"' in page and 'name="age14"' in page and "/consent" in page and "/family/new-child" in page
-    assert "код приглашения" not in page.lower()
     form = {"name": "Аня", "grade": 9, "login": "anya9", "password": "kot-luna-27", "consent": "1", "age14": "1"}
     assert "с 14 лет" in client.post("/join", data=dict(form, age14="")).text   # младше 14 — только через родителя
     r = client.post("/join", data=dict(form, consent=""))

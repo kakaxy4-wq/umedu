@@ -14,7 +14,8 @@ MAX_VALUE = 30000
 
 def _filters(r):
     """(мн. ч. «чисел, …», ед. ч. «число, …», условие на Python, проверка)."""
-    kind = r.choice(["mult", "end", "even", "two", "mult_end", "mult_not", "digitsum", "first"])
+    kind = r.choice(["mult", "end", "even", "two", "mult_end", "mult_not", "digitsum", "first",
+                     "last_even", "more", "digits"])
     if kind == "mult":
         k = r.randint(3, 9)
         return "чисел, кратных %d" % k, "число, кратное %d" % k, "x %% %d == 0" % k, lambda x: x % k == 0
@@ -38,6 +39,18 @@ def _filters(r):
         d = r.randint(1, 9)
         return ("чисел, которые начинаются с цифры %d" % d, "число, которое начинается с цифры %d" % d,
                 "str(x)[0] == '%d'" % d, lambda x, d=d: str(x).startswith(str(d)))
+    if kind == "last_even":
+        parity = r.choice(["чётную", "нечётную"])
+        even = parity == "чётную"
+        return ("чисел, оканчивающихся на %s цифру" % parity, "число, оканчивающееся на %s цифру" % parity,
+                "x %% 2 == %d" % (0 if even else 1), lambda x, even=even: (x % 2 == 0) == even)
+    if kind == "more":
+        k = r.randint(10, 50)
+        return ("чисел, больших %d" % k, "число, большее %d" % k, "x > %d" % k, lambda x, k=k: x > k)
+    if kind == "digits":
+        k = r.randint(2, 3)
+        return ("чисел, в записи которых %d цифр" % k, "число, в записи которого %d цифр" % k,
+                "len(str(x)) == %d" % k, lambda x, k=k: len(str(x)) == k)
     a, b = r.choice([(3, 9), (2, 4), (5, 10), (3, 6), (2, 6), (4, 8)])
     return ("чисел, кратных %d, но не кратных %d" % (a, b), "число, кратное %d, но не кратное %d" % (a, b),
             "x %% %d == 0 and x %% %d != 0" % (a, b), lambda x: x % a == 0 and x % b != 0)
@@ -53,6 +66,10 @@ AGGS = {
             "s += x; cnt += 1", "round(s / cnt)", lambda xs: round(sum(xs) / len(xs)), True),
     "pair": ("количество {pl} и наибольшее из них", "cnt, m = 0, 0", "{c}", "cnt += 1; m = x if x > m else m",
              "cnt, m", lambda xs: "%d %d" % (len(xs), max(xs)), True),
+    "minmax": ("наименьшее и наибольшее из {pl}", "mn, mx = %d, 0" % (MAX_VALUE + 1), "{c}", "mn = x if x < mn else mn; mx = x if x > mx else mx",
+               "mn, mx", lambda xs: "%d %d" % (min(xs), max(xs)), True),
+    "countsum": ("количество и сумму {pl}", "cnt, s = 0, 0", "{c}", "cnt += 1; s += x", "cnt, s",
+                 lambda xs: "%d %d" % (len(xs), sum(xs)), False),
 }
 
 INPUT_N = ("Программа получает на вход количество чисел в последовательности, а затем сами числа — каждое с новой строки. "
@@ -87,7 +104,14 @@ def make(seed):
     zero = r.random() < 0.5
     need = "хотя бы одно " + sg if need_match else "хотя бы одно число"
     what = what.format(pl=pl, sg=sg)
-    tail = ("два числа через пробел: сначала количество, потом максимум" if agg == "pair" else "одно число — %s" % what)
+    if agg == "pair":
+        tail = "два числа через пробел: сначала количество, потом максимум"
+    elif agg == "minmax":
+        tail = "два числа через пробел: сначала наименьшее, потом наибольшее"
+    elif agg == "countsum":
+        tail = "два числа через пробел: сначала количество, потом сумма"
+    else:
+        tail = "одно число — %s" % what
     text = ("Напишите программу, которая в последовательности натуральных чисел определяет %s.\n\n%s\n\n"
             "Программа должна вывести %s." % (what, (INPUT_ZERO if zero else INPUT_N).format(need=need), tail))
     c = upd_cond.format(c=cond)

@@ -9,7 +9,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import auth, certificates, config, family, game, oge_drill, season, students, subjects, theme, today
+from . import auth, certificates, config, family, game, oge_drill, season, students, subjects, theme, today, learning_path
 from .content import oge16_gen
 from .db import get_db
 from .content.cheatsheet import CHEATSHEET
@@ -27,7 +27,7 @@ router = APIRouter()
 @router.get("/today", response_class=HTMLResponse)
 def today_page(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
-    return render(request, "student/today.html", conn, user, plan=today.plan(conn, sid))
+    return render(request, "student/today.html", conn, user, plan=learning_path.enriched_plan(conn, sid))
 
 
 @router.post("/today/claim")

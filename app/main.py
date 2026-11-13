@@ -23,7 +23,8 @@ from markupsafe import Markup, escape
 from starlette.concurrency import run_in_threadpool
 
 from . import (account, art, auth, config, events, game, levels, oge_drill, parent_bot, russian, season, students,
-               subjects, theme, today, weekly)
+               subjects, theme, today, learning_path,
+    learning_path, weekly)
 
 from .content.checks import CHECK_BY_ID, CHECKS, grade
 from .content.glossary import add_abbr
@@ -410,7 +411,7 @@ def home(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)
     board = students.leaderboard(conn) if students.leaderboard_enabled(conn) else []
     ru_ov = russian.overview(conn, sid) if "russian" in subjects.of(students.get_student(conn, sid)) else None
     return render(request, "student/home.html", conn, user, ru_ov=ru_ov, pass_ov=season.overview(conn, sid),
-                  plan=today.plan(conn, sid),
+                  plan=learning_path.enriched_plan(conn, sid),
                   lessons=lessons, current=current, current_state=lessons[upto - 1] if current else None,
                   daily=daily, daily_item=daily_item, recent=recent, returned=returned,
                   next_lesson_at=students.get_student(conn, sid)["next_lesson_at"], next_ach=next_ach,

@@ -4,7 +4,7 @@
 ОГЭ по самому слабому номеру, одна новая задача текущего урока. Шаг считается сделанным по реальным событиям в
 базе за сегодня — отдельного учёта нет. Весь план — сундук (дроп) один раз в день.
 """
-from . import config, game, oge_drill, russian, season, subjects, students
+from . import config, game, oge_drill, russian, season, skills, subjects, students
 from .content.tasks import TASKS
 from .forecast import EASY_FIRST as OGE_START_ORDER
 

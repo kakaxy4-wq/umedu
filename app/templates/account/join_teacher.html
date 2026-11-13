@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Присоединиться к группе{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/account">Кабинет</a></p>
+<h1>👥 Присоединиться к группе преподавателя</h1>
+{% if ok %}<p class="pill good">{{ ok }}</p>{% endif %}
+{% if error %}<p class="pill bad">{{ error }}</p>{% endif %}
+<form method="post" action="/account/join-teacher" class="stack">
+  <label>Код приглашения
+    <input name="code" value="{{ code or '' }}" required maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="ABCD1234"></label>
+  <p class="small muted">Код даёт преподаватель. После присоединения ваши данные будут видны ему в кабинете.</p>
+  <button class="btn">Присоединиться</button>
+</form>
+{% endblock %}

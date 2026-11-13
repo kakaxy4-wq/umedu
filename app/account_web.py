@@ -5,7 +5,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import account, auth, config, family
+from . import account, auth, config, family, students
 from .db import get_db
 from .main import back, only_student, render
 
@@ -56,6 +56,26 @@ def _student_delete_page(request, conn, user, st, error=None):
                   action="/account/delete", error=error, minors=[], warn_minors=False, need_login=False,
                   confirm_text="Я понимаю, что аккаунт и учебные данные будут удалены без восстановления",
                   password_label="Пароль", blocked=blocked, done=False)
+
+
+@router.get("/account/join-teacher", response_class=HTMLResponse)
+def join_teacher_page(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    st = _student(conn, user)
+    return render(request, "account/join_teacher.html", conn, user, st=st, code="", error=None, ok=None)
+
+
+@router.post("/account/join-teacher", response_class=HTMLResponse)
+def join_teacher(request: Request, code: str = Form(""), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    st = _student(conn, user)
+    tid = students.teacher_by_invite(conn, code)
+    if not tid:
+        return render(request, "account/join_teacher.html", conn, user, st=st, code=code,
+                      error="Код не найден. Проверьте код у преподавателя.", ok=None)
+    students.attach_student_to_teacher(conn, st["id"], tid)
+    conn.commit()
+    teacher = conn.execute("SELECT display_name FROM users WHERE id = ?", (tid,)).fetchone()
+    return render(request, "account/join_teacher.html", conn, user, st=st, code=code, error=None,
+                  ok="Вы присоединились к группе преподавателя %s." % (teacher["display_name"] if teacher else ""))
 
 
 @router.get("/account/delete", response_class=HTMLResponse)

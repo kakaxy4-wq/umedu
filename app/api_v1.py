@@ -155,6 +155,25 @@ class TheoryOut(BaseModel):
     lessons: list[TheoryLesson]
 
 
+class PlanStep(BaseModel):
+    key: str
+    emoji: str | None = None
+    title: str
+    href: str
+    done: bool = False
+    note: str | None = None
+    skill_id: str | None = None
+
+
+class PlanOut(BaseModel):
+    schema_version: int = SCHEMA_VERSION
+    exam_id: str | None = None
+    steps: list[PlanStep]
+    done: int
+    total: int
+    complete: bool
+
+
 class AttemptIn(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=128)
     exam_id: str
@@ -406,6 +425,21 @@ def get_theory():
         items = [TheoryItem(code=c, note=n) for c, n in block.get("items", [])]
         lessons.append(TheoryLesson(lesson=block["lesson"], title=block["title"], items=items))
     return TheoryOut(lessons=lessons)
+
+
+@router.get("/plan", response_model=PlanOut)
+def get_plan(conn=Depends(get_db), authorization: str | None = Header(default=None)):
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
+    from . import learning_path
+    sid = user["id"]
+    p = learning_path.enriched_plan(conn, sid)
+    steps = [PlanStep(key=st.get("key", ""), emoji=st.get("emoji"), title=st.get("title", ""),
+                     href=st.get("href", ""), done=bool(st.get("done")), note=st.get("note"),
+                     skill_id=st.get("skill_id")) for st in p.get("steps", [])]
+    return PlanOut(steps=steps, done=p.get("done", 0), total=p.get("total", 0),
+                   complete=bool(p.get("complete", False)))
 
 
 def _session_limited(ip):

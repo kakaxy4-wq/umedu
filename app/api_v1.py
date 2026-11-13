@@ -337,9 +337,7 @@ def get_numbers(exam_id: str):
 @router.get("/errors/{exam_id}", response_model=ErrorsOut)
 def get_errors(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
     """Последние ошибки ученика по экзамену (этап 6)."""
-    user = _api_user(conn, _bearer(authorization))
-    if not user:
-        raise HTTPException(401, "Нужна авторизация")
+    user = _require_student(conn, authorization)
     rows = conn.execute(
         "SELECT task_key, seed, given, day FROM skill_attempt "
         "WHERE student_id = ? AND exam_id = ? AND score < 1 ORDER BY id DESC LIMIT 20",
@@ -356,18 +354,14 @@ def get_errors(exam_id: str, conn=Depends(get_db), authorization: str | None = H
 
 @router.get("/me", response_model=MeOut)
 def get_me(conn=Depends(get_db), authorization: str | None = Header(default=None)):
-    user = _api_user(conn, _bearer(authorization))
-    if not user:
-        raise HTTPException(401, "Нужна авторизация")
+    user = _require_student(conn, authorization)
     return MeOut(id=user["id"], display_name=user.get("display_name", ""), grade=user.get("grade"),
                  subjects=user.get("subjects"))
 
 
 @router.delete("/account", status_code=204)
 def delete_account(conn=Depends(get_db), authorization: str | None = Header(default=None)):
-    user = _api_user(conn, _bearer(authorization))
-    if not user:
-        raise HTTPException(401, "Нужна авторизация")
+    user = _require_student(conn, authorization)
     from . import account
     if not account.delete_student(conn, user["id"]):
         raise HTTPException(403, "Нельзя удалить этот аккаунт")
@@ -388,9 +382,7 @@ def post_crash(payload: dict, conn=Depends(get_db)):
 
 @router.get("/skills/{exam_id}", response_model=SkillsOut)
 def get_skills(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
-    user = _api_user(conn, _bearer(authorization))
-    if not user:
-        raise HTTPException(401, "Нужна авторизация")
+    user = _require_student(conn, authorization)
     from . import skills as skillmod
     summ = skillmod.progress_summary(conn, user["id"], exam_id)
     out = [SkillOut(id=sid, title=info["title"], p=info["p"], n=info["n"], mastered=info["mastered"])
@@ -426,6 +418,8 @@ def _bearer(authorization):
 
 def _api_user(conn, token):
     """Кто за токеном: гость (api_sessions) или вход по почте (api_logins). (user_id, таблица) или None."""
+    if not token:
+        return None
     th = _token_hash(token)
     row = conn.execute("SELECT s.user_id, 'api_sessions' FROM api_sessions s JOIN users u ON u.id = s.user_id "
                        "WHERE s.token_hash = ? AND u.active = 1", (th,)).fetchone()
@@ -434,6 +428,18 @@ def _api_user(conn, token):
     row = conn.execute("SELECT l.user_id, 'api_logins' FROM api_logins l JOIN users u ON u.id = l.user_id "
                        "WHERE l.token_hash = ? AND u.active = 1", (th,)).fetchone()
     return (row[0], "api_logins") if row else None
+
+
+def _require_student(conn, authorization):
+    """Строка ученика по Bearer. Нет токена или токен чужой — 401."""
+    found = _api_user(conn, _bearer(authorization))
+    if not found:
+        raise HTTPException(401, "Нужна авторизация")
+    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'student' AND active = 1",
+                       (found[0],)).fetchone()
+    if not row:
+        raise HTTPException(401, "Нужна авторизация")
+    return dict(row)
 
 
 @router.post("/sessions", response_model=SessionOut)

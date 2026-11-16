@@ -1,0 +1,18 @@
+{% extends "u2/base.html" %}
+{% block title %}Интерактивные модели{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/models.css?v={{ v }}">{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/lab">← Лаборатория</a>
+<h1 class="u2-h1">Интерактивные модели</h1>
+<p class="u2-hint model-lead">Можно крутить и менять. Это не опыт с проверкой ответа: смотри и сверяй с темой. Опыты с предсказанием — в лаборатории.</p>
+{% for section in sections %}
+<h2 class="u2-h2" id="{{ section.id }}">{{ section.title }}</h2>
+{% for card in section.cards %}
+<a class="u2-card u2-link" href="{{ card.href }}">
+  <div class="u2-card-head"><h2>{{ card.title }}</h2><span class="u2-chip">{{ card.chip }}</span></div>
+  <p>{{ card.text }}</p>
+</a>
+{% endfor %}
+{% endfor %}
+<p class="u2-hint">Кто автор и какая лицензия — написано на странице каждой модели.</p>
+{% endblock %}

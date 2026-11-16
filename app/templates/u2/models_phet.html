@@ -1,0 +1,21 @@
+{% extends "u2/base.html" %}
+{% block title %}Симуляции PhET{% endblock %}
+{% block main_class %} model-wide{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/models.css?v={{ v }}">{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/models">← Интерактивные модели</a>
+<h1 class="u2-h1">Симуляции PhET</h1>
+<p class="u2-hint model-lead">Русские версии с сайта Университета Колорадо. Выбери тему — симуляция откроется ниже. На телефоне двигай ползунки пальцем.</p>
+{% for group in groups %}
+<h2 class="u2-h2" id="{{ group.id }}">{{ group.title }}</h2>
+<div class="model-pick" role="group" aria-label="{{ group.title }}">
+  {% for item in group["items"] %}
+  <button type="button" data-src="{{ item.src }}" data-title="{{ item.title }}" data-note="{{ item.text }} {{ item.topic }}">{{ item.title }}</button>
+  {% endfor %}
+</div>
+{% endfor %}
+<p id="model-note" class="u2-hint model-note"></p>
+<iframe id="model-frame" class="model-frame" title="Симуляция PhET" allow="fullscreen" allowfullscreen></iframe>
+<p class="u2-hint model-credit">{{ credit }}. Симуляции открываются с phet.colorado.edu и на сайт не копируются.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/models/picker.js?v={{ v }}"></script>{% endblock %}

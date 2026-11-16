@@ -1,0 +1,18 @@
+{% extends "u2/base.html" %}
+{% block title %}Электрические цепи{% endblock %}
+{% block main_class %} model-wide{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/models.css?v={{ v }}">{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/models">← Интерактивные модели</a>
+<h1 class="u2-h1">Электрические цепи</h1>
+<p class="u2-hint model-lead">Пять схем. Нажми на резистор — увидишь ток и напряжение. Ключ переключается касанием. Точки на проводах — это ток.</p>
+<div class="model-pick" role="group" aria-label="Задания по цепям">
+  {% for item in items %}
+  <button type="button" data-src="{{ item.src }}" data-title="{{ item.title }}" data-note="{{ item.text }} {{ item.topic }}">{{ item.title }}</button>
+  {% endfor %}
+</div>
+<p id="model-note" class="u2-hint model-note"></p>
+<iframe id="model-frame" class="model-frame" title="Электрическая цепь"></iframe>
+<p class="u2-hint model-credit">CircuitJS1, авторы Paul Falstad и Iain Sharp. Исходники: <a href="https://github.com/pfalstad/circuitjs1">github.com/pfalstad/circuitjs1</a>, лицензия GPL-2.0 или новее. Это своя копия сборки. Меню модели можно переключить на русский и вручную: адрес уже открывает язык ru.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/models/picker.js?v={{ v }}"></script>{% endblock %}

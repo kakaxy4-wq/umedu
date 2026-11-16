@@ -1,0 +1,13 @@
+Микрокосмос для umedu
+Исходники: https://github.com/felipereigosa/microcosmos
+Автор: Felipe Reigosa
+Лицензия: GPL-3.0, файл LICENSE в этой папке
+
+Что изменено относительно исходников:
+- тексты карточек (web/src/info.js) переведены на русский для школьной биологии;
+  перевод лежит рядом, файл info.js
+- подписи кнопок и панели («Скорость», «пауза», «Рассмотри ближе», «Закрыть», «Войти в VR») переведены
+- файл music.mp3 в копию не входит, кнопка звука скрыта, пока файла нет
+
+Музыка, если её добавить отдельно: «Dreams Become Real», Kevin MacLeod (incompetech.com), CC BY 4.0.
+https://creativecommons.org/licenses/by/4.0/

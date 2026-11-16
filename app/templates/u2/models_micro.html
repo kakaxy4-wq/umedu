@@ -1,0 +1,13 @@
+{% extends "u2/base.html" %}
+{% block title %}Микрокосмос{% endblock %}
+{% block main_class %} model-wide{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/css/models.css?v={{ v }}">{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/models">← Интерактивные модели</a>
+<h1 class="u2-h1">Микрокосмос</h1>
+<p>Капля пруда, в которую можно залететь. Здесь одноклеточные: инфузории — туфелька, сувойка, лакримария и гальтерия, — колония зелёной водоросли десмодесмус и нить цианобактерии осциллатории. Нажми на организм: карточка расскажет, как он устроен и какие органоиды видны вблизи.</p>
+<p class="u2-hint">Тема: биология, одноклеточные. У инфузорий есть ядро, у цианобактерии ядра нет — это разница эукариот и прокариот. Крути каплю пальцем или мышью, щипок и колёсико меняют масштаб. Ползунок внизу — скорость, влево до упора — пауза.</p>
+<iframe class="model-frame" title="Капля пруда: инфузории, водоросли и органоиды" src="/static/models/microcosmos/microcosmos.html"></iframe>
+<p class="u2-hint model-credit">Модель сделал Felipe Reigosa. Исходники: <a href="https://github.com/felipereigosa/microcosmos">github.com/felipereigosa/microcosmos</a>, лицензия GPL-3.0. Тексты карточек переведены на русский, перевод лежит рядом с моделью. Музыка в эту копию не входит. Если положить файл music.mp3 рядом со страницей модели, появится кнопка звука: «Dreams Become Real», Kevin MacLeod (incompetech.com), лицензия CC BY 4.0.</p>
+<p class="u2-hint"><a href="/static/models/microcosmos/microcosmos.html">Открыть на весь экран</a></p>
+{% endblock %}

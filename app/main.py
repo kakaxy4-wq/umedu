@@ -68,6 +68,20 @@ FILE_EXT = IMAGE_EXT | {".py", ".txt", ".zip", ".pdf", ".json", ".md", ".exe", "
 CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; "
        "img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; media-src 'self'; "
        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+# Страницы моделей umedu могут вставлять официальный iframe PhET. На остальных страницах заголовок прежний.
+CSP_MODELS = (CSP.replace("worker-src 'self'", "worker-src 'self' blob:", 1)
+              + "; frame-src 'self' https://phet.colorado.edu")
+CSP_MOLECULES = CSP_MODELS.replace("script-src 'self' 'wasm-unsafe-eval'",
+                                   "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'", 1)
+# Готовые чужие страницы (микрокосмос, оптика, цепи) — отдельные документы со своим скриптом.
+CSP_MODEL_FILE = ("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; "
+                  "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; "
+                  "worker-src 'self' blob:; font-src 'self' data:; media-src 'self'; "
+                  "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'")
+
+
+def _models_on():
+    return config.UMEDU2 and not config.CHEM_SITE
 
 
 # страницы курса Python и игры «КодКвеста» — на сайте химии их нет
@@ -91,15 +105,27 @@ async def chem_site_only(request: Request, call_next):
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/static/models/") and not _models_on():
+        return Response("Not Found", status_code=404)
     response = await call_next(request)
     await run_in_threadpool(events.record, request, response.status_code)
     # Изоляция страницы нужна, чтобы Python в браузере мог ждать input() и останавливаться кнопкой «Стоп»
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    csp, coep = CSP, "require-corp"
+    if path.startswith("/static/models/") and path.endswith(".html"):
+        csp = CSP_MODEL_FILE
+    elif _models_on() and path.startswith("/u2/models/molecules"):
+        csp = CSP_MOLECULES
+    elif _models_on() and path.startswith("/u2/models"):
+        csp = CSP_MODELS
+        if path.startswith("/u2/models/phet"):
+            coep = "unsafe-none"
+    response.headers["Cross-Origin-Embedder-Policy"] = coep
     response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
-    response.headers.setdefault("Content-Security-Policy", CSP)
+    response.headers["Content-Security-Policy"] = csp
     if request.url.path.startswith("/static/vendor/"):
         response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
     if request.url.path.startswith(("/parent/", "/family", "/teacher/students", "/teacher/student/")):
@@ -497,6 +523,7 @@ from .family_web import router as family_router  # noqa: E402
 from .teacher_web import router as teacher_router  # noqa: E402
 from .signup_web import router as signup_router  # noqa: E402
 from .u2_web import router as u2_router  # noqa: E402
+from .models_web import router as models_router  # noqa: E402
 from .api_v1 import router as api_v1_router  # noqa: E402
 from .account_web import router as account_router  # noqa: E402
 app.include_router(student_router)
@@ -507,6 +534,7 @@ app.include_router(family_router)
 app.include_router(teacher_router)
 app.include_router(signup_router)
 app.include_router(u2_router)
+app.include_router(models_router)
 app.include_router(api_v1_router)
 app.include_router(account_router)
 from .chem_web import router as chem_router  # noqa: E402 — после всех общих функций, которыми он пользуется

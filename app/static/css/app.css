@@ -191,6 +191,15 @@ input.num { width: 110px; }
 .login-card { max-width: 380px; margin: 10vh auto 0; text-align: center; }
 .login-card form { text-align: left; margin-top: 16px; }
 .login-hero { font-size: 4rem; }
+.login-or { display: flex; align-items: center; gap: 12px; margin: 18px 0 12px; color: var(--muted); font-size: .9rem; }
+.login-or::before, .login-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.login-oauth { display: grid; gap: 8px; }
+.btn-oauth { width: 100%; box-sizing: border-box; background: #111; color: #fff; box-shadow: 0 3px 0 #000; text-decoration: none; }
+.btn-oauth:hover { color: #fff; text-decoration: none; filter: brightness(1.12); }
+.oauth-mark {
+  display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; border-radius: 50%;
+  background: #fc3f1d; color: #fff; font-weight: 800; font-size: .95rem; line-height: 1;
+}
 
 /* ---------- главная ---------- */
 .hello { margin-bottom: 18px; }

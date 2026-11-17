@@ -73,11 +73,11 @@ def oge_code16(request: Request, seed: int = 0, conn=Depends(get_db), user=Depen
 @router.get("/oge/drill/{num}", response_class=HTMLResponse)
 def oge_drill_page(num: int, request: Request, seed: int = 0, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
-    if num not in oge_gen.GENERATORS:
+    if num not in oge_drill.drill_numbers():
         raise HTTPException(404)
     if not 0 < seed < 10 ** 7:
         return back("/oge/drill/%d?seed=%d" % (num, random.randrange(1, 10 ** 6)))
-    v = oge_gen.make(num, seed)
+    v = oge_drill.load_variant(num, seed)
     return render(request, "student/oge_drill.html", conn, user, num=num, seed=seed, variant=oge_gen.public(v),
                   text=oge_drill.rich(v["text"]), title=OGE_NUMBERS[num][0], st=oge_drill.stats(conn, sid).get(num),
                   res=None, given="")
@@ -87,10 +87,10 @@ def oge_drill_page(num: int, request: Request, seed: int = 0, conn=Depends(get_d
 def oge_drill_answer(num: int, request: Request, seed: int = Form(...), answer: str = Form(""), conn=Depends(get_db),
                      user=Depends(auth.check_csrf)):
     sid = need_sid(conn, user)
-    if num not in oge_gen.GENERATORS or not 0 < seed < 10 ** 7:
+    if num not in oge_drill.drill_numbers() or not 0 < seed < 10 ** 7:
         raise HTTPException(404)
     res = oge_drill.answer(conn, sid, num, seed, answer[:100], record=user["role"] == "student")
-    v = oge_gen.make(num, seed)
+    v = oge_drill.load_variant(num, seed)
     return render(request, "student/oge_drill.html", conn, user, num=num, seed=seed, variant=oge_gen.public(v),
                   text=oge_drill.rich(v["text"]), title=OGE_NUMBERS[num][0], st=oge_drill.stats(conn, sid).get(num),
                   res=res, given=answer[:100])

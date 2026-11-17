@@ -41,7 +41,7 @@ _MINOR = "Младше 14 аккаунт создаёт родитель — п�
 _EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 # live — у предмета есть номера, где сервер сам выдаёт вариант и проверяет ответ (u2_web.GENERATED).
-# Остальные soon: там пока только самопроверка по банку ФИПИ. Баллы — из app/content/exams, не из памяти.
+# Баллы — из app/content/exams, не из памяти.
 # Обязательные: русский и математика ОГЭ; на ЕГЭ русский (математику выбирают — базу или профиль).
 _TRACKS = (("oge", "ОГЭ"), ("ege", "ЕГЭ"))
 _REQUIRED = {"oge-rus-2026", "oge-math-2026", "ege-rus-2026"}
@@ -329,7 +329,7 @@ _sessions = {}                            # ip -> [время создания �
 def get_numbers(exam_id: str):
     """Список номеров заданий, которые сервер умеет генерировать для экзамена (этап 6)."""
     from .u2_web import GENERATED
-    nums = sorted(GENERATED.get(exam_id, ()))
+    nums = sorted(n for n in GENERATED.get(exam_id, ()) if isinstance(n, int))
     if not nums:
         raise HTTPException(404, "Экзамен не найден или не поддерживается")
     return NumbersOut(exam_id=exam_id, numbers=nums)

@@ -2,7 +2,7 @@
 
 Старый сайт (/ru, /oge) этот модуль не вызывает: маршруты остаются за флагом /u2.
 """
-from .content import inf_gen, math_gen, oge_gen, oge_u2, phys_gen
+from .content import inf_gen, math_gen, oge_gen, oge_u2, onsite_extra, phys_gen
 from .content.ru import ITEMS, RULES, check_basis, check_comma, check_spell
 
 # (вид тренажёра, список правил или None — все правила этого вида)
@@ -39,14 +39,13 @@ SHORT = {
 
 
 def onsite(exam_id):
-    """Номера, которые ученик решает на сайте. None — экзамен по-прежнему со самопроверкой в плане."""
-    if exam_id == "oge-math-2026":
-        return set(SHORT[exam_id])
+    """Номера, которые ученик решает на сайте. План дня берёт только их."""
+    keys = set(SHORT.get(exam_id, ()))
+    keys |= set(RU.get(exam_id, ()))
+    keys |= onsite_extra.keys_for(exam_id)
     if exam_id == "oge-inf-2026":
-        return set(SHORT[exam_id]) | {15, 16}
-    if exam_id == "oge-rus-2026":
-        return set(RU[exam_id])
-    return None
+        keys |= {15, 16}
+    return keys
 
 
 def mode_of(exam_id, key):
@@ -56,7 +55,7 @@ def mode_of(exam_id, key):
         return "code"
     if key in RU.get(exam_id, {}):
         return "ru"
-    if key in SHORT.get(exam_id, ()):
+    if key in SHORT.get(exam_id, ()) or onsite_extra.has(exam_id, key):
         return "gen"
     return "self"
 

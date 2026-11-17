@@ -22,8 +22,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from markupsafe import Markup, escape
 from starlette.concurrency import run_in_threadpool
 
-from . import (account, art, auth, config, events, game, levels, oge_drill, parent_bot, russian, season, students,
-               subjects, theme, today, weekly)
+from . import (account, art, auth, config, events, game, levels, oge_drill, parent_bot, primary, russian, season,
+               students, subjects, theme, today, weekly)
 
 from .content.checks import CHECK_BY_ID, CHECKS, grade
 from .content.glossary import add_abbr
@@ -100,6 +100,24 @@ async def chem_site_only(request: Request, call_next):
         path = request.url.path
         if any(path == p.rstrip("/") or path.startswith(p if p.endswith("/") else p + "/") or path == p for p in PYTHON_ONLY):
             return Response("Not Found", status_code=404)
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def hide_senior_from_primary(request: Request, call_next):
+    """3–4 класс на umedu не видит ОГЭ, Python, игры и модели. КодКвест без флага и ХимЛаб не затрагиваются."""
+    path = request.url.path
+    if config.UMEDU2 and not config.CHEM_SITE and primary.hidden_path(path):
+        from .db import connect
+        conn = connect()
+        try:
+            user = auth.load_user(request, conn)
+            if user and user["role"] == "student":
+                st = students.get_student(conn, user["id"])
+                if st and students.is_primary_grade(st.get("grade")):
+                    return Response("Not Found", status_code=404)
+        finally:
+            conn.close()
     return await call_next(request)
 
 
@@ -289,6 +307,7 @@ def render(request, name, conn, user=None, **ctx):
         ctx["subject"] = students.get_student(conn, sid) if sid else None
         ctx.setdefault("me", game.stats(conn, sid) if sid else None)
         ctx["student_name"] = ctx["subject"]["display_name"] if ctx["subject"] else ""
+        ctx["junior"] = bool(ctx["subject"] and students.is_primary_grade(ctx["subject"].get("grade")))
         ctx["solo"] = bool(ctx["subject"] and ctx["subject"].get("self_paced"))
         ctx["subj"] = subjects.of(ctx["subject"]) if ctx["subject"] else []
         ctx["subjects_all"] = subjects.SUBJECTS

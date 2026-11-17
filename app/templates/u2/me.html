@@ -2,6 +2,18 @@
 {% block title %}Я{% endblock %}
 {% block content %}
 <h1 class="u2-h1">{{ student_name }}</h1>
+{% if grades %}
+<section class="u2-card">
+  <h2>Класс</h2>
+  <p class="u2-hint">3 и 4 класс занимаются по начальной школе. 7–10 — как раньше, с экзаменами.</p>
+  <form method="post" action="/u2/me/grade" class="u2-seg">
+    <input type="hidden" name="csrf" value="{{ user.csrf }}">
+    {% for g, title in grades.items() %}
+    <button name="grade" value="{{ g }}" aria-pressed="{{ 'true' if subject and subject.grade == g else 'false' }}"{% if user.role != 'student' %} disabled{% endif %}>{{ title }}</button>
+    {% endfor %}
+  </form>
+</section>
+{% endif %}
 <section class="u2-card">
   <h2>Мои экзамены</h2>
   {% for c in cards %}

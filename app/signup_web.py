@@ -30,7 +30,7 @@ def join_page(request: Request, code: str = "", conn=Depends(get_db)):
                       suggested=students.generate_password(), form={})
     if not config.OPEN_SIGNUP:
         raise HTTPException(404)
-    return render(request, "join.html", conn, None, grades=students.GRADES, suggested=students.generate_password(),
+    return render(request, "join.html", conn, None, grades=students.signup_grades(), suggested=students.generate_password(),
                   form={})
 
 
@@ -56,7 +56,7 @@ def join(request: Request, code: str = Form(""), name: str = Form(""), grade: in
         raise HTTPException(404)
 
     def again(error):
-        return render(request, "join.html", conn, None, grades=students.GRADES, suggested=password,
+        return render(request, "join.html", conn, None, grades=students.signup_grades(), suggested=password,
                       form={"name": name, "grade": grade, "login": login, "consent": consent, "age14": age14,
                             "invite_code": invite_code}, error=error)
     if website:                            # скрытое поле: человек его не видит, бот заполняет

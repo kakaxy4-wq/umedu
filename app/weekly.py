@@ -26,9 +26,12 @@ def student_week(conn, st, since):
     sid = st["id"]
     ru_n = _count(conn, "SELECT COUNT(*) FROM ru_attempts WHERE student_id = ? AND created_at >= ?", sid, since)
     ru_ok = _count(conn, "SELECT COALESCE(SUM(ok), 0) FROM ru_attempts WHERE student_id = ? AND created_at >= ?", sid, since)
-    days = {r[0] for t in ("xp_events", "task_attempts", "ru_attempts", "robot_attempts")
+    days = {r[0] for t in ("xp_events", "task_attempts", "ru_attempts", "robot_attempts", "primary_attempt")
             for r in conn.execute("SELECT DISTINCT substr(created_at, 1, 10) FROM %s WHERE student_id = ? "
                                   "AND created_at >= ?" % t, (sid, since))}
+    primary_n = _count(conn, "SELECT COUNT(*) FROM primary_attempt WHERE student_id = ? AND created_at >= ?", sid, since)
+    primary_ok = _count(conn, "SELECT COALESCE(SUM(ok), 0) FROM primary_attempt WHERE student_id = ? AND created_at >= ?",
+                        sid, since)
     return {
         "student": st,
         "xp": _count(conn, "SELECT COALESCE(SUM(amount), 0) FROM xp_events WHERE student_id = ? AND created_at >= ?", sid, since),
@@ -46,6 +49,7 @@ def student_week(conn, st, since):
         "plans": _count(conn, "SELECT COUNT(*) FROM xp_events WHERE student_id = ? AND kind = 'drop' AND ref LIKE 'today:%' "
                               "AND created_at >= ?", sid, since),
         "oge": _count(conn, "SELECT COUNT(*) FROM oge_drill WHERE student_id = ? AND created_at >= ?", sid, since),
+        "primary_n": primary_n, "primary_ok": primary_ok,
         "fc": _forecast(conn, st),
     }
 
@@ -103,13 +107,18 @@ def text(summary):
                 parts.append("Робот ОГЭ: %d" % w["robot"])
             if w["ru"][0]:
                 parts.append("русский: %d ответов, верно %d%%" % w["ru"])
+            if w.get("primary_n"):
+                parts.append("начальная школа: %d заданий, верно %d" % (w["primary_n"], w["primary_ok"]))
             if w["homework"]:
                 parts.append("домашек сдано: %d" % w["homework"])
             for cid, right, total in w["checks"]:
                 parts.append("проверка %s: %d/%d" % (cid, right, total))
             for p in parts:
                 lines.append("   • " + p)
-        lines.append("   сейчас открыт урок %d" % w["upto"])
+        if students.is_primary_grade(st.get("grade")):
+            lines.append("   %s класс: математика, русский язык, окружающий мир" % st["grade"])
+        else:
+            lines.append("   сейчас открыт урок %d" % w["upto"])
         if w["fc"]:
             lines.append("   🎯 прогноз ОГЭ: %d из %d — «%d»" % (w["fc"]["points"], w["fc"]["max"], w["fc"]["grade"]))
         for a in w["alerts"][:3]:

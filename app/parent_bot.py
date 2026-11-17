@@ -18,7 +18,7 @@ import time
 import urllib.request
 from datetime import datetime, timedelta
 
-from . import config, game, weekly
+from . import config, game, students, weekly
 from .db import connect, get_setting, set_setting
 
 log = logging.getLogger("codequest.parent_bot")
@@ -170,6 +170,16 @@ def _plural(n, one, few, many):
 def child_text(w):
     st = w["student"]
     lines = ["👤 %s" % st["display_name"]]
+    if students.is_primary_grade(st.get("grade")):
+        n, ok = w.get("primary_n") or 0, w.get("primary_ok") or 0
+        if not n:
+            lines.append("😴 На этой неделе заданий ещё не было. Хватит трёх коротких заданий в день.")
+        else:
+            lines.append("• Начальная школа, %s класс: %s, верно %d." % (
+                st["grade"], _plural(n, "задание", "задания", "заданий"), ok))
+        if config.BASE_URL:
+            lines.append("Подробнее: %s/family/child/%d" % (config.BASE_URL, st["id"]))
+        return "\n".join(lines)
     if not w["days"]:
         lines.append("😴 На этой неделе занятий не было. Хватит 10–15 минут в день — «План на сегодня» в кабинете ученика.")
     else:

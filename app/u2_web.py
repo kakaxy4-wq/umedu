@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import account, auth, config, labs, oge_drill, russian
+from . import account, auth, config, labs, oge_drill, primary, russian
 from . import exam_model as em
 from . import knowledge as kn
 from .content import inf_gen, math_gen, oge_gen, oge_u2, oge16_gen, phys_gen
@@ -116,8 +116,21 @@ def u2_home():
     return back("/u2/today")
 
 
+def _primary_student(conn, user):
+    sid = need_sid(conn, user)
+    st = students.get_student(conn, sid)
+    if not st or not students.is_primary_grade(st.get("grade")):
+        return None
+    return sid, st
+
+
 @router.get("/today", response_class=HTMLResponse)
 def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    found = _primary_student(conn, user)
+    if found:
+        sid, st = found
+        return _page(request, conn, user, "today", "u2/jr_today.html",
+                     plan=primary.today_plan(conn, sid, st["grade"]), grade=st["grade"])
     sid, today = need_sid(conn, user), config.today()
     cards = _cards(conn, sid, today)
     if not cards:
@@ -153,6 +166,11 @@ def _intro(cards, plans):
 
 @router.get("/subjects", response_class=HTMLResponse)
 def u2_subjects(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    found = _primary_student(conn, user)
+    if found:
+        sid, st = found
+        return _page(request, conn, user, "subjects", "u2/jr_subjects.html",
+                     items=primary.summary(conn, sid, st["grade"])["subjects"], grade=st["grade"])
     sid = need_sid(conn, user)
     return _page(request, conn, user, "subjects", "u2/subjects.html", cards=_cards(conn, sid, config.today()))
 
@@ -197,6 +215,11 @@ def _projection(conn, sid, c, today):
 
 @router.get("/progress", response_class=HTMLResponse)
 def u2_progress(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    found = _primary_student(conn, user)
+    if found:
+        sid, st = found
+        return _page(request, conn, user, "progress", "u2/jr_progress.html",
+                     overview=primary.summary(conn, sid, st["grade"]), grade=st["grade"])
     sid, today = need_sid(conn, user), config.today()
     cards = _cards(conn, sid, today)
     for c in cards:
@@ -295,11 +318,23 @@ def u2_how(request: Request, conn=Depends(get_db), user=Depends(auth.current_use
 def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid, today = need_sid(conn, user), config.today()
     st = students.get_student(conn, sid)
+    grades = students.signup_grades()
+    if st and students.is_primary_grade(st.get("grade")):
+        return _page(request, conn, user, "me", "u2/jr_me.html", grades=grades, grade=st["grade"])
     if user["role"] == "student":
         u2_badges.sync(conn, sid, today)
     return _page(request, conn, user, "me", "u2/me.html", cards=_cards(conn, sid, today),
-                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES,
+                 minutes=_minutes(conn, sid), choices=MINUTE_CHOICES, grades=grades,
                  gallery_on=account.granted(st) if st else False, badges=u2_badges.list_for(conn, sid))
+
+
+@router.post("/me/grade")
+def u2_me_grade(grade: int = Form(...), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    only_student(user)
+    with conn:
+        if not students.set_grade(conn, user["id"], grade):
+            raise HTTPException(400, "Выбери класс")
+    return back("/u2/today")
 
 
 @router.post("/me/minutes")
@@ -672,6 +707,48 @@ def _lab_or_404(lab_id):
         return labs.get(lab_id)
     except KeyError:
         raise HTTPException(404)
+
+
+def _primary_task(conn, user, subject_id, task_id):
+    found = _primary_student(conn, user)
+    task = primary.BY_ID.get(task_id)
+    if not found or subject_id not in primary.SUBJECT_BY_ID or not task:
+        raise HTTPException(404)
+    sid, st = found
+    if task["subject"] != subject_id or task["grade"] != st["grade"]:
+        raise HTTPException(404)
+    return sid, st, task
+
+
+@router.get("/p/{subject_id}", response_class=HTMLResponse)
+def u2_primary_subject(subject_id: str, request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    found = _primary_student(conn, user)
+    if not found or subject_id not in primary.SUBJECT_BY_ID:
+        raise HTTPException(404)
+    sid, st = found
+    view = primary.subject_view(conn, sid, st["grade"], subject_id)
+    return _page(request, conn, user, "subjects", "u2/jr_subject.html", view=view, grade=st["grade"])
+
+
+@router.get("/p/{subject_id}/{task_id}", response_class=HTMLResponse)
+def u2_primary_task(subject_id: str, task_id: str, request: Request, conn=Depends(get_db),
+                    user=Depends(auth.current_user)):
+    _sid, st, task = _primary_task(conn, user, subject_id, task_id)
+    return _page(request, conn, user, "today", "u2/jr_task.html", task=primary.public(task), res=None,
+                 course=primary.SUBJECT_BY_ID[subject_id], grade=st["grade"])
+
+
+@router.post("/p/{subject_id}/{task_id}", response_class=HTMLResponse)
+def u2_primary_answer(subject_id: str, task_id: str, request: Request, answer: str = Form(""),
+                      conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    only_student(user)
+    sid, st, task = _primary_task(conn, user, subject_id, task_id)
+    with conn:
+        ok, nxt = primary.answer(conn, sid, task, answer)
+    return _page(request, conn, user, "today", "u2/jr_task.html", task=primary.public(task),
+                 course=primary.SUBJECT_BY_ID[subject_id], grade=st["grade"],
+                 res={"ok": ok, "answer": task["accept"][0], "explain": task["explain"],
+                      "next_id": nxt["id"] if nxt else None})
 
 
 @router.get("/lab", response_class=HTMLResponse)

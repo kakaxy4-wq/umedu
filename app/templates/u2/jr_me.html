@@ -1,0 +1,37 @@
+{% extends "u2/base.html" %}
+{% block title %}Я{% endblock %}
+{% block content %}
+<h1 class="u2-h1">{{ student_name }}</h1>
+<section class="u2-card">
+  <h2>Класс</h2>
+  <p class="jr-lead">Сейчас {{ grade }} класс. Если класс другой — нажми свой.</p>
+  <form method="post" action="/u2/me/grade" class="u2-seg">
+    <input type="hidden" name="csrf" value="{{ user.csrf }}">
+    {% for g, title in grades.items() %}
+    <button name="grade" value="{{ g }}" aria-pressed="{{ 'true' if subject and subject.grade == g else 'false' }}"{% if user.role != 'student' %} disabled{% endif %}>{{ title }}</button>
+    {% endfor %}
+  </form>
+</section>
+<section class="u2-card">
+  <h2>Как заниматься</h2>
+  <p class="jr-lead">Каждый день три задания. Сначала новое, потом то, что ещё не получилось.</p>
+</section>
+<section class="u2-card">
+  <h2>Оформление</h2>
+  <div class="u2-seg" role="group" aria-label="Тема">
+    <button type="button" data-theme-set="light">Светлая</button>
+    <button type="button" data-theme-set="dark">Тёмная</button>
+    <button type="button" data-theme-set="">Как в системе</button>
+  </div>
+</section>
+{% if user.role == 'student' and subject.minor %}
+<section class="u2-card">
+  <h2>Аккаунт</h2>
+  <p class="jr-lead">Аккаунт заводил родитель. Удалить его может тоже родитель.</p>
+</section>
+{% endif %}
+<form method="post" action="/logout">
+  <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  <button class="u2-btn ghost">Выйти</button>
+</form>
+{% endblock %}

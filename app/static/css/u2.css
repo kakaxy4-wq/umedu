@@ -268,3 +268,29 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
   .u2-main { padding-left: 12px; padding-right: 12px; }
   .ru-sentence { font-size: 1.1rem; }
 }
+
+/* 3–4 класс: крупнее и спокойнее, без экзаменационной сетки */
+html.u2.junior body { font-size: 20px; line-height: 1.45; }
+html.u2.junior .u2-h1 { font-size: 32px; line-height: 1.2; }
+html.u2.junior .u2-h2 { font-size: 22px; }
+html.u2.junior .u2-main { max-width: 640px; }
+html.u2.junior .u2-card { padding: 20px; border-radius: 22px; }
+html.u2.junior .u2-card h2 { font-size: 22px; }
+html.u2.junior .u2-tab { font-size: 15px; }
+html.u2.junior .u2-btn { font-size: 20px; padding: 16px 22px; border-radius: 16px; }
+html.u2.junior .jr-lead { font-size: 20px; margin: 0 0 16px; }
+html.u2.junior .jr-prompt { font-size: 26px; line-height: 1.35; margin: 8px 0 0; }
+html.u2.junior h1.jr-prompt { margin: 12px 0 20px; }
+html.u2.junior .jr-score { font: 800 28px var(--head); margin: 8px 0 0; }
+html.u2.junior .jr-choice { display: block; width: 100%; text-align: left; margin-top: 12px; padding: 16px 18px;
+  border-radius: 16px; border: 2px solid var(--line); background: var(--card); color: var(--text);
+  font: 600 20px/1.35 var(--body); cursor: pointer; }
+html.u2.junior .jr-choice:hover, html.u2.junior .jr-choice:focus-visible { border-color: var(--ultra); }
+html.u2.junior .jr-input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 4px; padding: 16px 18px;
+  border-radius: 16px; border: 2px solid var(--line); background: var(--card); color: var(--text); font: 600 28px var(--body); }
+html.u2.junior .jr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+html.u2.junior .jr-list a, html.u2.junior .jr-list li { display: block; padding: 14px 16px; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--line); color: inherit; text-decoration: none; font-size: 18px; }
+html.u2.junior .jr-ok { color: var(--good); font-weight: 700; margin-right: 6px; }
+html.u2.junior .jr-bad { color: var(--weak); font-weight: 700; margin-right: 6px; }
+html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }

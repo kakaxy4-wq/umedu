@@ -1,0 +1,12 @@
+{% extends "u2/base.html" %}
+{% block title %}Сегодня{% endblock %}
+{% block content %}
+<h1 class="u2-h1">Сегодня, {{ grade }} класс</h1>
+<p class="jr-lead">Три коротких задания: математика, русский язык и окружающий мир.</p>
+{% for it in plan %}
+<a class="u2-card u2-link jr-card" href="/u2/p/{{ it.subject }}/{{ it.id }}">
+  <div class="u2-card-head"><h2>{{ it.emoji }} {{ it.subject_title }}</h2><span class="u2-chip">{{ it.why }}</span></div>
+  <p class="jr-prompt">{{ it.prompt }}</p>
+</a>
+{% endfor %}
+{% endblock %}

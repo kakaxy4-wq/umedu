@@ -16,9 +16,35 @@
   {% endif %}
 </section>
 {% endif %}
-<h1>{{ st.display_name }}: {{ me.level.emoji }} {{ me.level.title }}</h1>
-<p class="muted">Последний вход на сайт: {{ st.last_seen_at|ago }}{% if st.next_lesson_at %} · следующее занятие — {{ st.next_lesson_at|dt }}{% endif %}</p>
+<h1>{{ st.display_name }}{% if primary %}, {{ st.grade }} класс{% else %}: {{ me.level.emoji }} {{ me.level.title }}{% endif %}</h1>
+<p class="muted">Последний вход на сайт: {{ st.last_seen_at|ago }}{% if st.next_lesson_at and not primary %} · следующее занятие — {{ st.next_lesson_at|dt }}{% endif %}</p>
 
+{% if primary and jr %}
+<section class="card">
+  <h2>Начальная школа</h2>
+  <p>Математика, русский язык и окружающий мир. ОГЭ, программирование и интерактивные модели этому классу не показываются.</p>
+  <ul>
+    {% for s in jr.subjects %}<li>{{ s.emoji }} {{ s.title }}: верно {{ s.done }} из {{ s.total }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% if grade_choices and in_family %}
+<section class="card">
+  <h2>Класс</h2>
+  <form method="post" action="/family/child/{{ st.id }}/grade" class="stack">
+    {{ fam_csrf(fam) }}
+    <fieldset class="grade-pick">
+      <legend>Какой класс</legend>
+      {% for g, title in grade_choices.items() %}
+      <label class="check"><input type="radio" name="grade" value="{{ g }}" required {{ 'checked' if st.grade == g }}> {{ title }}</label>
+      {% endfor %}
+    </fieldset>
+    <button class="btn btn-small">Сохранить класс</button>
+  </form>
+</section>
+{% endif %}
+
+{% if not primary %}
 <div class="grid grid-home">
   <section class="card">
     <div class="mini-stats">
@@ -94,6 +120,7 @@
 </div>
 {% endif %}
 
+{% endif %}
 {% if certs %}
 <h2>Сертификаты</h2>
 <div class="cert-list">

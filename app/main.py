@@ -22,8 +22,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from markupsafe import Markup, escape
 from starlette.concurrency import run_in_threadpool
 
-from . import (account, art, auth, config, events, game, levels, oge_drill, parent_bot, primary, russian, season,
-               students, subjects, theme, today, weekly)
+from . import (account, art, auth, config, events, game, levels, oauth_providers, oge_drill, parent_bot, primary,
+               russian, season, students, subjects, theme, today, weekly)
 
 from .content.checks import CHECK_BY_ID, CHECKS, grade
 from .content.glossary import add_abbr
@@ -148,6 +148,10 @@ async def security_headers(request: Request, call_next):
         response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
     if request.url.path.startswith(("/parent/", "/family", "/teacher/students", "/teacher/student/")):
         # страница родителя и карточки доступа — не кэшировать и не индексировать
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    if path.startswith("/auth/"):
+        # в callback есть одноразовый code — его нельзя оставлять в кэше прокси
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
@@ -300,6 +304,7 @@ def render(request, name, conn, user=None, **ctx):
         "umedu2": config.UMEDU2,
         "source_url": config.SOURCE_URL,
         "logo": theme.LOGO,
+        "oauth_providers": oauth_providers.enabled(),
     })
     if user:
         sid = ctx.pop("sid", None) or subject_id(conn, user)
@@ -545,6 +550,7 @@ from .u2_web import router as u2_router  # noqa: E402
 from .models_web import router as models_router  # noqa: E402
 from .api_v1 import router as api_v1_router  # noqa: E402
 from .account_web import router as account_router  # noqa: E402
+from .oauth_web import router as oauth_router  # noqa: E402
 app.include_router(student_router)
 app.include_router(oge_router)
 app.include_router(russian_router)
@@ -556,6 +562,7 @@ app.include_router(u2_router)
 app.include_router(models_router)
 app.include_router(api_v1_router)
 app.include_router(account_router)
+app.include_router(oauth_router)
 from .chem_web import router as chem_router  # noqa: E402 — после всех общих функций, которыми он пользуется
 
 app.include_router(chem_router)

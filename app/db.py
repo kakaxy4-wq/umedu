@@ -514,6 +514,30 @@ CREATE TABLE IF NOT EXISTS api_attempt_keys (      -- один ключ идем
     response TEXT NOT NULL,            -- замороженный JSON ответа: повтор возвращает его дословно
     created_at TEXT NOT NULL
 );
+-- Вход через Яндекс ID (и позже VK): привязка внешнего id к users, одноразовый state и
+-- незавершённая регистрация нового аккаунта. CREATE TABLE IF NOT EXISTS — старая база догоняет при старте.
+CREATE TABLE IF NOT EXISTS oauth_identities (
+    provider TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (provider, subject)
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_identities_user ON oauth_identities(user_id);
+CREATE TABLE IF NOT EXISTS oauth_states (
+    state_hash TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS oauth_pending (
+    token_hash TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    email TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
 """
 
 # Таблицы, которые в v1 были «общими на одного ученика» и в v2 получили student_id.

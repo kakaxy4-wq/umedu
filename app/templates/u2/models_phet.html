@@ -6,6 +6,11 @@
 <a class="u2-back" href="/u2/models">← Интерактивные модели</a>
 <h1 class="u2-h1">Симуляции PhET</h1>
 <p class="u2-hint model-lead">Русские версии с сайта Университета Колорадо. Выбери тему — симуляция откроется ниже. На телефоне двигай ползунки пальцем.</p>
+<div class="model-how">
+  <p>Симуляция открывается с phet.colorado.edu, на наш сайт её не копируют. Если рамка остаётся пустой, сайт Колорадо из этой сети не ответил — так бывает. Нажми «Открыть в новой вкладке». Если и там пусто, нужен другой интернет: страница umedu при этом работает.</p>
+  <p><a id="phet-open" href="https://phet.colorado.edu/sims/html/ohms-law/latest/ohms-law_ru.html" target="_blank" rel="noopener">Открыть в новой вкладке</a></p>
+  <p id="phet-status" class="model-status" role="status">Загружаем симуляцию…</p>
+</div>
 {% for group in groups %}
 <h2 class="u2-h2" id="{{ group.id }}">{{ group.title }}</h2>
 <div class="model-pick" role="group" aria-label="{{ group.title }}">
@@ -15,7 +20,7 @@
 </div>
 {% endfor %}
 <p id="model-note" class="u2-hint model-note"></p>
-<iframe id="model-frame" class="model-frame" title="Симуляция PhET" allow="fullscreen" allowfullscreen></iframe>
+<iframe id="model-frame" class="model-frame" title="Симуляция PhET" data-external="phet" allow="fullscreen" allowfullscreen></iframe>
 <p class="u2-hint model-credit">{{ credit }}. Симуляции открываются с phet.colorado.edu и на сайт не копируются.</p>
 {% endblock %}
 {% block scripts %}<script src="/static/js/models/picker.js?v={{ v }}"></script>{% endblock %}

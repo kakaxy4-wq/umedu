@@ -5,7 +5,10 @@
 {% block content %}
 <a class="u2-back" href="/u2/models">← Интерактивные модели</a>
 <h1 class="u2-h1">Оптика</h1>
-<p class="u2-hint model-lead">Готовые сцены: линза, зеркало, преломление. Луч можно подвинуть. Интерфейс модели по-русски.</p>
+<p class="u2-hint model-lead">Готовые сцены. Что смотреть в этой — написано под кнопкой.</p>
+<div class="model-how">
+  <p><b>Как пользоваться.</b> Луч, линзу и зеркало перетаскивай мышью или пальцем. Колёсико и щипок меняют масштаб. Сплошной оранжевый луч — свет. Пунктир — продолжение луча туда, где изображение только кажется.</p>
+</div>
 <div class="model-pick" role="group" aria-label="Задания по оптике">
   {% for item in items %}
   <button type="button" data-src="{{ item.src }}" data-title="{{ item.title }}" data-note="{{ item.text }} {{ item.topic }}">{{ item.title }}</button>

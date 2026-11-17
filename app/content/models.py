@@ -65,46 +65,54 @@ PHET = (
 RAY = "/static/models/ray-optics/simulator/index.html?ru#"
 OPTICS = (
     {"id": "convex-lens", "title": "Собирающая линза",
-     "text": "Лучи после линзы сходятся. Где они пересекутся — там действительное изображение.",
+     "text": "Перетащи зелёную черту источника ближе к линзе и дальше. Лучи после линзы сходятся: "
+             "где они встречаются — там действительное изображение.",
      "topic": "Физика, линзы. ОГЭ и ЕГЭ, геометрическая оптика."},
     {"id": "concave-lens", "title": "Рассеивающая линза",
-     "text": "Лучи после линзы расходятся. Продолжения назад сходятся в мнимом изображении.",
+     "text": "Лучи после линзы расходятся. Пунктир — их продолжение назад: оно сходится в мнимом изображении "
+             "с той же стороны, где источник.",
      "topic": "Физика, линзы. ОГЭ и ЕГЭ."},
     {"id": "parabolic-mirror", "title": "Зеркало",
-     "text": "Сравни угол падения и угол отражения. У параболы лучи, параллельные оси, сходятся в фокусе.",
+     "text": "Подвинь луч. Сравни угол падения и угол отражения. У параболы лучи, параллельные оси, сходятся в фокусе.",
      "topic": "Физика, отражение. ОГЭ и ЕГЭ."},
     {"id": "prisms", "title": "Призма",
-     "text": "На границе стекло–воздух луч меняет направление. Это преломление.",
+     "text": "Подвинь луч к другой грани. На границе стекло–воздух он меняет направление. Это преломление.",
      "topic": "Физика, преломление. ОГЭ и ЕГЭ."},
     {"id": "internal-reflection", "title": "Полное отражение",
-     "text": "Из стекла в воздух луч при большом угле не выходит наружу, а отражается целиком.",
+     "text": "Поворачивай луч и увеличивай угол. При большом угле луч не выходит из стекла в воздух, а отражается целиком.",
      "topic": "Физика, полное внутреннее отражение. ЕГЭ."},
 )
 
 # Схемы собраны в формате CircuitJS и сжаты так же, как кнопка «Export as link» (lz-string).
-# Числа простые, чтобы сверить с законом: наведи на резистор — видны ток и напряжение.
-CIRCUIT = "/static/models/circuitjs/circuitjs.html?lang=ru&ctz="
+# whiteBackground=1 — белый холст. currentColor — синие точки тока: на белом жёлтые почти не видны.
+# В каждой схеме есть подписи и ползунки (& …): сопротивление, у закона Ома ещё и напряжение.
+CIRCUIT = "/static/models/circuitjs/circuitjs.html?lang=ru&whiteBackground=1&currentColor=%231a4fd8&ctz="
 CIRCUITS = (
     {"id": "ohm", "title": "Закон Ома",
-     "text": "Источник 6 В и один резистор 10 Ом. Какой ток? Нажми на резистор.",
+     "text": "Источник 6 В и резистор 10 Ом. Ток должен быть 0,6 А: 6 разделить на 10. "
+             "Подвинь ползунок R вправо — сопротивление больше, точек тока меньше.",
      "topic": "Физика, закон Ома. ОГЭ №9, ЕГЭ №11.",
-     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu45qGATDWK+OwBwgaNfCGR10Q8dEj0ATi1Rh+IDMgFKBXCfQDuKtbwGqjnQbv0muPDkPoBzBStPc2kdmaA"},
+     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu45qGATDWK+OwBwgaNfCGR10Q8dEj0ATi1Rh+IDMgFKBXCfQDuKtbwGqjnQbv0muPDkPoBzBStPc2kdmYAeIdnjS5vGFr+XIo0gHgggDwg9F58AuyBfgFC4KiogEgg9ABkgjnuSiAAqgA0ADoAzhnZEDTuCQBKpWWR9EA"},
     {"id": "series", "title": "Последовательно",
-     "text": "12 В, резисторы 4 Ом и 8 Ом один за другим. Где напряжение больше — на каком сопротивлении?",
+     "text": "12 В, резисторы 4 Ом и 8 Ом один за другим. Ток в обоих один и тот же, 1 А. "
+             "Нажми по очереди на каждый: на 8 Ом напряжение 8 В, на 4 Ом — 4 В. Больше там, где сопротивление больше.",
      "topic": "Физика, последовательное соединение. ОГЭ №9 и №14.",
-     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4YATCMamGy+zTfnCs66fiOiR6AJ16zW5dtz4hccaSHmKeuDFuUAONQHcVu2TvacQseiYscMXHlZsBzWVaUdk+6-SA"},
+     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4YATCMamGy+zTfnCs66fiOiR6AJ16zW5dtz4hccaSHmKeuDFuUAONQHcVu2TvacQseiYscMXHlZsBzWVaUdk+6-QAe4JA0+r5gyKih1uCouCCAeCCAPCABHGC+UcRxUTThIL5JKaxxrKwCNCX8MUIggEgg9ABk4NEQpSAASmAANAA6AM4FjcotNG2sPf3JQA"},
     {"id": "parallel", "title": "Параллельно",
-     "text": "12 В, ветви 6 Ом и 12 Ом. В какой ветви ток больше? Сложи токи ветвей.",
+     "text": "12 В, ветвь 6 Ом и ветвь 12 Ом. Нажми на резистор в каждой ветви. "
+             "В ветви 6 Ом ток 2 А, в ветви 12 Ом — 1 А. Сложи их: в общем проводе 3 А.",
      "topic": "Физика, параллельное соединение. ОГЭ №9 и №14, ЕГЭ №14.",
-     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4uuIxqebhINN+4AEx10fEdEj0A7i26pBADgUgesaSEXKeuDIJWo1AJw1L9J5R14hkcesZ17tu9hgNDbMzS9QPvvdVx+XpZqAOayfoGuympAA"},
+     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4uuIxqebhINN+4AEx10fEdEj0A7i26pBADgUgesaSEXKeuDIJWo1AJw1L9J5R14hkcesZ17tu9hgNDbMzS9QPvvdVx+XpZqAOayfoGuymoAHuA8grA0gmB6SXzgqKiAeCCAPCD08azKGSC4yGylNGCcevmFZSVgNBUazVY1QiCASCD0AGTsVulsAEpgADQAOgDO9QNsKRqjglOzBUA"},
     {"id": "switch", "title": "Ключ",
-     "text": "Цепь замкнута: 6 В и 10 Ом. Щёлкни по ключу. Что стало с током?",
+     "text": "Сейчас ключ замкнут: 6 В и 10 Ом, ток 0,6 А. Нажми на ключ — косую чёрточку сверху. "
+             "Цепь разомкнётся, точки тока пропадут. Нажми ещё раз — ток вернётся.",
      "topic": "Физика, электрическая цепь. ОГЭ №9.",
-     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4yNxqYr4ATABwg0a+EMjrpBY6JHoBnFjTB8Q3ctx78aAMwCGAGxkBTEDv0H6AJ2Wr1IXBjWKNaOPQDut+zbtr2Atx58MDi5fWHoAc3kQX042ZA16IA"},
+     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4yNxqYr4ATABwg0a+EMjrpBY6JHoBnFjTB8Q3ctx78aAMwCGAGxkBTEDv0H6AJ2Wr1IXBjWKNaOPQDut+zbtr2Atx58MDi5fWHoAc3kQX042ZA16AA9wcg5YBSwHdIEWEEAuEEBuEEA5EEBxECTo7gVsmOyFNJBAPBBAHhBy625KkF5+dsFc1EAkEHoAMmUcnxoAJQAaAB0ZZvogA"},
     {"id": "divider", "title": "Делитель",
-     "text": "9 В, сверху 10 Ом, снизу 20 Ом. Какое напряжение на нижнем резисторе?",
+     "text": "9 В, сверху 10 Ом, снизу 20 Ом. Нажми на нижний резистор: на нём 6 В. На верхнем — 3 В. "
+             "Нижнему достаётся большая часть напряжения, потому что его сопротивление больше.",
      "topic": "Физика, последовательное соединение. ОГЭ №14, ЕГЭ №14.",
-     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4uuIGkATC24SDTXwgsddANHRI9AE49hqDJxp8aYMTPZL5mmh240lcegHcd7LnL396Ac0sW8bDAA42sekA"},
+     "ctz": "CQAgjCCsB0AMCiBaAbOW0DMBOMAWWWyGGukkA7GVLFHNQFABu4uuIGkATC24SDTXwgsddANHRI9AE49hqDJxp8aYMTPZL5mmh240lcegHcd7LnL396Ac0sW8bDAA42segA9wz1OW5LuP35wVDUQQDwQQB4QT3YMVE4wqwSBEJAtKJiLTi1kZzStVVQsEEAkEHoAMnBg7iEAJQAdAGdAJhBAVhBAARBAURAKtOqQOqbAXhBADhBAdhB6IA"},
 )
 
 MOLECULES = (

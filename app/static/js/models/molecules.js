@@ -7,7 +7,7 @@
   if (!box || !lib || !lib.createViewer || !buttons.length) return;
   box.style.position = "relative";
   box.style.overflow = "hidden";
-  var viewer = lib.createViewer(box, { backgroundColor: "white" });
+  var viewer = lib.createViewer(box, { backgroundColor: "#F7F6FC" });
   viewer.resize();
 
   function draw(text, fmt, style) {

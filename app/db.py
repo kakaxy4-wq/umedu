@@ -456,6 +456,17 @@ CREATE TABLE IF NOT EXISTS u2_badge (           -- достижения umedu 2.
     earned_at TEXT NOT NULL,
     PRIMARY KEY (student_id, code)
 );
+-- Начальная школа (3–4 класс): только новые строки, users и экзамены не трогаем.
+-- Откат без потери остальных данных: DROP TABLE IF EXISTS primary_attempt;
+CREATE TABLE IF NOT EXISTS primary_attempt (
+    id INTEGER PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL,
+    ok INTEGER NOT NULL,
+    given TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_primary_attempt_student ON primary_attempt(student_id, id);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

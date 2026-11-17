@@ -77,7 +77,13 @@ def _parent_ctx(conn, st):
                 (config.today() - timedelta(days=i) for i in range(13, -1, -1))]
     plans = conn.execute("SELECT COUNT(*) FROM xp_events WHERE student_id = ? AND kind = 'drop' AND ref LIKE 'today:%' "
                          "AND created_at >= ?", (sid, since)).fetchone()[0]
+    primary = students.is_primary_grade(st.get("grade"))
+    jr = None
+    if primary:
+        from . import primary as primary_mod
+        jr = primary_mod.summary(conn, sid, st["grade"])
     return dict(st=st, me=game.stats(conn, sid), lessons=lessons, states=states, u2=_u2_cards(conn, sid),
+                primary=primary, jr=jr,
                 fc=forecast.forecast(oge_progress(conn, sid)) if "python" in subj else None,
                 ru_ov=russian.overview(conn, sid) if "russian" in subj else None, activity=activity, plans=plans,
                 results=[(CHECK_BY_ID[r["check_id"]], r) for r in results if r["check_id"] in CHECK_BY_ID],
@@ -223,8 +229,9 @@ def family_telegram(request: Request, action: str = Form("connect"), csrf: str =
 def family_child(sid: int, request: Request, conn=Depends(get_db)):
     fam = _family_only(request, conn)
     st = family.child(conn, fam["id"], sid)
+    grades = students.signup_grades() if config.UMEDU2 and not config.CHEM_SITE else None
     return render(request, "parent.html", conn, None, fam=fam, in_family=True, cert_base="/family/child/%d" % sid,
-                  gallery_on=account.granted(st), **_parent_ctx(conn, st))
+                  gallery_on=account.granted(st), grade_choices=grades, **_parent_ctx(conn, st))
 
 
 @router.get("/family/child/{sid}/certificate/{kind}/{ref}", response_class=HTMLResponse)
@@ -246,6 +253,20 @@ def family_unlink(sid: int, request: Request, csrf: str = Form(""), conn=Depends
     with conn:
         family.unlink(conn, fam["id"], sid)
     return back("/family")
+
+
+@router.post("/family/child/{sid}/grade")
+def family_child_grade(sid: int, request: Request, grade: int = Form(0), csrf: str = Form(""), conn=Depends(get_db)):
+    """Родитель меняет класс ребёнка. Старые ответы остаются, набор заданий берётся из нового класса."""
+    fam = _family_only(request, conn)
+    family.check_csrf(fam, csrf)
+    st = family.child(conn, fam["id"], sid)
+    if not (config.UMEDU2 and not config.CHEM_SITE):
+        raise HTTPException(404)
+    with conn:
+        if not students.set_grade(conn, st["id"], grade):
+            raise HTTPException(400, "Выбери класс")
+    return back("/family/child/%d" % sid)
 
 
 @router.post("/family/child/{sid}/gallery")
@@ -333,7 +354,7 @@ def family_child_delete(sid: int, request: Request, password: str = Form(""), co
 
 # ------------------------------------------------------------------ родитель заводит аккаунт ребёнку (младше 14 — только так)
 def _new_child_page(request, conn, fam, error=None, form=None):
-    return render(request, "family/new_child.html", conn, None, fam=fam, grades=students.GRADES, error=error,
+    return render(request, "family/new_child.html", conn, None, fam=fam, grades=students.signup_grades(), error=error,
                   form=form or {}, suggested=students.generate_password())
 
 

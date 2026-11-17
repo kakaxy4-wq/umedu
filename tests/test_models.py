@@ -132,6 +132,24 @@ def test_attributions_are_on_the_pages(client, monkeypatch):  # noqa: F811
     circuits = client.get("/u2/models/circuits").text
     assert "Paul Falstad" in circuits and "GPL-2.0" in circuits
     assert "Последовательно" in circuits and "Параллельно" in circuits and "Закон Ома" in circuits
+    assert "whiteBackground=1" in circuits and "currentColor=%231a4fd8" in circuits
+    assert "Как пользоваться" in circuits and "Редактировать" in circuits and "0,6 А" in circuits
+    assert "ползунок" in circuits and "‖" in circuits
+    optics_how = client.get("/u2/models/optics").text
+    assert "Как пользоваться" in optics_how and "оранжевый" in optics_how
+    phet_html = client.get("/u2/models/phet").text
+    assert "Открыть в новой вкладке" in phet_html
+    assert "phet.colorado.edu" in phet_html and "не копир" in phet_html
+    assert 'data-external="phet"' in phet_html
+    picker = client.get("/static/js/models/picker.js").text
+    assert "postMessageOnLoad" in picker and "https://phet.colorado.edu" in picker
+    micro_file = client.get("/static/models/microcosmos/microcosmos.html").text
+    assert "#8ecae6" in micro_file and "new Yt(.06,.18,.28)" in micro_file
+    assert ".0018,.0065,.0125" not in micro_file
+    ray_page = client.get("/static/models/ray-optics/simulator/index.html").text
+    assert "background-color: #F6F5FB" in ray_page
+    assert "background-color: black" not in ray_page
+    assert 'backgroundColor: "#F7F6FC"' in client.get("/static/js/models/molecules.js").text
     mol = client.get("/u2/models/molecules").text
     assert "3Dmol.js" in mol and "BSD-3-Clause" in mol
     assert "Вода" in mol and "Бензол" in mol and "Решётка NaCl" in mol

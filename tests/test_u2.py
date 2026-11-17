@@ -66,11 +66,16 @@ def test_trainer_generated_and_self_check(client, monkeypatch):  # noqa: F811
     sid = sid_of()
     assert kn.load_states(connect(), sid, "oge-inf-2026")[1]["n"] == 1
 
-    page = client.get("/u2/train/oge-rus-2026/13").text                     # сочинение — самопроверка по баллам
-    assert "fipi.ru/oge" in page and 'name="score" value="7"' in page
-    assert "Записано: 5 из 7" in client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "score": 5}).text
-    assert abs(kn.load_states(connect(), sid, "oge-rus-2026")[13]["p"] - (0.3 + 0.5 * (5 / 7 - 0.3))) < 1e-3
-    client.post("/u2/train/oge-rus-2026/ГК", data={"csrf": csrf, "score": 9})
+    page = client.get("/u2/train/oge-rus-2026/13", follow_redirects=False)  # сочинение — вопрос на сайте
+    assert page.status_code == 303 and "seed=" in page.headers["location"]
+    shown = client.get("/u2/train/oge-rus-2026/13?seed=4").text
+    assert "fipi.ru" not in shown and 'name="answer"' in shown and 'name="score"' not in shown
+    from app.content import onsite_extra
+    right = onsite_extra.make("oge-rus-2026", 13, 4)["answer"]
+    assert "Верно" in client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "seed": 4, "answer": right}).text
+    assert kn.load_states(connect(), sid, "oge-rus-2026")[13]["n"] == 1
+    gk = onsite_extra.make("oge-rus-2026", "ГК", 2)
+    client.post("/u2/train/oge-rus-2026/ГК", data={"csrf": csrf, "seed": 2, "answer": gk["answer"]})
     assert kn.load_states(connect(), sid, "oge-rus-2026")["ГК"]["n"] == 1
 
     assert client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "score": 8}).status_code == 400
@@ -88,7 +93,9 @@ def test_diag_seeds_start_without_attempts(client, monkeypatch):  # noqa: F811
     assert r.headers["location"] == "/u2/diag/oge-math-2026"                 # новый экзамен — сначала самооценка
     page = client.get("/u2/diag/oge-math-2026").text
     assert "Геометрия" in page and 'name="s2"' in page
-    client.post("/u2/train/oge-math-2026/23", data={"csrf": csrf, "score": 1})  # по №23 уже есть попытка
+    from app.content import onsite_extra
+    v23 = onsite_extra.make("oge-math-2026", 23, 5)
+    client.post("/u2/train/oge-math-2026/23", data={"csrf": csrf, "seed": 5, "answer": v23["answer"]})
     # практика — «почти всегда», алгебра — пропущена, геометрия — «не умею»
     client.post("/u2/diag/oge-math-2026", data={"csrf": csrf, "s0": 3, "s2": 0})
     states = kn.load_states(connect(), sid_of(), "oge-math-2026")
@@ -129,8 +136,10 @@ def test_forecast_history_and_chart(client, monkeypatch):  # noqa: F811
     csrf = login(client, "student")
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
     assert "График появится со второго дня" in client.get("/u2/progress").text
-    client.post("/u2/train/oge-math-2026/20", data={"csrf": csrf, "score": 1})
-    client.post("/u2/train/oge-math-2026/21", data={"csrf": csrf, "score": 1})
+    from app.content import onsite_extra
+    for num, seed in ((20, 3), (21, 4)):
+        variant = onsite_extra.make("oge-math-2026", num, seed)
+        client.post("/u2/train/oge-math-2026/%d" % num, data={"csrf": csrf, "seed": seed, "answer": variant["answer"]})
     conn, sid, today = connect(), sid_of(), config.today()
     hist = kn.history(conn, sid, "oge-math-2026", today=today)
     assert len(hist) == 1 and hist[0]["day"] == today.isoformat()              # одна строка в день
@@ -204,8 +213,8 @@ def test_math_trainer(client, monkeypatch):  # noqa: F811
     res = client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 11, "answer": "999999", "hint": 1}).text
     assert "Неверно" in res and v["answer"].replace("-", "−") in res.replace("-", "−")
     assert kn.load_states(connect(), sid_of(), "oge-math-2026")[9]["n"] == 1
-    page = client.get("/u2/train/oge-math-2026/20").text                     # часть 2 — самопроверка
-    assert 'name="score"' in page
+    page = client.get("/u2/train/oge-math-2026/20").text                     # часть 2 тоже проверяет сайт
+    assert 'name="answer"' in page and 'name="score"' not in page
 
 
 def test_subject_mentions_regional_scale(client, monkeypatch):  # noqa: F811
@@ -270,7 +279,8 @@ def test_mock_exam(client, monkeypatch):  # noqa: F811
                              (sid_of(),)).fetchall()
     assert [(int(k), s) for k, _, s in rows] == items and [r[1] for r in rows].count(1.0) == 1
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-rus-2026", "goal": 4})
-    assert client.get("/u2/mock/oge-rus-2026?seed=3").status_code == 404
+    rus = client.get("/u2/mock/oge-rus-2026?seed=3")
+    assert rus.status_code == 200 and 'name="a' in rus.text
     assert "мини-пробник" in client.get("/u2/today").text.lower()
 
 
@@ -315,7 +325,7 @@ def test_my_mistakes(client, monkeypatch):  # noqa: F811
     assert "Ошибок пока нет" in client.get("/u2/mistakes").text
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
     client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 21, "answer": "424242", "hint": 1})
-    client.post("/u2/train/oge-math-2026/20", data={"csrf": csrf, "score": 0})
+    assert client.post("/u2/train/oge-math-2026/20", data={"csrf": csrf, "score": 0}).status_code == 400
     v = mg.OGE.make(9, 21)
     page = client.get("/u2/mistakes").text
     assert "424242" in page and v["answer"].replace("-", "−") in page.replace("-", "−") and "№20" not in page

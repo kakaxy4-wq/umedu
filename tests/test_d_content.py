@@ -244,5 +244,6 @@ def test_plan_filter_does_not_change_other_exams():
     states = {n: {"p": 0.1, "n": 0, "last": D.isoformat()} for n in range(1, 14)}
     plain = [s["n"] for s in kn.plan(ex, states, 30, D)]
     assert 1 in plain                                              # изложение по-прежнему в модели
-    only = [s["n"] for s in kn.plan(ex, states, 30, D, only=u2_onsite.onsite("oge-rus-2026"))]
-    assert only and set(only) <= {2, 3, 4, 5, 6, 7}
+    allowed = u2_onsite.onsite("oge-rus-2026")
+    only = [s["n"] for s in kn.plan(ex, states, 30, D, only=allowed)]
+    assert only and set(only) <= allowed and 8 in allowed and 13 in allowed

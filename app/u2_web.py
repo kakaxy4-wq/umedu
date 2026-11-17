@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from . import account, auth, config, labs, oge_drill, primary, russian
 from . import exam_model as em
 from . import knowledge as kn
-from .content import inf_gen, math_gen, oge_gen, oge_u2, oge16_gen, phys_gen
+from .content import inf_gen, math_gen, oge_gen, oge_u2, oge16_gen, onsite_extra, phys_gen
 from .content import robot as robot_content
 from .content.oge import OGE_NUMBERS
 from .content.ru import RULES as RU_RULES
@@ -35,11 +35,18 @@ DAILY_MINUTES = 30            # по умолчанию; ученик меняе
 MINUTE_CHOICES = (15, 30, 45, 60, 90)
 REVIEW_AFTER_DAYS = 14        # номер, к которому не возвращались столько дней, попадает в план как повторение
 REVIEW_MIN_P = 0.6
-FIPI_BANK = {"ОГЭ": "https://fipi.ru/oge/otkrytyy-bank-zadaniy-oge", "ЕГЭ": "https://fipi.ru/ege/otkrytyy-bank-zadaniy-ege"}
-# номера, для которых сайт сам выдаёт варианты и проверяет ответ; остальные — самопроверка по банку ФИПИ
 BANKS = {"oge-math-2026": math_gen.OGE, "ege-math-profile-2026": math_gen.EGE_PROFILE, "ege-inf-2026": inf_gen.EGE,
          "ege-math-base-2026": math_gen.EGE_BASE, "oge-phys-2026": phys_gen.OGE, "ege-phys-2026": phys_gen.EGE}
-GENERATED = dict(u2_onsite.SHORT)
+
+
+def _generated_map():
+    out = {exam: set(keys) for exam, keys in u2_onsite.SHORT.items()}
+    for exam_id, key in onsite_extra.FUNCS:
+        out.setdefault(exam_id, set()).add(key)
+    return out
+
+
+GENERATED = _generated_map()
 TITLES = {"oge-inf-2026": {n: t[0] for n, t in OGE_NUMBERS.items()}, **{e: b.TITLES for e, b in BANKS.items()}}
 TABS = [("today", "Сегодня"), ("subjects", "Предметы"), ("progress", "Прогресс"), ("me", "Я")]
 
@@ -505,7 +512,7 @@ def _train_ctx(conn, sid, enr, key, today):
     st = kn.decay(states.get(key), today)
     mode = u2_onsite.mode_of(exam["id"], key)
     return {"c": _card(enr, states, today), "t": _task_info(exam, key), "p": st["p"], "tries": st.get("n", 0),
-            "bank": FIPI_BANK.get(exam["exam"]), "generated": mode == "gen", "mode": mode}
+            "generated": mode == "gen", "mode": mode}
 
 
 @router.get("/train/{exam_id}/{raw}", response_class=HTMLResponse)
@@ -533,6 +540,8 @@ def _budget(conn, sid, today, n=1):
 
 
 def _variant(exam_id, key, seed):
+    if onsite_extra.has(exam_id, key):
+        return onsite_extra.make(exam_id, key, seed)
     if exam_id == "oge-inf-2026" and key in oge_u2.GENERATORS:
         return oge_u2.make(key, seed)
     bank = BANKS.get(exam_id)
@@ -578,7 +587,7 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         if not 0 < seed < 10 ** 7:
             raise HTTPException(400)
         v = _variant(exam_id, key, seed)
-        ok = BANKS[exam_id].check(v, answer[:100]) if exam_id in BANKS else oge_gen.check(v, answer[:100])
+        ok = _check(exam_id, v, answer[:100])
         if not ok and hint != 1:
             ctx = _train_ctx(conn, sid, enr, key, today)
             ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
@@ -768,7 +777,7 @@ def u2_lab(lab_id: str, request: Request, conn=Depends(get_db), user=Depends(aut
     if user["role"] == "student":
         u2_badges.sync(conn, sid, config.today(), lab=True)
     return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result=None,
-                 transfer=labs.transfer_public(lab, enrolled), fipi=FIPI_BANK["ОГЭ"],
+                 transfer=labs.transfer_public(lab, enrolled),
                  lab_json=labs.client_json(lab, random.randrange(1, 10 ** 6)))
 
 
@@ -820,7 +829,7 @@ async def u2_lab_transfer(lab_id: str, request: Request, conn=Depends(get_db), u
         shown.append({"label": "%s №%s" % (name, g["task"]), "text": g["text"], "ok": g["ok"],
                       "given": g["given"], "explain": "" if g["ok"] else g["explain"]})
     return _page(request, conn, user, "today", "u2/lab.html", lab=lab, result={"items": shown, "deltas": deltas},
-                 transfer=[], fipi=FIPI_BANK["ОГЭ"], lab_json="")
+                 transfer=[], lab_json="")
 
 
 # ================================================================== мини-пробник
@@ -832,7 +841,7 @@ def _mock_items(exam, seed):
     всегда даёт тот же набор и те же варианты — проверка на сервере пересборкой, как в тренажёре."""
     r = random.Random(f"mock-{exam['id']}-{seed}")
     by_n = {t["n"]: t for t in em.tasks(exam)}
-    nums = sorted(GENERATED.get(exam["id"], ()))
+    nums = sorted(n for n in GENERATED.get(exam["id"], ()) if n in by_n)
     r.shuffle(nums)
     picked, left = [], MOCK_MINUTES
     for n in nums:
@@ -853,6 +862,8 @@ def _mock_ctx(exam, seed):
 
 
 def _check(exam_id, v, given):
+    if v.get("source") == "extra":
+        return onsite_extra.check(v, given)
     bank = BANKS.get(exam_id)
     return bank.check(v, given) if bank else oge_gen.check(v, given)
 

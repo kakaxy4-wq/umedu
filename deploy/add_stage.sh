@@ -212,6 +212,10 @@ if [[ "$ready" -ne 1 ]]; then
   echo "Служба ${SERVICE} не ответила на http://localhost:${PORT}/healthz. Журнал: journalctl -u ${SERVICE}" >&2
   exit 1
 fi
+if ! "$CODE/.venv/bin/python" "$CODE/scripts/check_static.py" "http://localhost:${PORT}"; then
+  echo "Статика неполная. Смотри список выше. Обычно помогает повторный fetch_vendor.sh." >&2
+  exit 1
+fi
 
 if ! command -v ufw >/dev/null; then
   echo "Нет ufw. Служба уже работает на localhost:${PORT}, но правило для сети Traefik не добавлено." >&2

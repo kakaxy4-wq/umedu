@@ -491,11 +491,19 @@ def _task_info(exam, key):
 
 
 def _plan(exam, states, minutes, today, due=()):
-    """План дня только из номеров, которые решаются на сайте, — для экзаменов, где это уже возможно."""
-    only = u2_onsite.onsite(exam["id"])
-    if only is not None:
-        due = [n for n in due if n in only]
-    return kn.plan(exam, states, minutes, today, due=due, only=only)
+    """План дня — номера, которые проверяются на сайте и входят в прогноз.
+
+    Тренировка развёрнутого ответа в план не ставится: она не должна занимать место сильного номера.
+    Номер с одним и тем же условием на всех сидах не повторяем дважды.
+    """
+    only = set(u2_onsite.onsite(exam["id"])) - onsite_extra.practice_keys(exam["id"])
+    due = [n for n in due if n in only]
+    items = kn.plan(exam, states, minutes, today, due=due, only=only)
+    for it in items:
+        if it.get("times", 1) > 1 and not onsite_extra.varies(exam["id"], it["n"]):
+            it["minutes"] = max(1, it["minutes"] // it["times"])
+            it["times"] = 1
+    return items
 
 
 def _next_step(exam, states, today, after, minutes):
@@ -512,7 +520,8 @@ def _train_ctx(conn, sid, enr, key, today):
     st = kn.decay(states.get(key), today)
     mode = u2_onsite.mode_of(exam["id"], key)
     return {"c": _card(enr, states, today), "t": _task_info(exam, key), "p": st["p"], "tries": st.get("n", 0),
-            "generated": mode == "gen", "mode": mode}
+            "generated": mode == "gen", "mode": mode,
+            "practice": onsite_extra.is_practice(exam["id"], key)}
 
 
 @router.get("/train/{exam_id}/{raw}", response_class=HTMLResponse)
@@ -522,7 +531,7 @@ def u2_train(exam_id: str, raw: str, request: Request, seed: int = 0, conn=Depen
     enr = _enrolled(conn, sid, exam_id)
     key = _task_key(em.load(exam_id), raw)
     ctx = _train_ctx(conn, sid, enr, key, today)
-    if ctx["mode"] != "self":
+    if ctx["mode"] not in ("self", "soon"):
         if not 0 < seed < 10 ** 7:
             return back(f"/u2/train/{exam_id}/{key}?seed={_fresh_seed()}")
         ctx.update(_play_ctx(exam_id, key, seed))
@@ -583,6 +592,8 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
     exam = em.load(exam_id)
     key = _task_key(exam, raw)
     before = _card(enr, kn.load_states(conn, sid, exam_id), today)
+    if u2_onsite.mode_of(exam_id, key) == "soon":
+        raise HTTPException(404)
     if key in GENERATED.get(exam_id, ()):
         if not 0 < seed < 10 ** 7:
             raise HTTPException(400)
@@ -607,7 +618,8 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         res = {"ok": score == mx, "score": score, "max": mx}
         seed, given = None, None
     with conn:
-        kn.record(conn, sid, exam_id, key, got, today, seed=seed, given=given)
+        kn.record(conn, sid, exam_id, key, got, today, seed=seed, given=given,
+                  update_state=not onsite_extra.is_practice(exam_id, key))
         kn.log_forecast(conn, sid, exam_id, today)
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:

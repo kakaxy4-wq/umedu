@@ -57,7 +57,7 @@ def mode_of(exam_id, key):
         return "ru"
     if key in SHORT.get(exam_id, ()) or onsite_extra.has(exam_id, key):
         return "gen"
-    return "self"
+    return "soon"
 
 
 def ru_pool(exam_id, num):

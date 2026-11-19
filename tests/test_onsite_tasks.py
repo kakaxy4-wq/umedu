@@ -27,6 +27,7 @@ ALLOW_URL_FILES = {
     "app/templates/u2/models_micro.html",
     "app/templates/u2/models_mol.html",
     "app/templates/u2/models_optics.html",
+    "app/templates/student/oge.html",
 }
 
 GO_ELSEWHERE = re.compile(
@@ -40,13 +41,19 @@ ALLOW_URL = re.compile(r"^https?://(www\.)?w3\.org/", re.I)
 
 
 def test_no_self_check_numbers_left():
-    missing = []
+    """Самопроверки с уходом на ФИПИ нет. Номер без честного задания — «скоро», не в плане."""
+    soon = []
     for exam_id in em.all_ids():
         for key in em.points(em.load(exam_id)):
-            if u2_onsite.mode_of(exam_id, key) == "self":
-                missing.append((exam_id, key))
-            assert key in u2_onsite.onsite(exam_id)
-    assert missing == []
+            mode = u2_onsite.mode_of(exam_id, key)
+            assert mode != "self", (exam_id, key)
+            if mode == "soon":
+                soon.append((exam_id, key))
+                assert key not in u2_onsite.onsite(exam_id)
+            else:
+                assert key in u2_onsite.onsite(exam_id)
+    assert ("ege-eng-2026", 1) in soon and ("oge-math-2026", 22) in soon
+    assert ("ege-math-profile-2026", 17) in soon
 
 
 def test_extra_answers_recomputed():
@@ -96,7 +103,6 @@ def test_task_copy_has_no_go_elsewhere():
         ROOT / "app" / "templates" / "u2" / "train.html",
         ROOT / "app" / "templates" / "u2" / "lab.html",
         ROOT / "app" / "templates" / "u2" / "mistakes.html",
-        ROOT / "app" / "templates" / "student" / "oge.html",
         ROOT / "app" / "templates" / "student" / "lesson.html",
         ROOT / "app" / "templates" / "student" / "task.html",
     ]
@@ -134,3 +140,68 @@ def test_student_templates_urls_are_allowlisted():
         if urls and rel not in ALLOW_URL_FILES:
             found.append((rel, urls))
     assert found == []
+
+
+_SERVICE = (
+    "как единственная норма", "как единственный смысл", "для угля всегда",
+    "wrongly", "Solve for", "Article 1", "сердце в колене", "любой камень",
+)
+_LATIN = re.compile(r"[A-Za-z]{4,}")
+_LATIN_OK = {"true", "false", "none", "html", "href"}
+_ROMAN = re.compile(r"^[IVXLCDM]+$")
+
+
+def test_russian_variants_have_no_service_or_latin():
+    bad = []
+    for (exam_id, key) in onsite_extra.FUNCS:
+        if exam_id.endswith("eng-2026"):
+            continue
+        for seed in (1, 2, 3):
+            v = onsite_extra.make(exam_id, key, seed)
+            blob = v["text"] + " " + " ".join((v.get("data") or {}).get("options") or [])
+            for phrase in _SERVICE:
+                if phrase.lower() in blob.lower():
+                    bad.append((exam_id, key, phrase))
+            if exam_id.split("-")[1] in ("rus", "hist", "soc", "lit", "bio", "geo"):
+                words = [w for w in _LATIN.findall(blob) if w.lower() not in _LATIN_OK and not _ROMAN.match(w)]
+                if words:
+                    bad.append((exam_id, key, words[:4]))
+    assert bad == []
+
+
+def test_units_and_paren_are_accepted():
+    v = {"answer": "30", "data": {"kind": "digits"}}
+    assert onsite_extra.check(v, "30 м/с") and onsite_extra.check(v, "30м/с")
+    v2 = {"answer": "3"}
+    assert onsite_extra.check(v2, "3)") and onsite_extra.check(v2, "3.")
+
+
+def test_practice_does_not_move_forecast_and_twins_differ():
+    assert onsite_extra.is_practice("ege-rus-2026", 27)
+    assert not onsite_extra.is_practice("ege-rus-2026", 4)
+    a = onsite_extra.make("ege-phys-2026", 5, 1)["text"]
+    b = onsite_extra.make("ege-phys-2026", 6, 1)["text"]
+    assert a != b
+    assert onsite_extra.make("ege-phys-2026", 9, 1)["text"] != onsite_extra.make("ege-phys-2026", 10, 1)["text"]
+    same = [key for key in onsite_extra.FUNCS if not onsite_extra.varies(*key)]
+    assert same == []
+
+
+def test_practice_attempt_keeps_forecast(client, monkeypatch):
+    from app import config, knowledge as kn
+    from app.db import connect
+    from test_app import login, sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-rus-2026", "goal": 70})
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-eng-2026", "goal": 70})
+    before = kn.forecast(em.load("ege-rus-2026"), kn.load_states(connect(), sid_of(), "ege-rus-2026"))
+    page = client.get("/u2/train/ege-rus-2026/27?seed=2").text
+    assert "на прогноз балла не влияет" in page and "fipi" not in page.lower()
+    right = onsite_extra.make("ege-rus-2026", 27, 2)["answer"]
+    client.post("/u2/train/ege-rus-2026/27", data={"csrf": csrf, "seed": 2, "answer": right})
+    after = kn.forecast(em.load("ege-rus-2026"), kn.load_states(connect(), sid_of(), "ege-rus-2026"))
+    assert before["test"] == after["test"]
+    assert 27 not in kn.load_states(connect(), sid_of(), "ege-rus-2026")
+    hidden = client.get("/u2/train/ege-eng-2026/1").text
+    assert "Скоро" in hidden and "fipi" not in hidden.lower()

@@ -73,10 +73,10 @@ def test_trainer_generated_and_self_check(client, monkeypatch):  # noqa: F811
     from app.content import onsite_extra
     right = onsite_extra.make("oge-rus-2026", 13, 4)["answer"]
     assert "Верно" in client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "seed": 4, "answer": right}).text
-    assert kn.load_states(connect(), sid, "oge-rus-2026")[13]["n"] == 1
+    assert 13 not in kn.load_states(connect(), sid, "oge-rus-2026")  # сочинение — тренировка, прогноз не двигается
     gk = onsite_extra.make("oge-rus-2026", "ГК", 2)
     client.post("/u2/train/oge-rus-2026/ГК", data={"csrf": csrf, "seed": 2, "answer": gk["answer"]})
-    assert kn.load_states(connect(), sid, "oge-rus-2026")["ГК"]["n"] == 1
+    assert "ГК" not in kn.load_states(connect(), sid, "oge-rus-2026")
 
     assert client.post("/u2/train/oge-rus-2026/13", data={"csrf": csrf, "score": 8}).status_code == 400
     assert client.get("/u2/train/oge-rus-2026/99").status_code == 404
@@ -93,15 +93,14 @@ def test_diag_seeds_start_without_attempts(client, monkeypatch):  # noqa: F811
     assert r.headers["location"] == "/u2/diag/oge-math-2026"                 # новый экзамен — сначала самооценка
     page = client.get("/u2/diag/oge-math-2026").text
     assert "Геометрия" in page and 'name="s2"' in page
-    from app.content import onsite_extra
-    v23 = onsite_extra.make("oge-math-2026", 23, 5)
-    client.post("/u2/train/oge-math-2026/23", data={"csrf": csrf, "seed": 5, "answer": v23["answer"]})
+    from app.content import math_gen as mg
+    client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 5, "answer": mg.OGE.make(9, 5)["answer"]})
     # практика — «почти всегда», алгебра — пропущена, геометрия — «не умею»
     client.post("/u2/diag/oge-math-2026", data={"csrf": csrf, "s0": 3, "s2": 0})
     states = kn.load_states(connect(), sid_of(), "oge-math-2026")
     assert states[1]["p"] == 0.85 and states[1]["n"] == 0
     assert 6 not in states                                                    # пропущенный раздел не тронут
-    assert states[16]["p"] == 0.1 and states[23]["n"] == 1 and states[23]["p"] > 0.1   # попытку не затирает
+    assert states[16]["p"] == 0.1 and states[9]["n"] == 1 and states[9]["p"] > 0.1   # попытку не затирает
     r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 5}, follow_redirects=False)
     assert r.headers["location"] == "/u2/today"                              # смена цели — без повторной оценки
 

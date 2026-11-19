@@ -48,8 +48,13 @@ def load_variant(num, seed):
 
 
 def drill_numbers():
+    """На КодКвесте тренажёр как раньше: только номера oge_gen. №11, №13 и №14 — на umedu."""
+    from . import config
     from .content import oge_u2
-    return set(oge_gen.GENERATORS) | set(oge_u2.GENERATORS)
+    nums = set(oge_gen.GENERATORS)
+    if config.UMEDU2 and not config.CHEM_SITE:
+        nums |= set(oge_u2.GENERATORS)
+    return nums
 
 
 def answer(conn, sid, num, seed, given, record=True):

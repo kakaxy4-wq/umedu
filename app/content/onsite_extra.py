@@ -51,16 +51,80 @@ def make(exam_id, key, seed):
     return v
 
 
+_UNITS = (
+    "м/с²", "м/с2", "км/ч", "м/с", "дж", "ом", "кг", "см", "мм", "кдж",
+    "н", "а", "в", "г", "м", "%",
+)
+
+
+def _strip_units(text):
+    """«30 м/с» и «3)» — тот же ответ, что 30 и 3. Буквенный ответ не режем."""
+    s = str(text).strip().replace("ё", "е").replace("−", "-")
+    s = re.sub(r"^(\d+)\s*[).]$", r"\1", s)
+    compact = re.sub(r"\s+", "", s).lower()
+    for _ in range(3):
+        m = re.match(r"^(-?\d+(?:[.,]\d+)?)(.*)$", compact)
+        if not m or not m.group(2):
+            break
+        rest = m.group(2)
+        if rest not in _UNITS:
+            break
+        compact = m.group(1)
+    return compact
+
+
 def _norm(s):
     return re.sub(r"\s+", "", str(s)).lower().replace("ё", "е").replace("−", "-")
 
 
 def check(v, given):
     ans, got = str(v["answer"]).strip(), str(given).strip()
-    a, b = _num(ans), _num(got)
+    a, b = _num(_strip_units(ans)), _num(_strip_units(got))
     if a is not None and b is not None:
         return a == b
     return _norm(got) == _norm(ans)
+
+
+def _wanted(exam, keys):
+    return {(exam, k) for k in keys}
+
+
+# Развёрнутый ответ и сочинение: попытка пишется, прогноз по номеру не двигается.
+_PRACTICE_WANTED = set()
+_PRACTICE_WANTED |= _wanted("ege-rus-2026", [27])
+_PRACTICE_WANTED |= _wanted("oge-rus-2026", [1, 13, "ГК", "ФК"])
+_PRACTICE_WANTED |= _wanted("ege-eng-2026", [37, 38, "У1", "У2", "У3", "У4"])
+_PRACTICE_WANTED |= _wanted("oge-eng-2026", [35, "У1", "У2", "У3"])
+_PRACTICE_WANTED |= _wanted("ege-hist-2026", [17])
+_PRACTICE_WANTED |= _wanted("oge-hist-2026", [18, 19, 20, 21, 22, 23, 24])
+_PRACTICE_WANTED |= _wanted("ege-bio-2026", [22, 23, 25, 26, 27, 28])
+_PRACTICE_WANTED |= _wanted("ege-phys-2026", [21, 22, 23, 24, 25, 26])
+_PRACTICE_WANTED |= _wanted("oge-phys-2026", [17, 18, 19, 20, 21, 22])
+_PRACTICE_WANTED |= _wanted("oge-math-2026", [20, 21, 23, 25])
+_PRACTICE_WANTED |= _wanted("ege-math-profile-2026", [13, 14, 15, 16, 18, 19])
+PRACTICE = {key for key in _PRACTICE_WANTED if key in FUNCS}
+
+
+def is_practice(exam_id, key):
+    return (exam_id, key) in PRACTICE
+
+
+def practice_keys(exam_id):
+    return {key for exam, key in PRACTICE if exam == exam_id}
+
+
+def varies(exam_id, key):
+    """Разные сиды дают разные условия. Иначе номер не ставим в план дважды подряд."""
+    if not has(exam_id, key):
+        return False
+    texts = {make(exam_id, key, s)["text"] for s in range(1, 9)}
+    return len(texts) > 1
+
+
+def status_of(exam_id, key):
+    if has(exam_id, key):
+        return "тренировка" if is_practice(exam_id, key) else "соответствует"
+    return "скрыт"
 
 
 def value_of(v):

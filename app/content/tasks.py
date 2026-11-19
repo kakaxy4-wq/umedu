@@ -470,8 +470,11 @@ TASKS = [
 ]
 
 # задачи в формате ОГЭ — в тех же уроках, помечены номером задания (поле "oge")
-# Уроки, где раньше не было автопроверки и ученика просили самому отметить «урок изучен».
-TASKS += [
+# На КодКвесте этих задач нет: кнопка «Урок изучен» остаётся. На umedu урок закрывается проверкой.
+from .. import config as _site_config  # noqa: E402
+
+if _site_config.UMEDU2 and not _site_config.CHEM_SITE:
+    TASKS += [
     {"id": "quest_torch", "lesson": 11, "level": 1, "title": "Есть ли факел?",
      "text": "Функция `has_light(items)` возвращает `True`, если в списке есть строка `факел`, иначе `False`.",
      "starter": "def has_light(items):\n    ...\n",

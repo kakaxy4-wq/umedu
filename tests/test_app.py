@@ -915,7 +915,7 @@ def test_oge_drill_flow(client):
     s = login_as(client, "student")
     r = client.get("/oge/drill/4", follow_redirects=False)
     assert r.status_code == 303 and "/oge/drill/4?seed=" in r.headers["location"]
-    assert client.get("/oge/drill/11", follow_redirects=False).status_code == 303       # №11 тоже на сайте
+    assert client.get("/oge/drill/11").status_code == 404                               # №11 — только на занятии
     assert client.get("/oge/drill/99").status_code == 404
     page = client.get("/oge/drill/4?seed=42").text
     v = g.make(4, 42)
@@ -1378,13 +1378,16 @@ def test_self_paced_lessons(client):
     for task in t1[1:3]:
         client.post("/api/task/%s/attempt" % task["id"], json={"code": "x", "passed": True}, headers={"X-CSRF-Token": s})
     assert game.unlocked_upto(conn, sid) == 2 and 1 in game.done_lessons(conn, sid)
-    # у каждого урока есть задача, кнопка «урок изучен» сама следующий не открывает
-    assert [n for n in range(1, 35) if not [x for x in TASKS if x["lesson"] == n]] == []
+    # урок без задач — по кнопке
+    empty = next(n for n in range(1, 35) if not [x for x in TASKS if x["lesson"] == n])
     with conn:
-        game.open_lesson(conn, sid, 11, notice=False)
-    assert "Урок изучен" not in client.get("/lesson/11").text
-    client.post("/lesson/11/self-done", data={"csrf": s})
-    assert game.unlocked_upto(conn, sid) == 11 and 11 not in game.done_lessons(conn, sid)
+        game.open_lesson(conn, sid, empty, notice=False)
+    assert "Урок изучен" in client.get("/lesson/%d" % empty).text
+    client.post("/lesson/%d/self-done" % empty, data={"csrf": s})
+    assert game.unlocked_upto(conn, sid) == empty + 1 and empty in game.done_lessons(conn, sid)
+    client.post("/lesson/%d/self-done" % (empty + 1), data={"csrf": s})                # у урока с задачами кнопка не работает
+    if [x for x in TASKS if x["lesson"] == empty + 1]:
+        assert game.unlocked_upto(conn, sid) == empty + 1
 
 
 def test_landing_only_on_public_site(client, monkeypatch):

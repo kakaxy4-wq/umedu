@@ -266,13 +266,12 @@ def _similar(r):
 
 
 def _abs_sum(r):
-    # |x| + |x - 2| минимум равен 2, достигается на [0, 2]. Наименьшее целое a, при котором есть решение |x|+|x-2| = a
-    text = ("Найдите наименьшее целое число a, при котором уравнение |x| + |x − 2| = a имеет хотя бы одно решение.")
-    expl = "Выражение |x| + |x − 2| равно 2 на всём отрезке от 0 до 2 и больше 2 вне его. Наименьшее такое a — 2."
-    return _out(text, 2, expl,
-                ["На отрезке между 0 и 2 сумма модулей постоянна.", "Посчитай её в точке 0: |0| + |−2| = 2.",
-                 "Меньше 2 выражение не бывает."],
-                {"kind": "abs-sum"})
+    b = r.choice([2, 3, 4, 5])
+    text = ("Найдите наименьшее целое число a, при котором уравнение |x| + |x − %d| = a имеет хотя бы одно решение." % b)
+    expl = "На отрезке от 0 до %d сумма модулей равна %d. Меньше она не бывает." % (b, b)
+    return _out(text, b, expl,
+                ["Между нулями модулей сумма постоянна и равна расстоянию между ними.", expl],
+                {"kind": "abs-sum", "b": b})
 
 
 def _lcm_below(r):
@@ -340,7 +339,7 @@ def recompute(data):
     if k == "similar":
         return data["k"] ** 2
     if k == "abs-sum":
-        return 2
+        return data["b"]
     if k == "lcm":
         step = data["a"] * data["b"] // math.gcd(data["a"], data["b"])
         return (data["n"] - 1) // step * step
@@ -350,9 +349,7 @@ def recompute(data):
 MATH = {
     ("oge-math-2026", 20): _quad,
     ("oge-math-2026", 21): lambda r: r.choice([_work, _motion])(r),
-    ("oge-math-2026", 22): _ineq,
     ("oge-math-2026", 23): _angles,
-    ("oge-math-2026", 24): _diag,
     ("oge-math-2026", 25): _inscribed,
     ("ege-math-base-2026", 2): lambda r: r.choice([_percent, _motion, _work])(r),
     ("ege-math-base-2026", 3): _table_sum,
@@ -368,7 +365,6 @@ MATH = {
     ("ege-math-profile-2026", 14): _box_scale,
     ("ege-math-profile-2026", 15): _count_between,
     ("ege-math-profile-2026", 16): _deposit,
-    ("ege-math-profile-2026", 17): lambda r: r.choice([_similar, _angles, _diag])(r),
     ("ege-math-profile-2026", 18): _abs_sum,
     ("ege-math-profile-2026", 19): _lcm_below,
 }

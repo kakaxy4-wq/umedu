@@ -68,20 +68,70 @@ def _needs_review(conn, sid):
     return {tid for tid, ok in last.items() if not ok}
 
 
-def today_plan(conn, sid, grade):
-    """По одному заданию на предмет: сначала новое, иначе то, где последняя попытка неверная."""
-    done, review = _solved(conn, sid), _needs_review(conn, sid)
-    out = []
+DAY_GOAL = 3
+
+
+def _day_rows(conn, sid, grade, today):
+    """Три задания дня фиксируются при первом заходе и не подменяются новыми."""
+    day = today.isoformat()
+    rows = list(conn.execute(
+        "SELECT slot, task_id FROM primary_day WHERE student_id = ? AND day = ? ORDER BY slot", (sid, day)))
+    if len(rows) == DAY_GOAL and all(r[1] in BY_ID for r in rows):
+        tasks = [BY_ID[r[1]] for r in rows]
+        if all(t["grade"] == grade for t in tasks):
+            return tasks
+    done = _solved(conn, sid)
+    picks = []
     for subj in SUBJECTS:
         pool = tasks_for(grade, subj["id"])
         fresh = [t for t in pool if t["id"] not in done]
-        if fresh:
-            pick, why = fresh[0], "новое"
-        else:
-            missed = [t for t in pool if t["id"] in review]
-            pick, why = (missed[0] if missed else pool[0]), "повтори"
-        out.append({**public(pick), "why": why, "subject_title": subj["title"], "emoji": subj["emoji"]})
-    return out
+        picks.append(fresh[0] if fresh else pool[0])
+    conn.execute("DELETE FROM primary_day WHERE student_id = ? AND day = ?", (sid, day))
+    for slot, task in enumerate(picks):
+        conn.execute("INSERT INTO primary_day (student_id, day, slot, task_id) VALUES (?, ?, ?, ?)",
+                     (sid, day, slot, task["id"]))
+    return picks
+
+
+def _solved_on(conn, sid, today):
+    prefix = today.isoformat()
+    return {r[0] for r in conn.execute(
+        "SELECT DISTINCT task_id FROM primary_attempt WHERE student_id = ? AND ok = 1 AND created_at LIKE ?",
+        (sid, prefix + "%"))}
+
+
+def today_plan(conn, sid, grade, today=None):
+    """Три карточки дня. После трёх верных ответов день закрыт, новые задания не подставляются."""
+    from . import config
+    today = today or config.today()
+    solved_today = _solved_on(conn, sid, today)
+    out = []
+    for task in _day_rows(conn, sid, grade, today):
+        subj = SUBJECT_BY_ID[task["subject"]]
+        out.append({**public(task), "why": "готово" if task["id"] in solved_today else "новое",
+                    "done": task["id"] in solved_today, "subject_title": subj["title"], "emoji": subj["emoji"]})
+    done_n = sum(1 for it in out if it["done"])
+    return {"items": out, "done": done_n, "goal": DAY_GOAL, "finished": done_n >= DAY_GOAL}
+
+
+def trailing_misses(conn, sid, task_id):
+    n = 0
+    for (ok,) in conn.execute(
+            "SELECT ok FROM primary_attempt WHERE student_id = ? AND task_id = ? ORDER BY id DESC LIMIT 2",
+            (sid, task_id)):
+        if ok:
+            break
+        n += 1
+    return n
+
+
+def hint_for(task):
+    """Подсказка без правильного ответа: его показываем только после второй ошибки."""
+    answer = str(task["accept"][0])
+    explain = task["explain"]
+    if answer and answer in explain:
+        return "Посмотри на числа в условии и проверь действие. Правильный ответ покажем после второй попытки."
+    return explain
 
 
 def groups(grade, subject, solved):

@@ -6,11 +6,15 @@
 {% for c in cards %}
 <section class="u2-card">
   <div class="u2-card-head"><h2>{{ c.title }}</h2><span class="u2-chip">попыток: {{ c.attempts }}</span></div>
+  {% if c.attempts == 0 %}
+  <p class="u2-hint">Чисел прогноза ещё нет: по этому экзамену нет решённых заданий.</p>
+  {% else %}
   <div class="u2-band" role="img" aria-label="Прогноз первичного балла от {{ c.fc.low }} до {{ c.fc.high }} из {{ c.exam.max_points }}">
     <span class="u2-band-fill" style="left: {{ c.fc.low / c.exam.max_points * 100 }}%; width: {{ (c.fc.high - c.fc.low) / c.exam.max_points * 100 }}%"></span>
     <span class="u2-band-mid" style="left: {{ c.fc.primary / c.exam.max_points * 100 }}%"></span>
   </div>
   <p class="u2-hint">Первичный балл: {{ c.fc.low }}–{{ c.fc.high }} из {{ c.exam.max_points }}.</p>
+  {% endif %}
   {% if c.chart %}{% set ch = c.chart %}
   <figure class="u2-chart">
     <svg viewBox="0 0 {{ ch.w }} {{ ch.h }}" preserveAspectRatio="none" role="img"

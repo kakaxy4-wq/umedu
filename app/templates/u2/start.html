@@ -1,8 +1,17 @@
 {% extends "u2/base.html" %}
 {% block title %}Выбор экзамена{% endblock %}
 {% block content %}
+{% if not step %}
 <h1 class="u2-h1">Какой экзамен сдаёшь?</h1>
-<p class="u2-hint">Цель можно поменять в любой момент. Короткая диагностика для точного прогноза — следующий шаг.</p>
+<p class="u2-hint">Сначала ОГЭ или ЕГЭ, потом предмет. Цель можно поменять позже.</p>
+<div class="u2-start-grid">
+  <a class="u2-card u2-link" href="/u2/start?step=ОГЭ"><h2>ОГЭ</h2><p>9 класс</p></a>
+  <a class="u2-card u2-link" href="/u2/start?step=ЕГЭ"><h2>ЕГЭ</h2><p>11 класс</p></a>
+</div>
+{% else %}
+<p class="u2-back"><a href="/u2/start">← ОГЭ или ЕГЭ</a></p>
+<h1 class="u2-h1">{{ step }}: какой предмет?</h1>
+<p class="u2-hint">Цель можно поменять в любой момент.</p>
 <p class="u2-hint">Даты — {{ 'по проекту расписания' if schedule.status == 'project' else 'по расписанию' }} {{ schedule.year }} года{% if schedule.status == 'project' %}, могут измениться{% endif %}.</p>
 {% if grade in (7, 8, 10) %}
 <p class="u2-hint">Справочник знает только {{ schedule.year }} год. Если экзамен позже, дату можно не указывать: план и прогноз без неё работают.</p>
@@ -35,4 +44,5 @@
 {% endif %}
 {% endfor %}
 {% endfor %}
+{% endif %}
 {% endblock %}

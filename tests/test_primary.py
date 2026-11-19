@@ -92,18 +92,23 @@ def test_primary_student_path(client, monkeypatch):  # noqa: F811
     assert "Интерактивные модели" not in today and "html.u2.junior" not in today and 'class="u2 junior"' in today
     assert "Уроки" in today and "Успехи" in today
     for path in ("/shop", "/oge", "/bots", "/lesson/1", "/u2/models", "/u2/lab", "/u2/start", "/u2/train/oge-math-2026/1"):
-        assert client.get(path).status_code == 404, path
+        miss = client.get(path)
+        assert miss.status_code == 404, path
+        if path.startswith("/u2/") or path in ("/shop", "/oge", "/map"):
+            assert "Not Found" not in miss.text and "Этого раздела нет" in miss.text
     csrf = re.search(r'name="csrf" content="([^"]+)"', today).group(1)
     task = client.get("/u2/p/math/m3-01").text
     assert "42" not in task.split("<body", 1)[1] and "6 × 7" in task
     assert 'action="/u2/p/math/m3-01"' in task
     assert client.get("/u2/p/math/m4-01").status_code == 404
     bad = client.post("/u2/p/math/m3-01", data={"csrf": csrf, "answer": "41"}).text
-    assert "Пока не так" in bad and "42" in bad
+    assert "Почти" in bad and "42" not in bad.split("<body", 1)[-1]
+    again = client.post("/u2/p/math/m3-01", data={"csrf": csrf, "answer": "40"}).text
+    assert "Пока не так" in again and "42" in again
     good = client.post("/u2/p/math/m3-01", data={"csrf": csrf, "answer": "42"}).text
     assert "Верно" in good and "6 × 7 = 42" in good
     assert [r[0] for r in connect().execute(
-        "SELECT ok FROM primary_attempt WHERE student_id = ? ORDER BY id", (row["id"],))] == [0, 1]
+        "SELECT ok FROM primary_attempt WHERE student_id = ? ORDER BY id", (row["id"],))] == [0, 0, 1]
     prog = client.get("/u2/progress").text
     assert "1 из 26" in prog
     me = client.get("/u2/me").text
@@ -124,7 +129,7 @@ def test_primary_student_path(client, monkeypatch):  # noqa: F811
     assert "47 × 23" in client.get("/u2/today").text and "6 × 7" not in client.get("/u2/today").text
     assert client.get("/u2/p/math/m3-01").status_code == 404
     parent_sets(8)
-    start = client.get("/u2/start").text
+    start = client.get("/u2/start?step=ОГЭ").text
     assert "ОГЭ · 9 класс" in start
     assert client.get("/u2/models").status_code == 200
     csrf = re.search(r'name="csrf" content="([^"]+)"', start).group(1)

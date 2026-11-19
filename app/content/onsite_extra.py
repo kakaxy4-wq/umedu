@@ -121,6 +121,38 @@ def varies(exam_id, key):
     return len(texts) > 1
 
 
+# Один и тот же короткий тест на много номеров. Вес номера = базовый / размер группы,
+# иначе верный ответ по пулу поднимает прогноз сразу по всем этим номерам.
+_SHARED = {
+    "ege-soc-2026": [(1, 10)],
+    "oge-soc-2026": [(1, 10)],
+    "ege-bio-2026": [(5, 16)],
+    "oge-bio-2026": [(5, 16)],
+    "ege-hist-2026": [(1, 4)],
+    "oge-hist-2026": [(1, 4)],
+}
+
+
+def _group_size(exam_id, key):
+    for lo, hi in _SHARED.get(exam_id, ()):
+        if isinstance(key, int) and lo <= key <= hi:
+            return hi - lo + 1
+    fn = QUIZ.get((exam_id, key))
+    if fn is None:
+        return 1
+    return sum(1 for (exam, _n), gen in QUIZ.items() if exam == exam_id and gen is fn)
+
+
+def weight(exam_id, key):
+    """Доля балла КИМ, которую даёт верное решение этой замены. 1 — задание в формате номера."""
+    if is_practice(exam_id, key):
+        return 0.0
+    if not has(exam_id, key):
+        return 1.0
+    base = 0.55 if (exam_id, key) in QUIZ else 0.85
+    return round(base / _group_size(exam_id, key), 4)
+
+
 def status_of(exam_id, key):
     if has(exam_id, key):
         return "тренировка" if is_practice(exam_id, key) else "соответствует"

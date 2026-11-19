@@ -467,6 +467,13 @@ CREATE TABLE IF NOT EXISTS primary_attempt (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_primary_attempt_student ON primary_attempt(student_id, id);
+CREATE TABLE IF NOT EXISTS primary_day (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    day TEXT NOT NULL,
+    slot INTEGER NOT NULL,
+    task_id TEXT NOT NULL,
+    PRIMARY KEY (student_id, day, slot)
+);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

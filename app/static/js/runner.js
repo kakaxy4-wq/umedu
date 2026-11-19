@@ -401,7 +401,7 @@
       this.inputField = el('input');
       this.inputField.placeholder = 'Введи ответ и нажми Enter';
       this.inputField.autocomplete = 'off';
-      const send = el('button', 'btn btn-small', 'Ввод ⏎');
+      const send = el('button', 'btn btn-small u2-enter', 'Ввод ⏎');
       send.type = 'submit';
       this.inputRow.append(this.inputField, send);
       this.consoleWrap.append(this.out, this.inputRow);

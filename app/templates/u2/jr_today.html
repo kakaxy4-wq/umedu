@@ -2,11 +2,21 @@
 {% block title %}Сегодня{% endblock %}
 {% block content %}
 <h1 class="u2-h1">Сегодня, {{ grade }} класс</h1>
-<p class="jr-lead">Три коротких задания: математика, русский язык и окружающий мир.</p>
+<p class="jr-lead">Цель дня: {{ day.done }} из {{ day.goal }}.</p>
+<div class="jr-dots" aria-label="{{ day.done }} из {{ day.goal }}">
+  {% for i in range(day.goal) %}<i class="{{ 'on' if i < day.done else '' }}"></i>{% endfor %}
+</div>
+{% if day.finished %}
+<section class="u2-card u2-res ok">
+  <h2>На сегодня всё</h2>
+  <p>Три задания дня сделаны. Завтра здесь будут новые.</p>
+</section>
+{% endif %}
 {% for it in plan %}
 <a class="u2-card u2-link jr-card" href="/u2/p/{{ it.subject }}/{{ it.id }}">
-  <div class="u2-card-head"><h2>{{ it.emoji }} {{ it.subject_title }}</h2><span class="u2-chip">{{ it.why }}</span></div>
-  <p class="jr-prompt">{{ it.prompt }}</p>
+  <div class="u2-card-head"><h2>{{ it.emoji }} {{ it.subject_title }}</h2>
+    <span class="u2-chip">{{ 'готово' if it.done else it.why }}</span></div>
+  <p class="jr-prompt">{% if it.done %}<span class="jr-ok" aria-hidden="true">✓</span> {% endif %}{{ it.prompt }}</p>
 </a>
 {% endfor %}
 {% endblock %}

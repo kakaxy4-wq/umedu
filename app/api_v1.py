@@ -518,7 +518,9 @@ def post_attempt(body: AttemptIn, conn=Depends(get_db), authorization: str | Non
                                (body.idempotency_key,)).fetchone()
             return AttemptOut.model_validate_json(row["response"])
         try:
-            kn.record(conn, uid, body.exam_id, body.n, 1.0 if ok else 0.0, seed=body.seed, given=body.answer)
+            from .content import onsite_extra
+            kn.record(conn, uid, body.exam_id, body.n, 1.0 if ok else 0.0, seed=body.seed, given=body.answer,
+                      update_state=not onsite_extra.is_practice(body.exam_id, body.n))
         except KeyError:
             raise HTTPException(404)
         conn.execute("UPDATE %s SET last_seen_at = ? WHERE token_hash = ?" % table, (now, _token_hash(token)))

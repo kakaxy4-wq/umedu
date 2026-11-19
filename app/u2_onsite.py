@@ -38,6 +38,11 @@ SHORT = {
 }
 
 
+def scoring_keys(exam_id):
+    """Номера, ответ по которым меняет прогноз. Тренировка и «скоро» сюда не входят."""
+    return set(onsite(exam_id)) - onsite_extra.practice_keys(exam_id)
+
+
 def onsite(exam_id):
     """Номера, которые ученик решает на сайте. План дня берёт только их."""
     keys = set(SHORT.get(exam_id, ()))

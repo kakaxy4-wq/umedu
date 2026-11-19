@@ -189,13 +189,20 @@ def u2_subject(exam_id: str, request: Request, conn=Depends(get_db), user=Depend
     if not enr:
         raise HTTPException(404)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)
-    tasks = [{**t, "p": kn.decay(c["states"].get(t["n"]), today)["p"], "n_try": c["states"].get(t["n"], {}).get("n", 0)}
+    tasks = [{**t, "p": kn.decay(c["states"].get(t["n"]), today)["p"], "n_try": c["states"].get(t["n"], {}).get("n", 0),
+              "mode": u2_onsite.mode_of(exam_id, t["n"])}
              for t in em.tasks(c["exam"])]
     path = None
-    if c["goal"] is not None and c["gap"] > 0:
-        path = kn.path_to_goal(c["exam"], c["states"], c["goal"], today)
+    scoring = u2_onsite.scoring_keys(exam_id)
+    practice = [{"n": n, **_task_info(c["exam"], n)}
+                for n in sorted(onsite_extra.practice_keys(exam_id), key=lambda x: str(x))]
+    if not scoring:
+        path = {"steps": [], "reached": False, "practice": practice}
+    elif c["goal"] is not None and c["gap"] > 0:
+        path = kn.path_to_goal(c["exam"], c["states"], c["goal"], today, only=scoring)
         for s in path["steps"]:
             s.update(_task_info(c["exam"], s["n"]))
+        path["practice"] = practice
     return _page(request, conn, user, "subjects", "u2/subject.html", c=c, tasks=tasks, proj=_projection(conn, sid, c, today),
                  path=path)
 
@@ -379,6 +386,7 @@ def _catalog():
                     "kind": _kind(ex), "range": _goal_range(ex),
                     "min": ex["scale"].get("min_university"), "dates": _dates(exam_id),
                     "days": ", ".join(_ru_day(d) for d in _dates(exam_id)),
+                    "ready": bool(u2_onsite.scoring_keys(exam_id)),
                     "note": SCHEDULE.get("notes", {}).get(exam_id.rsplit("-", 1)[0])})
     return sorted(out, key=lambda e: (e["exam"] != "ОГЭ", e["subject"]))
 
@@ -398,6 +406,8 @@ def u2_start_submit(exam_id: str = Form(...), goal: int = Form(...), exam_date: 
     only_student(user)
     if exam_id not in em.all_ids():
         raise HTTPException(400, "Такого экзамена нет")
+    if not u2_onsite.scoring_keys(exam_id):
+        raise HTTPException(400, "По этому экзамену заданий на сайте пока нет")
     lo, hi = _goal_range(em.load(exam_id))
     if not lo <= goal <= hi:
         raise HTTPException(400, f"Цель — от {lo} до {hi}")
@@ -503,6 +513,13 @@ def _plan(exam, states, minutes, today, due=()):
         if it.get("times", 1) > 1 and not onsite_extra.varies(exam["id"], it["n"]):
             it["minutes"] = max(1, it["minutes"] // it["times"])
             it["times"] = 1
+    left = minutes - sum(it["minutes"] for it in items)
+    have = {it["n"] for it in items}
+    for n in sorted(onsite_extra.practice_keys(exam["id"]), key=lambda x: (str(type(x).__name__), str(x))):
+        if left < 3 or n in have:
+            continue
+        items.append({"n": n, "minutes": 3, "gain": 0.0, "why": "тренировка", "times": 1})
+        left -= 3
     return items
 
 
@@ -825,7 +842,8 @@ async def u2_lab_transfer(lab_id: str, request: Request, conn=Depends(get_db), u
             before[g["exam"]] = _card(enr, kn.load_states(conn, sid, g["exam"]), today)
     with conn:
         for g in graded:
-            kn.record(conn, sid, g["exam"], g["task"], 1.0 if g["ok"] else 0.0, today, given=g["given"] or None)
+            kn.record(conn, sid, g["exam"], g["task"], 1.0 if g["ok"] else 0.0, today, given=g["given"] or None,
+                      update_state=not onsite_extra.is_practice(g["exam"], g["task"]))
         for exam_id in before:
             kn.log_forecast(conn, sid, exam_id, today)
     u2_badges.sync(conn, sid, today)
@@ -853,7 +871,8 @@ def _mock_items(exam, seed):
     всегда даёт тот же набор и те же варианты — проверка на сервере пересборкой, как в тренажёре."""
     r = random.Random(f"mock-{exam['id']}-{seed}")
     by_n = {t["n"]: t for t in em.tasks(exam)}
-    nums = sorted(n for n in GENERATED.get(exam["id"], ()) if n in by_n)
+    nums = sorted(n for n in GENERATED.get(exam["id"], ())
+                  if n in by_n and not onsite_extra.is_practice(exam["id"], n))
     r.shuffle(nums)
     picked, left = [], MOCK_MINUTES
     for n in nums:
@@ -915,7 +934,7 @@ async def u2_mock_submit(exam_id: str, request: Request, conn=Depends(get_db), u
             it["ok"] = bool(it["given"]) and _check(exam_id, it["v"], it["given"])
             it["answer"], it["explain"] = it["v"]["answer"], it["v"]["explain"]
             kn.record(conn, sid, exam_id, it["t"]["key"], 1.0 if it["ok"] else 0.0, today, seed=it["seed"],
-                      given=it["given"])
+                      given=it["given"], update_state=not onsite_extra.is_practice(exam_id, it["t"]["key"]))
         kn.log_forecast(conn, sid, exam_id, today)
     u2_badges.sync(conn, sid, today, mock=True)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)

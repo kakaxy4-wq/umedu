@@ -153,23 +153,26 @@ async def task_attempt(task_id: str, request: Request, conn=Depends(get_db), use
         raise HTTPException(404)
     data = await request.json()
     code = str(data.get("code", ""))[:100_000]
-    passed = bool(data.get("passed"))
+    from .grade_code import python_passes
     if seed16:                                     # вариант №16 из тренажёра — своя таблица и трофеи
         v = oge16_gen.make(seed16)
+        if user["role"] == "student" and v["lesson"] > game.unlocked_upto(conn, user["id"]):
+            raise HTTPException(404)
+        passed = python_passes(code, v["tests"])
         result = {"first": False, "xp": 0, "notices": []}
         if user["role"] == "student":
-            if v["lesson"] > game.unlocked_upto(conn, user["id"]):
-                raise HTTPException(404)
             result.update(oge_drill.code_attempt(conn, user["id"], seed16, passed, code))
             result["notices"] = game.pop_notices(conn, user["id"])
         if passed:
             result["solution"] = v["solution"]
+        result["passed"] = passed
         return result
-    result = {"first": False, "xp": 0, "notices": []}
+    if user["role"] == "student" and task["lesson"] > game.unlocked_upto(conn, user["id"]):
+        raise HTTPException(404)
+    passed = python_passes(code, task["tests"])
+    result = {"first": False, "xp": 0, "notices": [], "passed": passed}
     if user["role"] == "student":
         sid = user["id"]
-        if task["lesson"] > game.unlocked_upto(conn, sid):
-            raise HTTPException(404)
         already = task_id in game.solved_task_ids(conn, sid)
         with conn:
             conn.execute("INSERT INTO task_attempts (student_id, task_id, code, passed, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -486,6 +489,9 @@ def for_parents(request: Request, conn=Depends(get_db), user=Depends(auth.curren
 def for_parents_action(action: str = Form("new"), parent_id: int = Form(0), conn=Depends(get_db),
                        user=Depends(auth.check_csrf)):
     sid = _for_parents_only(user)
+    st = students.get_student(conn, sid)
+    if action == "unlink" and st and (st["minor"] or students.is_primary_grade(st.get("grade"))):
+        raise HTTPException(403, "Отвязать кабинет может родитель. Тебе ещё нет 14 лет.")
     with conn:
         if action == "revoke":
             conn.execute("UPDATE users SET parent_token = NULL WHERE id = ?", (sid,))

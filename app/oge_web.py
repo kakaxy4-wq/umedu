@@ -128,10 +128,12 @@ def robot_page(task_id: str, request: Request, exam: int = 0, conn=Depends(get_d
     nxt = ids[ids.index(task_id) + 1] if ids.index(task_id) + 1 < len(ids) else None
     exam = bool(exam)
     # На экзамене поля каждый раз новые и программа пишется с чистого листа; эталон не показываем до решения.
-    fields = robot_content.fields_for(task, random.randrange(10 ** 6) if exam else None)
+    # Сид уходит на страницу и обратно: сервер собирает те же поля и сам прогоняет программу.
+    seed = random.randrange(1, 10 ** 6)
+    fields = robot_content.fields_for(task, seed)
     code = robot_content.EXAM_STARTER if exam else (last["code"] if last else task["starter"])
     return render(request, "student/robot.html", conn, user, task=robot_content.public(task),
-                  fields=fields, code=code, exam=exam, starter=robot_content.EXAM_STARTER if exam else task["starter"],
+                  fields=fields, seed=seed, code=code, exam=exam, starter=robot_content.EXAM_STARTER if exam else task["starter"],
                   solved=solved, xp=robot_content.XP, help=robot_content.COMMANDS_HELP,
                   next_task=robot_content.TASK_BY_ID.get(nxt) if nxt else None,
                   answer=task if (solved or is_teacher(user)) and not exam else None)
@@ -144,7 +146,12 @@ async def robot_attempt(task_id: str, request: Request, conn=Depends(get_db), us
         raise HTTPException(404)
     data = await request.json()
     code = str(data.get("code", ""))[:50_000]
-    passed = bool(data.get("passed"))
+    try:
+        seed = int(data.get("seed", 0))
+    except (TypeError, ValueError):
+        seed = 0
+    from .grade_code import robot_passes
+    passed = robot_passes(code, robot_content.fields_for(task, seed or None))
     result = {"first": False, "xp": 0, "notices": []}
     if user["role"] == "student":
         sid = user["id"]
@@ -159,6 +166,7 @@ async def robot_attempt(task_id: str, request: Request, conn=Depends(get_db), us
                 season.maybe_drop(conn, sid, "Робот: «%s»" % task["title"])
                 result.update({"first": True, "xp": robot_content.XP})
         result["notices"] = game.pop_notices(conn, sid)
+    result["passed"] = passed
     if passed:
         result["solution"] = task["solution"]
         result["kumir"] = task["kumir"]

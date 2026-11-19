@@ -45,7 +45,7 @@
     <span class="hud-item" title="Опыт">✨ <b>{{ me.xp }}</b></span>
   </div>
   {% endif %}
-  {% elif me and not public_site %}
+  {% elif me and not public_site and not umedu2 %}
   <div class="hud">
     <a href="/achievements" class="hud-item" title="Ранг: {{ me.level.title }}">{{ me.level.emoji }} <b>{{ me.level.title }}</b></a>
     <a href="/achievements" class="hud-item" title="Трофеи">🏆 <b>{{ me.xp }}</b></a>
@@ -94,14 +94,23 @@
   {{ group("t-report", "📊 Награды и отчёты", [("/teacher/rewards", "🎁", "Запросы наград"), ("/teacher/journal", "📜", "Журнал"),
       ("/teacher/weekly", "📊", "Сводка недели"), ("/teacher/analytics", "📈", "Аналитика")], pending_buy) }}
   <div class="nav-sep">Кабинет: {{ student_name or 'нет учеников' }}</div>
+  {% elif umedu2 %}
+  <a href="/u2/today" class="nav-home {{ 'active' if nav.startswith('/u2/today') }}">📅 Сегодня</a>
+  <a href="/u2/subjects" class="nav-home {{ 'active' if nav.startswith('/u2/subjects') or nav.startswith('/u2/subject') }}">{{ '📚 Уроки' if junior else '📚 Предметы' }}</a>
+  <a href="/u2/progress" class="nav-home {{ 'active' if nav.startswith('/u2/progress') }}">{{ '🌱 Успехи' if junior else '📈 Прогресс' }}</a>
+  <a href="/u2/me" class="nav-home {{ 'active' if nav.startswith('/u2/me') }}">👤 Я</a>
+  {% if not junior %}<a href="/u2/models" class="nav-home {{ 'active' if nav.startswith('/u2/models') }}">🔬 Модели</a>{% endif %}
+  {% if open_signup %}<a href="/for-parents" class="nav-home {{ 'active' if nav.startswith('/for-parents') }}">👪 Для родителей</a>{% endif %}
   {% else %}
   <a href="/" class="nav-home {{ 'active' if nav == '/' }}">🏠 Главная</a>
   {% if not public_site and ('python' in subj or 'russian' in subj) %}<a href="/today" class="nav-home {{ 'active' if nav == '/today' }}">📅 План на сегодня</a>{% endif %}
   {% endif %}
+  {% if not umedu2 %}
   {% if 'python' in subj and not public_site %}{{ group("py", "🐍 Python", py_links, not teacher) }}{% endif %}
   {% if 'russian' in subj %}{{ group("ru", "📖 Русский язык", ru_links, not teacher) }}{% endif %}
   {{ group("prize", "🏆 Награды", prize_links, False) }}
   {{ group("more", "Ещё", more_links, False) }}
+  {% endif %}
   {% endif %}
   {% if user.role == 'student' %}<a href="/account">👤 Аккаунт и данные</a>{% endif %}
   <form method="post" action="/logout" class="logout">

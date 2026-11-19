@@ -4,8 +4,13 @@
 {% block content %}
 <section class="card for-parents">
   <h1>👪 Для родителей</h1>
-  <p>По ссылке родитель видит твои занятия, домашки и прогноз балла ОГЭ — и может завести свой кабинет, чтобы заходить
+  {% if junior %}
+  <p>По ссылке родитель видит, какие уроки ты уже сделал и что получилось. Он может завести свой кабинет, чтобы заходить
+    без ссылки. Менять что-то за тебя он не сможет. Убрать кабинет родителя можешь только ты, когда тебе исполнится 14, или сам родитель.</p>
+  {% else %}
+  <p>По ссылке родитель видит твои занятия и прогноз балла по выбранным экзаменам — и может завести свой кабинет, чтобы заходить
     без ссылки. Менять что-то за тебя он не сможет.</p>
+  {% endif %}
   {% if url %}
   <div class="copy-row"><input value="{{ url }}" readonly aria-label="Ссылка для родителей"><button type="button" class="btn btn-small" data-copy="{{ url }}">📋 Копировать</button></div>
   <div class="row">
@@ -22,7 +27,9 @@
   <ul class="plain">
     {% for p in parents %}
     <li>{{ p.display_name }} <span class="muted small">· с {{ p.created_at[:10] }}</span>
-      <form method="post" action="/for-parents" class="inline" data-confirm="Отвязать этот кабинет? Он перестанет видеть твой прогресс.">{{ csrf_field(user) }}<input type="hidden" name="action" value="unlink"><input type="hidden" name="parent_id" value="{{ p.id }}"><button class="btn btn-small btn-ghost">Отвязать</button></form></li>
+      {% if not subject.minor and not junior %}
+      <form method="post" action="/for-parents" class="inline" data-confirm="Отвязать этот кабинет? Он перестанет видеть твой прогресс.">{{ csrf_field(user) }}<input type="hidden" name="action" value="unlink"><input type="hidden" name="parent_id" value="{{ p.id }}"><button class="btn btn-small btn-ghost">Отвязать</button></form>
+      {% endif %}</li>
     {% endfor %}
   </ul>
   {% endif %}

@@ -7,6 +7,14 @@
 публичного адреса. `/healthz` специально остаётся 200: балансировщик не снимает сайт,
 а в JSON смотрят поле `vendor`.
 
+Приложение само отдаёт `Strict-Transport-Security: max-age=31536000`, если запрос пришёл по https
+или nginx передал `X-Forwarded-Proto: https`. На чистом http (локально) заголовка нет.
+Если TLS обрывается на nginx и заголовок нужен ещё до приложения, в server-блок https:
+
+```nginx
+add_header Strict-Transport-Security "max-age=31536000" always;
+```
+
 ## Удаление неактивных аккаунтов: `codequest-purge@.service` + `codequest-purge@.timer`
 
 Политика (/privacy) обещает удалять аккаунт через год после последнего занятия. Это делает

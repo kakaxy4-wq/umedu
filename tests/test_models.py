@@ -138,7 +138,8 @@ def test_attributions_are_on_the_pages(client, monkeypatch):  # noqa: F811
     optics_how = client.get("/u2/models/optics").text
     assert "Как пользоваться" in optics_how and "оранжевый" in optics_how
     phet_html = client.get("/u2/models/phet").text
-    assert "Открыть в новой вкладке" in phet_html
+    assert "Открыть в новой вкладке" not in phet_html
+    assert 'id="model-frame"' in phet_html
     assert "phet.colorado.edu" in phet_html and "не копир" in phet_html
     assert 'data-external="phet"' in phet_html
     picker = client.get("/static/js/models/picker.js").text

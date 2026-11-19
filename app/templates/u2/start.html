@@ -3,8 +3,7 @@
 {% block content %}
 <h1 class="u2-h1">Какой экзамен сдаёшь?</h1>
 <p class="u2-hint">Цель можно поменять в любой момент. Короткая диагностика для точного прогноза — следующий шаг.</p>
-<p class="u2-hint">Даты — {{ 'по проекту расписания' if schedule.status == 'project' else 'по расписанию' }} {{ schedule.year }} года{% if schedule.status == 'project' %}, могут измениться{% endif %}.
-  <a href="{{ schedule.source }}" target="_blank" rel="noopener">Источник</a>.</p>
+<p class="u2-hint">Даты — {{ 'по проекту расписания' if schedule.status == 'project' else 'по расписанию' }} {{ schedule.year }} года{% if schedule.status == 'project' %}, могут измениться{% endif %}.</p>
 {% if grade in (7, 8, 10) %}
 <p class="u2-hint">Справочник знает только {{ schedule.year }} год. Если экзамен позже, дату можно не указывать: план и прогноз без неё работают.</p>
 {% endif %}

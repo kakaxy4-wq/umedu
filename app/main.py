@@ -164,19 +164,51 @@ async def umedu_legacy_to_u2(request: Request, call_next):
     return await call_next(request)
 
 
+async def _head_keep_length(response):
+    """Тело HEAD пустое, Content-Length — как у GET. Иначе ASGI падает:
+    «Response content longer than Content-Length»."""
+    length = response.headers.get("content-length")
+    body = getattr(response, "body", None)
+    if length is None and isinstance(body, (bytes, bytearray)):
+        length = str(len(body))
+    if hasattr(response, "body_iterator"):
+        # Тело нужно вычитать, иначе внутренний ответ так и висит на отправке.
+        async for _chunk in response.body_iterator:
+            pass
+
+        async def _empty():
+            if False:
+                yield b""
+
+        response.body_iterator = _empty()
+    if isinstance(body, (bytes, bytearray)):
+        response.body = b""
+    if length is not None:
+        response.headers["content-length"] = length
+    return response
+
+
 @app.middleware("http")
 async def head_like_get(request: Request, call_next):
-    """HEAD на HTML-страницы не должен отвечать 405: отдаём те же заголовки, что и GET, без тела."""
+    """HEAD на HTML-страницы не должен отвечать 405: те же заголовки, что у GET, без тела.
+
+    FileResponse и StreamingResponse сами отвечают на HEAD (верный Content-Length, пустое тело).
+    Их нельзя превращать в GET: промежуточный слой тогда читает файл целиком, а нулевая длина
+    при ещё не пустом теле роняет сервер. Так падает HEAD, которым редактор проверяет статику.
+    """
     if request.method != "HEAD":
         return await call_next(request)
+    path = request.url.path
+    if path.startswith("/static/") or path == "/favicon.ico":
+        return await call_next(request)
     request.scope["method"] = "GET"
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    finally:
+        request.scope["method"] = "HEAD"
     if isinstance(response, (FileResponse, StreamingResponse)):
         return response
-    response.body = b""
-    if "content-length" in response.headers:
-        response.headers["content-length"] = "0"
-    return response
+    return await _head_keep_length(response)
 
 
 @app.middleware("http")

@@ -79,7 +79,7 @@ def _inf11(data):
     if data["kind"] == "count":
         return str(len(re.findall(r"(?<![А-Яа-яЁё])%s(?![А-Яа-яЁё])" % re.escape(data["name"]), body)))
     if data["kind"] == "after":
-        return re.search(re.escape(data["name"]) + r" купил (\d+)", body).group(1)
+        return re.search(re.escape(data["name"]) + r" купил[а]? (\d+)", body).group(1)
     return str(max(int(x) for x in re.findall(r"\d+", body)))
 
 

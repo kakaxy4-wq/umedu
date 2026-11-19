@@ -132,7 +132,7 @@ def test_student_templates_urls_are_allowlisted():
     found = []
     base = ROOT / "app" / "templates"
     for path in base.rglob("*.html"):
-        rel = str(path.relative_to(ROOT))
+        rel = path.relative_to(ROOT).as_posix()  # прямые слэши и на Windows — иначе guides/ не исключить
         if rel.startswith("app/templates/chem/") or rel.startswith("app/templates/guides/"):
             continue
         text = path.read_text(encoding="utf-8")

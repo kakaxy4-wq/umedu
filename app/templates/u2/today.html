@@ -3,6 +3,16 @@
 {% block title %}Сегодня{% endblock %}
 {% block content %}
 <h1 class="u2-h1">Сегодня · {{ total }} минут</h1>
+{% set nxt = namespace(step=none, card=none) %}
+{% for p in plans %}{% if nxt.step is none and p.steps %}{% set nxt.step = p.steps[0] %}{% set nxt.card = p.card %}{% endif %}{% endfor %}
+{% if nxt.step %}
+<section class="u2-card u2-next">
+  <p class="u2-eyebrow">Следующий шаг</p>
+  <h2>№{{ nxt.step.n }} · {{ nxt.step.title }}</h2>
+  <p>Решается прямо здесь: ответ проверим сразу и покажем разбор.</p>
+  <a class="u2-btn" href="/u2/train/{{ nxt.card.id }}/{{ nxt.step.n }}">Начать задание →</a>
+</section>
+{% endif %}
 {% if intro %}
 <section class="u2-card u2-intro" aria-labelledby="intro-h">
   <h2 id="intro-h">Первые шаги</h2>

@@ -1,6 +1,9 @@
 {% extends "u2/base.html" %}
 {% from "u2/_task.html" import task_body %}
 {% block title %}{{ t.label }} · {{ c.title }}{% endblock %}
+{% block extra_head %}{% if mode == 'code' %}
+<link rel="stylesheet" href="/static/vendor/codemirror/codemirror.css?v={{ v }}">
+{% endif %}{% endblock %}
 {% block content %}
 <a class="u2-back" href="/u2/subject/{{ c.id }}">← {{ c.title }}</a>
 <h1 class="u2-h1">{{ t.label }} · {{ t.title }}</h1>
@@ -119,5 +122,12 @@
 {% block scripts %}
 {% if mode == 'ru' %}<script src="/static/js/u2-ru.js?v={{ v }}"></script>{% endif %}
 {% if mode == 'robot' %}<script src="/static/js/runner.js?v={{ v }}"></script><script src="/static/js/u2-robot.js?v={{ v }}"></script>{% endif %}
-{% if mode == 'code' %}<script src="/static/js/runner.js?v={{ v }}"></script><script src="/static/js/u2-code.js?v={{ v }}"></script>{% endif %}
+{% if mode == 'code' %}
+<script src="/static/vendor/codemirror/codemirror.js?v={{ v }}"></script>
+<script src="/static/vendor/codemirror/python.js?v={{ v }}"></script>
+<script src="/static/vendor/codemirror/matchbrackets.js?v={{ v }}"></script>
+<script src="/static/vendor/codemirror/closebrackets.js?v={{ v }}"></script>
+<script src="/static/js/runner.js?v={{ v }}"></script>
+<script src="/static/js/u2-code.js?v={{ v }}"></script>
+{% endif %}
 {% endblock %}

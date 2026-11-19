@@ -36,8 +36,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 var(
 a { color: var(--link); }
 h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 
-.u2-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+.u2-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px;
   background: var(--ultra); color: #fff; }
+.u2-nav { display: none; }
 .u2-logo { display: flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; font: 700 18px var(--head); }
 .u2-logo img { width: 26px; height: 26px; }
 .u2-who { font-size: 14px; opacity: .85; }
@@ -106,8 +107,25 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
   background: var(--bg); color: var(--text); font: 15px var(--body); }
 .u2-pick-row .u2-btn { margin-top: 0; }
 
-.u2-tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center;
+.u2-tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; height: 72px;
   background: var(--card); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) {
+  .u2-tabs { display: none; }
+  .u2-nav { display: flex; gap: 4px; margin-left: auto; }
+  .u2-nav a { color: #fff; text-decoration: none; font: 600 15px var(--body); padding: 8px 14px; border-radius: 999px; }
+  .u2-nav a.on { background: rgba(255,255,255,.16); }
+  .u2-main { max-width: 880px; padding: 32px 32px 48px; }
+  .u2-top { height: 64px; padding: 0 32px; }
+}
+.u2-next { background: var(--ultra); color: #fff; border: 0; }
+.u2-next h2 { font: 700 26px/34px var(--head); margin: 8px 0; }
+.u2-next p { color: #E4E2FF; }
+.u2-next .u2-btn { background: var(--lime); color: var(--ink); }
+.u2-eyebrow { font: 700 12px/16px var(--body); letter-spacing: .08em; text-transform: uppercase; color: #CFCBFF; margin: 0; }
+.u2-btn, .u2-tab, .u2-card, .u2-nav a { transition: background .2s ease-out, border-color .2s ease-out, color .2s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 .u2-tab { flex: 1; max-width: 160px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0;
   color: var(--muted); text-decoration: none; font-size: 12px; }
 .u2-dot { width: 22px; height: 6px; border-radius: 99px; background: var(--line); }

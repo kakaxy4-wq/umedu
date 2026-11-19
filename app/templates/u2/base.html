@@ -13,6 +13,11 @@
 <body>
 <header class="u2-top">
   <a class="u2-logo" href="/u2/today"><img src="/static/img/brand/umedu-mark.svg" alt=""> umedu</a>
+  <nav class="u2-nav" aria-label="Разделы">
+    {% for key, label in tabs %}
+    <a href="/u2/{{ key }}" class="{{ 'on' if key == tab }}"{% if key == tab %} aria-current="page"{% endif %}>{{ {'today': 'Сегодня', 'subjects': 'Уроки', 'progress': 'Успехи', 'me': 'Я'}.get(key, label) if junior else label }}</a>
+    {% endfor %}
+  </nav>
   <span class="u2-who">{{ student_name }}</span>
 </header>
 <main class="u2-main{% block main_class %}{% endblock %}">

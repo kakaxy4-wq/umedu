@@ -342,9 +342,20 @@ def u2_me(request: Request, conn=Depends(get_db), user=Depends(auth.current_user
                  gallery_on=account.granted(st) if st else False, badges=u2_badges.list_for(conn, sid))
 
 
+def _grade_locked(conn, user):
+    """Ребёнка, которого завёл родитель, и ученика 3–4 класса класс меняет только родитель."""
+    st = students.get_student(conn, user["id"])
+    if not st:
+        return False
+    linked = conn.execute("SELECT 1 FROM parent_children WHERE student_id = ?", (user["id"],)).fetchone()
+    return bool(st["minor"] or linked or students.is_primary_grade(st.get("grade")))
+
+
 @router.post("/me/grade")
 def u2_me_grade(grade: int = Form(...), conn=Depends(get_db), user=Depends(auth.check_csrf)):
     only_student(user)
+    if _grade_locked(conn, user):
+        raise HTTPException(403, "Класс меняет родитель.")
     with conn:
         if not students.set_grade(conn, user["id"], grade):
             raise HTTPException(400, "Выбери класс")

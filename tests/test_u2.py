@@ -18,7 +18,8 @@ def test_enroll_and_tabs(client, monkeypatch):  # noqa: F811
     r = client.get("/u2/today", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/u2/start"      # без экзамена — сначала выбор
     start = client.get("/u2/start").text
-    assert "ОГЭ · 9 класс" in start and "ЕГЭ · 11 класс" in start and start.count("u2-card u2-pick") == 21
+    assert "ОГЭ · 9 класс" in start and "ЕГЭ · 11 класс" in start
+    assert 'value="ege-lit-2026"' not in start and "скоро" in start
 
     r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-05-20"},
                     follow_redirects=False)
@@ -382,7 +383,8 @@ def test_path_to_goal(client, monkeypatch):  # noqa: F811
     from app import exam_model as em
     from app import knowledge as kn
     ex, today = em.load("oge-math-2026"), date(2026, 10, 29)
-    path = kn.path_to_goal(ex, {}, 4, today)
+    from app import u2_onsite
+    path = kn.path_to_goal(ex, {}, 4, today, only=u2_onsite.scoring_keys("oge-math-2026"))
     assert path["reached"] and path["steps"]
     done = {s["n"]: {"p": kn.MASTER_P, "n": 1, "last": today.isoformat()} for s in path["steps"]}
     assert kn.forecast(ex, done, today)["grade"] >= 4

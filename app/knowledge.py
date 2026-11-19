@@ -129,7 +129,7 @@ def plan(exam, states, minutes=30, today=None, due=(), only=None):
 MASTER_P = 0.9                # «освоить номер» для пути к цели — довести шанс до 90 %
 
 
-def path_to_goal(exam, states, goal, today=None):
+def path_to_goal(exam, states, goal, today=None, only=None):
     """Самый короткий по времени путь к цели: жадно берём номер (или критерий), освоение которого до MASTER_P даёт
     больше всего ожидаемых баллов на минуту тренировки, пока прогноз не дойдёт до цели. Возвращает
     {'steps': [{'n', 'p', 'reps'}], 'reached': bool}; reps — сколько тренировок нужно по модели plan."""
@@ -140,6 +140,8 @@ def path_to_goal(exam, states, goal, today=None):
     while forecast(exam, states, today)[key] < goal:
         best = None
         for n, pts in em.points(exam).items():
+            if only is not None and n not in only:
+                continue
             p = _p(states, n, today)["p"]
             if p >= MASTER_P or any(s["n"] == n for s in steps):
                 continue

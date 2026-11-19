@@ -209,7 +209,7 @@ POOLS["geo-people"] = [
 POOLS["geo-econ"] = [
     ("Отрасль первичного сектора", "добыча полезных ископаемых",
      ["банковское дело", "образование", "разработка программ"]),
-    ("Транспорт, который перевозит больше всего массовых грузов на дальние расстояния дёшево, часто",
+    ("Какой транспорт перевозит больше всего тяжёлых грузов на дальние расстояния?",
      "морской",
      ["велосипедный", "воздушный", "гужевой"]),
     ("Экспорт — это", "вывоз товаров из страны",
@@ -300,7 +300,7 @@ POOLS["hist-term"] = [
     ("Вотчина в Древней Руси — это", "наследственное земельное владение",
      ["выборный городской совет", "налог солью", "вид ладьи"]),
     ("Баскак в период ордынского владычества —", "сборщик дани",
-     ["московский митрополит", "новгородский посадник всегда", "капитан флота Петра"]),
+     ["московский митрополит", "новгородский посадник", "капитан флота Петра"]),
     ("Опричнина связана с правлением", "Ивана IV", ["Петра I", "Александра II", "Ярослава Мудрого"]),
     ("Манифест 19 февраля 1861 года", "отменял крепостное право",
      ["вводил опричнину", "основал Петербург", "объявлял войну Наполеону"]),
@@ -400,9 +400,9 @@ POOLS["soc-state"] = [
     ("Федеральное Собрание состоит из", "Совета Федерации и Государственной Думы",
      ["только Правительства", "только Верховного суда", "президента и губернаторов как одной палаты"]),
     ("Президент Российской Федерации избирается на", "6 лет",
-     ["4 года по действующей норме", "10 лет", "пожизненно"]),
+     ["4 года", "10 лет", "пожизненно"]),
     ("Голосовать на выборах президента может гражданин с", "18 лет",
-     ["14 лет", "21 года как минимальный возраст избирателя", "35 лет"]),
+     ["14 лет", "21 год", "35 лет"]),
     ("Разделение властей — это", "законодательная, исполнительная и судебная власть",
      ["деление страны только на города и сёла", "деление бюджета на рубли", "три палаты одной думы"]),
     ("Республика означает, что", "главу государства выбирают, а не передают трон по наследству",
@@ -675,7 +675,7 @@ POOLS["eng-oge"] = [
     ("There isn't ___ milk.", "much", ["many", "a few", "several"]),
 ]
 
-POOLS["eng-ege"] = [
+POOLS["eng-grammar"] = [
     ("Choose the sentence with the correct tense.", "By the time we arrived, the film had started.",
      ["By the time we arrived, the film has started.", "By the time we arrived, the film starts.",
       "By the time we arrived, the film had start."]),
@@ -684,20 +684,22 @@ POOLS["eng-ege"] = [
       "If I would know her number, I called her."]),
     ("Choose the correct passive.", "The letter was written yesterday.",
      ["The letter wrote yesterday.", "The letter was wrote yesterday.", "The letter is write yesterday."]),
-    ("Which question is polite?", "Could you open the window, please?",
-     ["Open window now.", "You open.", "Window open you."]),
     ("Choose the correct word.", "She has lived here since 2019.",
      ["She has lived here for 2019.", "She lived here since 2019.",
       "She lives here since 2019."]),
-    ("The opposite of 'borrow' in this pair is", "lend", ["steal", "read", "break"]),
-    ("A person who writes novels is a", "novelist", ["novel", "library", "reader only"]),
     ("Choose the correct relative clause.", "The boy who won the prize is my friend.",
      ["The boy which won the prize is my friend.", "The boy where won the prize is my friend.",
       "The boy what won the prize is my friend."]),
-    ("In formal email the greeting is", "Dear Mr Smith,",
-     ["Hey dude,", "Hi!!!", "Yo,"]),
+]
+
+POOLS["eng-lex"] = [
+    ("The opposite of 'borrow' in this pair is", "lend", ["steal", "read", "break"]),
+    ("A person who writes novels is a", "novelist", ["novel", "library", "reader"]),
     ("Which sentence asks for directions?", "How can I get to the station?",
      ["What time is it?", "How old are you?", "What is your name?"]),
+    ("A place where you buy bread is a", "bakery", ["library", "station", "hospital"]),
+    ("The word 'cheap' is closest to", "inexpensive", ["expensive", "heavy", "late"]),
+    ("'To look after' means", "to take care of", ["to search for", "to look up a word", "to look at a picture"]),
 ]
 
 POOLS["eng-write"] = [
@@ -711,7 +713,7 @@ POOLS["eng-write"] = [
      ["Water boils at 100 degrees.", "Two plus two is four.", "The capital of Japan is Tokyo."]),
     ("To invite someone you can write", "Would you like to come to my birthday?",
      ["You must work.", "Close the door.", "Two plus two is four."]),
-    ("A linking word of contrast is", "however", ["because", "and then always", "hello"]),
+    ("A linking word of contrast is", "however", ["because", "and", "hello"]),
 ]
 
 POOL_ABOUT = {
@@ -756,7 +758,8 @@ POOL_ABOUT = {
     "ru-essay": "Тезис, аргумент, сжатый пересказ, фактическая ошибка.",
     "ru-punct": "Выбрать предложение, где запятые стоят верно.",
     "eng-oge": "Английский 9 класса: время, артикль, сравнение, предлоги, much/many.",
-    "eng-ege": "Английский 11 класса: времена, пассив, условие, вежливый вопрос.",
+    "eng-grammar": "Английский 11 класса: времена, пассив, условие, относительное придаточное.",
+    "eng-lex": "Английский 11 класса: значение слова и бытовая лексика.",
     "eng-write": "Письмо: приветствие, причина, тема, слова связки.",
 }
 
@@ -788,7 +791,7 @@ _add("oge-bio-2026", [2, 7, 9, 10, 11, 13], "bio-div")
 _add("oge-bio-2026", [3], "bio-tax")
 _add("oge-bio-2026", [14, 15, 16, 17, 18], "bio-human")
 _add("oge-bio-2026", [19, 20, 21], "bio-eco")
-_add("oge-bio-2026", [22, 24], "bio-text")
+_add("oge-bio-2026", [22], "bio-text")
 
 _add("ege-bio-2026", [1, 2, 22, 23], "bio-method")
 _add("ege-bio-2026", [5, 6, 7, 8, 27], "bio-cell")
@@ -806,10 +809,10 @@ _add("oge-geo-2026", [12, 14, 15, 26], "geo-econ")
 _add("oge-geo-2026", [27, 29], "geo-russia")
 _add("oge-geo-2026", [4, 5, 11, 16, 17, 19, 22, 23, 24, 30], "geo-nature")
 
-_add("ege-geo-2026", [4, 5, 11, 13, 14, 28], "geo-map")
+_add("ege-geo-2026", [4, 11, 14, 28], "geo-map")
 _add("ege-geo-2026", [2, 3], "geo-climate")
 _add("ege-geo-2026", [6, 8, 12, 19, 20], "geo-people")
-_add("ege-geo-2026", [7, 9, 10, 17, 22, 23, 24, 25, 29], "geo-econ")
+_add("ege-geo-2026", [7, 9, 10, 17, 22, 23, 24, 25], "geo-econ")
 _add("ege-geo-2026", [18, 26, 27], "geo-russia")
 _add("ege-geo-2026", [21], "geo-nature")
 
@@ -825,7 +828,7 @@ _add("ege-hist-2026", [1, 2, 3, 4], "hist-date")
 _add("ege-hist-2026", [5], "hist-person")
 _add("ege-hist-2026", [17], "hist-ww2")
 _add("ege-hist-2026", [7], "hist-culture")
-_add("ege-hist-2026", [6, 13, 14], "hist-source")
+_add("ege-hist-2026", [6, 14], "hist-source")
 
 _add("oge-soc-2026", [2, 3, 4, 20], "soc-person")
 _add("oge-soc-2026", [7, 8, 9], "soc-econ")
@@ -863,5 +866,6 @@ _add("ege-rus-2026", [27], "ru-essay")
 
 _add("oge-eng-2026", list(range(19, 35)), "eng-oge")
 _add("oge-eng-2026", [35, "У1", "У2", "У3"], "eng-write")
-_add("ege-eng-2026", list(range(19, 37)), "eng-ege")
+_add("ege-eng-2026", list(range(19, 25)), "eng-grammar")
+_add("ege-eng-2026", list(range(30, 37)), "eng-lex")
 _add("ege-eng-2026", [37, 38, "У1", "У2", "У3", "У4"], "eng-write")

@@ -145,6 +145,8 @@ def test_student_templates_urls_are_allowlisted():
 _SERVICE = (
     "как единственная норма", "как единственный смысл", "для угля всегда",
     "wrongly", "Solve for", "Article 1", "сердце в колене", "любой камень",
+    "посадник всегда", "по действующей норме", "как минимальный возраст",
+    "дёшево, часто", "для вопроса выберем",
 )
 _LATIN = re.compile(r"[A-Za-z]{4,}")
 _LATIN_OK = {"true", "false", "none", "html", "href"}
@@ -205,3 +207,102 @@ def test_practice_attempt_keeps_forecast(client, monkeypatch):
     assert 27 not in kn.load_states(connect(), sid_of(), "ege-rus-2026")
     hidden = client.get("/u2/train/ege-eng-2026/1").text
     assert "Скоро" in hidden and "fipi" not in hidden.lower()
+
+
+def test_quantity_change_answers_match_the_story():
+    """Эталон «две цифры» должен совпадать с тем, что написано в условии. Все ветки, не один сид."""
+    rules = (
+        ("β-распад", "31"),
+        ("α-распад", "22"),
+        ("силу тяги увеличивают, масса та же", "31"),
+        ("массу увеличивают, сила тяги та же", "12"),
+        ("массу уменьшают, сила тяги та же", "21"),
+        ("Идеальный газ нагревают", "11"),
+        ("Идеальный газ охлаждают", "22"),
+        ("Идеальный газ расширяется", "11"),
+        ("Идеальный газ сжимается", "22"),
+        ("резистора увеличивают", "12"),
+        ("резистора уменьшают", "21"),
+    )
+    seen = set()
+    for (exam_id, key), _fn in onsite_extra.FUNCS.items():
+        if "phys" not in exam_id:
+            continue
+        for seed in range(1, 41):
+            v = onsite_extra.make(exam_id, key, seed)
+            if (v.get("data") or {}).get("kind") != "digits":
+                continue
+            for phrase, expect in rules:
+                if phrase in v["text"]:
+                    seen.add(phrase)
+                    assert v["answer"] == expect, (exam_id, key, seed, phrase, v["answer"], v["explain"])
+                    assert expect in v["explain"] or expect in "".join(v["steps"])
+    assert seen == {phrase for phrase, _expect in rules}
+
+
+def test_mock_skips_practice_numbers(client, monkeypatch):
+    from app import config, knowledge as kn
+    from app.db import connect
+    from test_app import login, sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-rus-2026", "goal": 70})
+    page = client.get("/u2/mock/ege-rus-2026?seed=3").text
+    assert "/27" not in page and "№27" not in page
+    before = kn.load_states(connect(), sid_of(), "ege-rus-2026")
+    client.post("/u2/mock/ege-rus-2026", data={"csrf": csrf, "seed": 3})
+    after = kn.load_states(connect(), sid_of(), "ege-rus-2026")
+    assert 27 not in after
+    assert before.get(4, {}).get("n", 0) <= after.get(4, {}).get("n", 0)
+
+
+def test_goal_path_skips_hidden_and_puts_practice_last(client, monkeypatch):
+    from app import config
+    from test_app import login
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    assert client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-lit-2026", "goal": 40}).status_code == 400
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-rus-2026", "goal": 70})
+    page = client.get("/u2/subject/ege-rus-2026").text
+    assert "Скоро" not in page.split("Путь к цели")[-1].split("Дальше — тренировка")[0]
+    assert "Дальше — тренировка" in page and "№27" in page.split("Дальше — тренировка")[-1]
+
+
+def kim_status_markdown():
+    lines = ["# Номер → тема КИМ → статус", "",
+             "Источник правды для заданий umedu. Сомнение в теме номера — статус «скрыт».",
+             "«генератор» — задание было на сайте до замены банка.",
+             "«соответствует» — новое задание по теме номера, влияет на прогноз.",
+             "«тренировка» — срез навыка, прогноз не меняет.",
+             "«скрыт» — страницы задания нет в плане.", ""]
+    for exam_id in em.all_ids():
+        ex = em.load(exam_id)
+        lines.append("## %s" % exam_id)
+        lines.append("")
+        lines.append("| № | Тема | Баллы | Статус |")
+        lines.append("|---|---|---|---|")
+        titles, points = {}, {}
+        for t in em.tasks(ex):
+            titles[t["n"]] = t.get("title") or "—"
+            points[t["n"]] = t.get("points")
+        for c in ex.get("criteria") or []:
+            titles[c["id"]] = c.get("name") or "критерий"
+            points[c["id"]] = c.get("points")
+        for key in em.points(ex):
+            mode = u2_onsite.mode_of(exam_id, key)
+            if mode == "soon":
+                label = "скрыт"
+            elif onsite_extra.is_practice(exam_id, key):
+                label = "тренировка"
+            elif onsite_extra.has(exam_id, key):
+                label = "соответствует"
+            else:
+                label = "генератор"
+            lines.append("| %s | %s | %s | %s |" % (key, titles.get(key) or "—", points.get(key, ""), label))
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def test_kim_status_table_is_committed():
+    path = ROOT / "docs" / "kim-status-table.md"
+    assert path.read_text(encoding="utf-8") == kim_status_markdown()

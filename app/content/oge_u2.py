@@ -10,8 +10,30 @@ import re
 from .solve_steps import ensure
 
 _NAMES = ["Аня", "Боря", "Вера", "Глеб", "Даша", "Егор", "Зоя", "Кирилл"]
-_GOODS = ["тетрадей", "яблок", "марок", "открыток", "карандашей"]
+_FEMALE = {"Аня", "Вера", "Даша", "Зоя"}
+# именительный ед. / родительный ед. (2–4) / родительный мн. — в винительном для «купил»
+_GOODS = {
+    "тетрадь": ("тетрадь", "тетради", "тетрадей"),
+    "яблоко": ("яблоко", "яблока", "яблок"),
+    "марка": ("марку", "марки", "марок"),
+    "открытка": ("открытку", "открытки", "открыток"),
+    "карандаш": ("карандаш", "карандаша", "карандашей"),
+}
 _SHOPS = ["Север", "Юг", "Мост"]
+
+
+def _bought(name):
+    return "купила" if name in _FEMALE else "купил"
+
+
+def _noun(n, forms):
+    n_abs = abs(int(n))
+    tail, hundred = n_abs % 10, n_abs % 100
+    if tail == 1 and hundred != 11:
+        return forms[0]
+    if 2 <= tail <= 4 and not 12 <= hundred <= 14:
+        return forms[1]
+    return forms[2]
 
 
 def _finish(v, num, seed):
@@ -25,9 +47,10 @@ def g11(r):
     sentences = []
     bag = []                                              # (имя, число, товар) в порядке текста
     for _ in range(r.randint(6, 9)):
-        name, n, good = r.choice(_NAMES), r.randint(3, 40), r.choice(_GOODS)
-        sentences.append("%s купил %d %s." % (name, n, good))
-        bag.append((name, n, good))
+        name, n, forms = r.choice(_NAMES), r.randint(3, 40), r.choice(list(_GOODS.values()))
+        word = _noun(n, forms)
+        sentences.append("%s %s %d %s." % (name, _bought(name), n, word))
+        bag.append((name, n, word))
     text_body = " ".join(sentences)
     kind = r.choice(["count", "after", "max"])
     if kind == "count":
@@ -43,9 +66,10 @@ def g11(r):
         # первое вхождение имени, у которого есть покупка — оно всегда есть, раз имя из bag
         name = r.choice([b[0] for b in bag])
         ans = next(n for who, n, _ in bag if who == name)
-        ask = "Какое число купил человек при первом упоминании имени «%s»?" % name
+        verb = _bought(name)
+        ask = "Какое число %s человек при первом упоминании имени «%s»?" % (verb, name)
         expl = "Первая покупка %s — %d." % (name, ans)
-        steps = ["Найди первое «%s» в тексте." % name, "Число стоит сразу после слова «купил».", "Это %d." % ans]
+        steps = ["Найди первое «%s» в тексте." % name, "Число стоит сразу после слова «%s»." % verb, "Это %d." % ans]
         data = {"kind": "after", "name": name, "body": text_body}
     else:
         ans = max(n for _, n, _ in bag)
@@ -62,7 +86,7 @@ def g14(r):
     n = r.randint(10, 16)
     rows = []
     for i in range(n):
-        rows.append((r.choice(_GOODS), r.choice(_SHOPS), r.randint(20, 400)))
+        rows.append((r.choice(list(_GOODS)), r.choice(_SHOPS), r.randint(20, 400)))
     kind = r.choice(["sum", "count", "max"])
     header = ["Товар", "Магазин", "Цена, руб."]
     table = [header] + [[a, b, str(c)] for a, b, c in rows]
@@ -81,7 +105,7 @@ def g14(r):
         steps = ["Смотри только столбец цены.", "Считай строки, где цена ≥ %d." % limit, "Их %d." % ans]
         data = {"kind": "count", "limit": limit, "rows": rows}
     else:
-        good = r.choice(_GOODS)
+        good = r.choice(list(_GOODS))
         prices = [c for a, _, c in rows if a == good]
         if not prices:                                    # редкий промах — добавим строку
             rows.append((good, r.choice(_SHOPS), r.randint(20, 400)))

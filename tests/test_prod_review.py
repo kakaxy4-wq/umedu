@@ -64,18 +64,26 @@ def test_umedu_legacy_redirects_senior_not_primary_or_codequest(client, monkeypa
     assert client.get("/oge").status_code == 200 and "ОГЭ" in client.get("/oge").text
 
 
-def test_server_ignores_browser_passed_flag(client):
+def test_passed_needs_nonempty_code(client):
+    """Код на сервере не запускаем. Пустую отправку не засчитываем, непустую — как сообщил браузер."""
     csrf = login(client, "student")
     h = {"X-CSRF-Token": csrf}
-    r = client.post("/api/task/hello/attempt", json={"code": "print(1)", "passed": True}, headers=h).json()
-    assert r["passed"] is False and r["xp"] == 0
-    ok = client.post("/api/task/hello/attempt", json={"code": 'print("Привет, мир!")', "passed": False}, headers=h).json()
-    assert ok["passed"] is True and ok["xp"] == 10
+    empty = client.post("/api/task/hello/attempt", json={"code": "   ", "passed": True}, headers=h).json()
+    assert empty["passed"] is False and empty["xp"] == 0
+    claimed = client.post("/api/task/hello/attempt", json={"code": "print(1)", "passed": True}, headers=h).json()
+    assert claimed["passed"] is True and claimed["xp"] == 10
 
 
-def test_head_robots_favicon_sitemap_and_hsts(client):
+def test_head_robots_favicon_sitemap_and_hsts(client, monkeypatch):
     head = client.head("/login")
     assert head.status_code == 200 and head.content == b""
+    family = client.get("/robots.txt")
+    assert family.status_code == 200 and "Disallow: /" in family.text and "Allow: /" not in family.text
+    assert "<url>" not in client.get("/sitemap.xml").text
+    monkeypatch.setattr(config, "CHEM_SITE", True)
+    assert "Disallow: /" in client.get("/robots.txt").text
+    monkeypatch.setattr(config, "CHEM_SITE", False)
+    monkeypatch.setattr(config, "UMEDU2", True)
     robots = client.get("/robots.txt")
     assert robots.status_code == 200 and "Disallow: /account" in robots.text and "Allow: /" in robots.text
     assert client.get("/favicon.ico").status_code == 200
@@ -100,18 +108,21 @@ def test_u2_csrf_is_json_and_gallery_is_not_python(client, monkeypatch):
 
 
 def test_physics_plan_has_no_fipi_self_checks(client, monkeypatch):
-    from app.content import phys_gen
+    from app import u2_onsite
+    from app.content import onsite_extra, phys_gen
     monkeypatch.setattr(config, "UMEDU2", True)
     csrf = login(client, "student")
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-phys-2026", "goal": 70})
     page = client.get("/u2/today").text
     assert "fipi.ru" not in page and "сборник" not in page and "открытого банка" not in page
     hrefs = [int(n) for n in re.findall(r'href="/u2/train/ege-phys-2026/(\d+)"', page)]
-    assert hrefs and set(hrefs) <= set(phys_gen.EGE.GENERATORS)
-    for gone in (5, 6, 9, 10, 14, 15, 17, 18):
-        assert gone not in hrefs
-    self_page = client.get("/u2/train/ege-phys-2026/5").text
-    assert "fipi.ru" not in self_page and "готовим" in self_page and "target=\"_blank\"" not in self_page
+    allowed = (set(phys_gen.EGE.GENERATORS) | onsite_extra.keys_for("ege-phys-2026")
+               ) - onsite_extra.practice_keys("ege-phys-2026")
+    assert hrefs and set(hrefs) <= allowed
+    for n in hrefs:
+        assert u2_onsite.mode_of("ege-phys-2026", n) != "soon"
+    self_page = client.get("/u2/train/ege-phys-2026/5?seed=3").text
+    assert "fipi.ru" not in self_page and 'name="answer"' in self_page and "target=\"_blank\"" not in self_page
     lab = client.get("/u2/lab/ohm").text
     assert "fipi.ru" not in lab
     assert "ХимЛабе" not in client.get("/u2/lab").text

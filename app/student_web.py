@@ -23,6 +23,19 @@ from .main import (FILE_EXT, back, cert_signer, check_states, is_teacher, need_s
 
 router = APIRouter()
 
+_ATTEMPT_DAY = 1000
+
+
+def _code_budget(conn, table, sid):
+    """Дешёвый предел попыток за день. Код ученика здесь не исполняется."""
+    if table not in ("task_attempts", "oge_drill", "robot_attempts"):
+        return
+    n = conn.execute(
+        "SELECT COUNT(*) FROM %s WHERE student_id = ? AND created_at >= ?" % table,
+        (sid, config.today().isoformat())).fetchone()[0]
+    if n >= _ATTEMPT_DAY:
+        raise HTTPException(429, "На сегодня проверок достаточно — продолжим завтра.")
+
 
 @router.get("/today", response_class=HTMLResponse)
 def today_page(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
@@ -153,12 +166,15 @@ async def task_attempt(task_id: str, request: Request, conn=Depends(get_db), use
         raise HTTPException(404)
     data = await request.json()
     code = str(data.get("code", ""))[:100_000]
-    from .grade_code import python_passes
+    # Код ученика на сервере не запускаем: это учебный тренажёр, проверку делает браузер.
+    # Пустой код не может быть засчитан, даже если браузер прислал passed.
+    passed = bool(data.get("passed")) and bool(code.strip())
     if seed16:                                     # вариант №16 из тренажёра — своя таблица и трофеи
         v = oge16_gen.make(seed16)
         if user["role"] == "student" and v["lesson"] > game.unlocked_upto(conn, user["id"]):
             raise HTTPException(404)
-        passed = python_passes(code, v["tests"])
+        if user["role"] == "student":
+            _code_budget(conn, "oge_drill", user["id"])
         result = {"first": False, "xp": 0, "notices": []}
         if user["role"] == "student":
             result.update(oge_drill.code_attempt(conn, user["id"], seed16, passed, code))
@@ -169,7 +185,8 @@ async def task_attempt(task_id: str, request: Request, conn=Depends(get_db), use
         return result
     if user["role"] == "student" and task["lesson"] > game.unlocked_upto(conn, user["id"]):
         raise HTTPException(404)
-    passed = python_passes(code, task["tests"])
+    if user["role"] == "student":
+        _code_budget(conn, "task_attempts", user["id"])
     result = {"first": False, "xp": 0, "notices": [], "passed": passed}
     if user["role"] == "student":
         sid = user["id"]

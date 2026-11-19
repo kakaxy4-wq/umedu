@@ -150,8 +150,10 @@ async def robot_attempt(task_id: str, request: Request, conn=Depends(get_db), us
         seed = int(data.get("seed", 0))
     except (TypeError, ValueError):
         seed = 0
-    from .grade_code import robot_passes
-    passed = robot_passes(code, robot_content.fields_for(task, seed or None))
+    passed = bool(data.get("passed")) and bool(code.strip())
+    if user["role"] == "student":
+        from .student_web import _code_budget
+        _code_budget(conn, "robot_attempts", user["id"])
     result = {"first": False, "xp": 0, "notices": []}
     if user["role"] == "student":
         sid = user["id"]

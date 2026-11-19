@@ -216,7 +216,7 @@ def test_robot_and_code_open_inside_u2(client, monkeypatch):  # noqa: F811
     from app.content import robot as rc
     task = rc.TASKS[4 % len(rc.TASKS)]
     done = client.post("/u2/api/play/oge-inf-2026/15",
-                       json={"seed": 4, "passed": False, "hint": 1, "code": task["solution"]},
+                       json={"seed": 4, "passed": True, "hint": 1, "code": task["solution"]},
                        headers=h).json()
     assert done["ok"] and "solution" in done
 

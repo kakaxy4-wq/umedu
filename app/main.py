@@ -18,6 +18,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -169,6 +170,8 @@ async def head_like_get(request: Request, call_next):
         return await call_next(request)
     request.scope["method"] = "GET"
     response = await call_next(request)
+    if isinstance(response, (FileResponse, StreamingResponse)):
+        return response
     response.body = b""
     if "content-length" in response.headers:
         response.headers["content-length"] = "0"
@@ -501,6 +504,9 @@ def healthz():
 
 @app.api_route("/robots.txt", methods=["GET", "HEAD"])
 def robots():
+    # python.familysrv.ru и ХимЛаб — семейные сайты, их не индексируем.
+    if not (config.UMEDU2 and not config.CHEM_SITE):
+        return Response("User-agent: *\nDisallow: /\n", media_type="text/plain")
     body = "\n".join([
         "User-agent: *",
         "Disallow: /account",
@@ -526,9 +532,11 @@ def favicon():
 def sitemap(request: Request):
     """Публичные страницы. Кабинеты ученика и родителя в карту не кладём."""
     base = (config.BASE_URL or str(request.base_url)).rstrip("/")
-    paths = ["/", "/welcome", "/login", "/privacy", "/consent", "/gallery"]
-    if config.OPEN_SIGNUP:
-        paths += ["/join", "/family/login", "/family/new-child"]
+    paths = []
+    if config.UMEDU2 and not config.CHEM_SITE:
+        paths = ["/", "/welcome", "/login", "/privacy", "/consent", "/gallery"]
+        if config.OPEN_SIGNUP:
+            paths += ["/join", "/family/login", "/family/new-child"]
     body = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
             "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"]
     for path in paths:

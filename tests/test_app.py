@@ -916,6 +916,7 @@ def test_oge_drill_flow(client):
     r = client.get("/oge/drill/4", follow_redirects=False)
     assert r.status_code == 303 and "/oge/drill/4?seed=" in r.headers["location"]
     assert client.get("/oge/drill/11").status_code == 404                               # №11 — только на занятии
+    assert client.get("/oge/drill/99").status_code == 404
     page = client.get("/oge/drill/4?seed=42").text
     v = g.make(4, 42)
     assert "кратчайшего пути" in page and v["explain"] not in page                    # ответ не уходит в браузер

@@ -11,6 +11,12 @@
 {% for exam, group in catalog|groupby('exam')|sort(attribute='grouper', reverse=true) %}
 <h2 class="u2-h2">{{ exam }} · {{ '9 класс' if exam == 'ОГЭ' else '11 класс' }}</h2>
 {% for e in group %}
+{% if not e.ready %}
+<section class="u2-card">
+  <div class="u2-card-head"><h2>{{ e.subject }}</h2><span class="u2-chip">скоро</span></div>
+  <p class="u2-hint">Заданий, которые влияют на прогноз, на сайте пока нет. Выбрать этот экзамен нельзя.</p>
+</section>
+{% else %}
 <form method="post" action="/u2/start" class="u2-card u2-pick">
   <input type="hidden" name="csrf" value="{{ user.csrf }}">
   <input type="hidden" name="exam_id" value="{{ e.id }}">
@@ -27,6 +33,7 @@
   </div>
   {% if e.dates|length > 1 or e.note %}<p class="u2-hint">{{ e.note or 'Дни: ' ~ e.days ~ ' — какой из них, скажут в школе' }}.</p>{% endif %}
 </form>
+{% endif %}
 {% endfor %}
 {% endfor %}
 {% endblock %}

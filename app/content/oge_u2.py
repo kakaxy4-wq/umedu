@@ -96,7 +96,37 @@ def g14(r):
     return {"text": text, "answer": str(ans), "explain": expl, "steps": steps, "data": data, "table": table}
 
 
-GENERATORS = {11: g11, 14: g14}
+def g13(r):
+    """Структура презентации или размер текста. На экзамене это файл, здесь тот же счёт."""
+    kind = r.choice(["bullets", "bytes", "slides"])
+    if kind == "bullets":
+        n, k = r.randint(3, 12), r.randint(2, 6)
+        ans = n * k
+        text = ("Презентация: один титульный слайд без пунктов и %d слайдов с текстом. На каждом текстовом слайде "
+                "ровно %d пункта. Сколько пунктов во всей презентации?" % (n, k))
+        expl = "%d · %d = %d. Титульный слайд пунктов не добавляет." % (n, k, ans)
+        steps = ["Титульный слайд в сумму пунктов не входит.", "Умножь число текстовых слайдов на число пунктов.",
+                 "Получается %d." % ans]
+        data = {"kind": "bullets", "n": n, "k": k}
+    elif kind == "bytes":
+        chars, b = r.choice([80, 100, 120, 150, 200, 250]), r.choice([1, 2])
+        ans = chars * b
+        text = ("Текст документа без служебного заголовка — %d символов. Каждый символ кодируется %d байтами. "
+                "Каков размер текста в байтах?" % (chars, b))
+        expl = "%d · %d = %d байт." % (chars, b, ans)
+        steps = ["Заголовка файла в условии нет.", "Умножь число символов на число байт на символ.", expl]
+        data = {"kind": "bytes", "chars": chars, "b": b}
+    else:
+        content = r.randint(4, 16)
+        ans = content + 1
+        text = ("В презентации есть титульный слайд и ещё %d слайдов с содержанием. Сколько слайдов всего?" % content)
+        expl = "1 + %d = %d." % (content, ans)
+        steps = ["Титульный слайд тоже считается.", "Прибавь его к остальным.", expl]
+        data = {"kind": "slides", "content": content}
+    return {"text": text, "answer": str(ans), "explain": expl, "steps": steps, "data": data}
+
+
+GENERATORS = {11: g11, 13: g13, 14: g14}
 
 
 def make(num, seed):

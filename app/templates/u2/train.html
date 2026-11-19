@@ -4,6 +4,16 @@
 {% block content %}
 <a class="u2-back" href="/u2/subject/{{ c.id }}">← {{ c.title }}</a>
 <h1 class="u2-h1">{{ t.label }} · {{ t.title }}</h1>
+{% if practice %}
+<p class="u2-hint">Тренируем часть навыка. Полный развёрнутый ответ здесь не оценивается и на прогноз балла не влияет.</p>
+{% endif %}
+{% if mode == 'soon' %}
+<section class="u2-card">
+  <h2>Скоро</h2>
+  <p>Это задание по теме номера ещё готовим. В плане его нет, и с сайта уходить не нужно.</p>
+  <a class="u2-btn" href="/u2/today">К плану на сегодня</a>
+</section>
+{% else %}
 <div class="u2-meta">
   <span class="u2-chip">{{ t.points }} {{ 'балл' if t.points == 1 else ('балла' if t.points < 5 else 'баллов') }}</span>
   <span>решишь с вероятностью {{ (p * 100)|round|int }}%</span><span>попыток: {{ tries }}</span>
@@ -102,17 +112,8 @@
       <button class="u2-btn">Проверить</button>
     </div>
   </form>
-  {% elif mode == 'self' and not res %}
-  <form method="post" action="/u2/train/{{ c.id }}/{{ t.key }}" class="u2-card">
-    <input type="hidden" name="csrf" value="{{ user.csrf }}">
-    <p>Реши задание {{ t.label }} из <a href="{{ bank }}" target="_blank" rel="noopener">открытого банка ФИПИ</a> или своего сборника,
-      сверь с ответом и отметь, сколько баллов получил бы на экзамене.</p>
-    <div class="u2-score" role="group" aria-label="Баллы">
-      {% for s in range(t.points + 1) %}<button name="score" value="{{ s }}" class="u2-btn{{ ' ghost' if s < t.points }}">{{ s }}</button>{% endfor %}
-    </div>
-    <p class="u2-hint">Честная отметка важнее высокой: от неё зависит прогноз и план.</p>
-  </form>
   {% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}
 {% block scripts %}

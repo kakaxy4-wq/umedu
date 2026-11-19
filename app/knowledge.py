@@ -129,7 +129,7 @@ def plan(exam, states, minutes=30, today=None, due=(), only=None):
 MASTER_P = 0.9                # «освоить номер» для пути к цели — довести шанс до 90 %
 
 
-def path_to_goal(exam, states, goal, today=None):
+def path_to_goal(exam, states, goal, today=None, only=None):
     """Самый короткий по времени путь к цели: жадно берём номер (или критерий), освоение которого до MASTER_P даёт
     больше всего ожидаемых баллов на минуту тренировки, пока прогноз не дойдёт до цели. Возвращает
     {'steps': [{'n', 'p', 'reps'}], 'reached': bool}; reps — сколько тренировок нужно по модели plan."""
@@ -140,6 +140,8 @@ def path_to_goal(exam, states, goal, today=None):
     while forecast(exam, states, today)[key] < goal:
         best = None
         for n, pts in em.points(exam).items():
+            if only is not None and n not in only:
+                continue
             p = _p(states, n, today)["p"]
             if p >= MASTER_P or any(s["n"] == n for s in steps):
                 continue
@@ -247,11 +249,19 @@ def seed(conn, sid, exam_id, key, p, today=None):
                  (sid, exam_id, str(key), round(min(max(p, 0.0), 1.0), 4), (today or date.today()).isoformat()))
 
 
-def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None):
-    """Записывает попытку по номеру (или критерию) и возвращает новое состояние."""
+def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, update_state=True):
+    """Записывает попытку по номеру (или критерию) и возвращает новое состояние.
+
+    update_state=False — тренировка части навыка: попытка есть в журнале, прогноз по номеру не меняется.
+    """
     exam = em.load(exam_id)
     if key not in em.points(exam):
         raise KeyError(f"{exam_id}: нет номера {key!r}")
+    if not update_state:
+        day = (today or date.today()).isoformat()
+        conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, seed, given, day) "
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)", (sid, exam_id, str(key), score, seed, given, day))
+        return load_states(conn, sid, exam_id).get(key)
     st = update(load_states(conn, sid, exam_id).get(key), score, today)
     conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) VALUES (?, ?, ?, ?, ?, ?) "
                  "ON CONFLICT(student_id, exam_id, task_key) DO UPDATE SET p = excluded.p, n = excluded.n, last = excluded.last",

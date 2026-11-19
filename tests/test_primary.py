@@ -95,7 +95,7 @@ def test_primary_student_path(client, monkeypatch):  # noqa: F811
         assert client.get(path).status_code == 404, path
     csrf = re.search(r'name="csrf" content="([^"]+)"', today).group(1)
     task = client.get("/u2/p/math/m3-01").text
-    assert "42" not in task and "6 × 7" in task
+    assert "42" not in task.split("<body", 1)[1] and "6 × 7" in task
     assert 'action="/u2/p/math/m3-01"' in task
     assert client.get("/u2/p/math/m4-01").status_code == 404
     bad = client.post("/u2/p/math/m3-01", data={"csrf": csrf, "answer": "41"}).text

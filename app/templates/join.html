@@ -43,21 +43,5 @@
 </section>
 {% endblock %}
 {% block scripts %}
-<script>
-(function () {
-  var input = document.getElementById("join-password");
-  var show = document.getElementById("join-show");
-  var copy = document.getElementById("join-copy");
-  if (!input || !show) return;
-  show.addEventListener("click", function () {
-    var hidden = input.type === "password";
-    input.type = hidden ? "text" : "password";
-    show.textContent = hidden ? "Скрыть" : "Показать";
-  });
-  if (copy) copy.addEventListener("click", function () {
-    if (navigator.clipboard) navigator.clipboard.writeText(input.value);
-    copy.textContent = "Скопировано";
-  });
-})();
-</script>
+<script src="/static/js/join.js?v={{ v }}"></script>
 {% endblock %}

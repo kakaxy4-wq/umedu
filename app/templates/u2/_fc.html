@@ -2,6 +2,9 @@
 {% macro forecast(c, how=True) %}
 {% set k = c.kind %}
 <div class="u2-fc">
+  {% if c.attempts == 0 %}
+  <p class="u2-hint">Реши пару заданий, и покажем прогноз.</p>
+  {% else %}
   <div class="u2-fc-main">
     {% if k == 'grade' %}<span class="u2-grade g{{ c.fc.grade }}">{{ c.fc.grade }}</span>
     {% else %}<span class="u2-big">{{ c.fc.test }}</span>{% endif %}
@@ -14,6 +17,7 @@
     {% else %}· <b class="u2-ok">достигнута</b>{% endif %}</div>
   {% endif %}
   {% if c.attempts < 20 %}<p class="u2-hint">Прогноз пока грубый: решено заданий — {{ c.attempts }}. Вилка сужается с каждой попыткой.</p>{% endif %}
+  {% endif %}
   {% if how %}<p class="u2-hint"><a href="/u2/how">Как считается прогноз</a></p>{% endif %}
 </div>
 {% endmacro %}

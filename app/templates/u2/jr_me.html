@@ -10,8 +10,9 @@
   <form method="post" action="/u2/me/grade" class="u2-seg">
     <input type="hidden" name="csrf" value="{{ user.csrf }}">
     {% for g, title in grades.items() %}
-    <button name="grade" value="{{ g }}" aria-pressed="{{ 'true' if subject and subject.grade == g else 'false' }}">{{ title }}</button>
+    <button name="grade" value="{{ g }}" disabled aria-pressed="{{ 'true' if subject and subject.grade == g else 'false' }}">{{ title }}</button>
     {% endfor %}
+    <p class="u2-hint">Класс меняет родитель. Отсюда его не переключить.</p>
   </form>
   {% endif %}
 </section>

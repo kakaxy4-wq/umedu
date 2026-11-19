@@ -20,8 +20,10 @@
       } catch (err) { return; }
       if (!r.ok) return;
       var data = await r.json();
+      var old = box.querySelector(".u2-verdict");
+      if (old) old.remove();
       var note = document.createElement("p");
-      note.className = "u2-hint";
+      note.className = "u2-verdict u2-hint";
       if (data.pending) {
         hinted = true;
         note.textContent = "Пока не то. Подсказка: " + data.hint;

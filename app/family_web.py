@@ -73,6 +73,9 @@ def _parent_ctx(conn, st):
     since = (config.today() - timedelta(days=13)).isoformat()
     days = {r[0] for r in conn.execute("SELECT DISTINCT substr(created_at, 1, 10) FROM xp_events WHERE student_id = ? "
                                        "AND created_at >= ?", (sid, since))}
+    days |= {r[0] for r in conn.execute(
+        "SELECT DISTINCT substr(created_at, 1, 10) FROM primary_attempt WHERE student_id = ? AND created_at >= ?",
+        (sid, since))}
     activity = [{"day": d, "on": d.isoformat() in days} for d in
                 (config.today() - timedelta(days=i) for i in range(13, -1, -1))]
     plans = conn.execute("SELECT COUNT(*) FROM xp_events WHERE student_id = ? AND kind = 'drop' AND ref LIKE 'today:%' "

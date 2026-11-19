@@ -135,13 +135,19 @@
 {% endif %}
 
 <h2>Последние успехи</h2>
-<ul class="feed">{% for e in recent %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% else %}<li class="muted">Пока пусто — всё впереди!</li>{% endfor %}</ul>
+{% if primary and jr and jr.recent %}
+<ul class="feed">{% for r in jr.recent %}<li><b class="{{ 'plus' if r.ok else 'minus' }}">{{ 'Верно' if r.ok else 'Пока не так' }}</b> {{ r.title }} · {{ r.topic }} <small class="muted">{{ r.prompt }}</small></li>{% endfor %}</ul>
+{% elif recent %}
+<ul class="feed">{% for e in recent %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% endfor %}</ul>
+{% else %}
+<p class="muted">Ещё нет решённых заданий за неделю.</p>
+{% endif %}
 {% if in_family and st.minor %}
 <section class="card">
   <h2>Ник в галерее</h2>
   <form method="post" action="/family/child/{{ st.id }}/gallery" class="stack">
     {{ fam_csrf(fam) }}
-    <p><label><input type="checkbox" name="gallery" value="1"{% if gallery_on %} checked{% endif %}> Показывать ник ребёнка в галерее</label></p>
+    <label class="check"><input type="checkbox" name="gallery" value="1"{% if gallery_on %} checked{% endif %}> <span>Показывать ник ребёнка в галерее</span></label>
     {% set nick = st.display_name %}
     {% include "account/_gallery_note.html" %}
     <button class="btn btn-small">Сохранить</button>

@@ -107,15 +107,28 @@ def test_primary_student_path(client, monkeypatch):  # noqa: F811
     prog = client.get("/u2/progress").text
     assert "1 из 26" in prog
     me = client.get("/u2/me").text
-    assert 'value="3"' in me and 'aria-pressed="true"' in me
-    client.post("/u2/me/grade", data={"csrf": csrf, "grade": 4}, follow_redirects=False)
+    assert "Меняет родитель" in me and "Класс: 3" in me
+    assert client.post("/u2/me/grade", data={"csrf": csrf, "grade": 4}).status_code == 403
+
+    def parent_sets(grade):
+        client.cookies.clear()
+        assert client.post("/family/login", data={"username": "mama3", "password": "dlinnyi-parol"},
+                           follow_redirects=False).status_code == 303
+        card = client.get("/family/child/%d" % row["id"]).text
+        client.post("/family/child/%d/grade" % row["id"], data={"grade": grade, "csrf": _fam_csrf(card)},
+                    follow_redirects=False)
+        client.cookies.clear()
+        client.post("/login", data={"username": "petya3", "password": "kot-luna-27"}, follow_redirects=False)
+
+    parent_sets(4)
     assert "47 × 23" in client.get("/u2/today").text and "6 × 7" not in client.get("/u2/today").text
     assert client.get("/u2/p/math/m3-01").status_code == 404
-    client.post("/u2/me/grade", data={"csrf": csrf, "grade": 8}, follow_redirects=False)
+    parent_sets(8)
     start = client.get("/u2/start").text
     assert "ОГЭ · 9 класс" in start
     assert client.get("/u2/models").status_code == 200
-    assert client.post("/u2/me/grade", data={"csrf": csrf, "grade": 5}).status_code == 400
+    csrf = re.search(r'name="csrf" content="([^"]+)"', start).group(1)
+    assert client.post("/u2/me/grade", data={"csrf": csrf, "grade": 5}).status_code == 403
     assert connect().execute("SELECT grade FROM users WHERE id = ?", (row["id"],)).fetchone()[0] == 8
 
     client.cookies.clear()

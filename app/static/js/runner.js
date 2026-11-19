@@ -383,7 +383,9 @@
       }
       bar.append(this.resetBtn, this.status);
       if (this.mode !== 'playground') {
-        const copy = el('button', 'btn btn-ghost', '⧉');
+        const copy = el('button', 'btn btn-ghost', 'Копировать');
+        copy.type = 'button';
+        copy.setAttribute('aria-label', 'Скопировать код');
         copy.title = 'Скопировать код';
         copy.onclick = () => navigator.clipboard && navigator.clipboard.writeText(this.getCode()).then(() => this._status('Скопировано'));
         bar.append(copy);

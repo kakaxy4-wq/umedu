@@ -1160,7 +1160,7 @@
         if (rr.ops) animate(rr.ops, rr); else { anim++; draw(fields[current]); }
       }
       try {
-        const r = await api('/api/robot/' + taskId + '/attempt', { code, seed: Number(root.dataset.seed || 0) });
+        const r = await api('/api/robot/' + taskId + '/attempt', { code, seed: Number(root.dataset.seed || 0), passed });
         const serverOk = !!(r && r.passed);
         handleNotices(r);
         if (serverOk) {

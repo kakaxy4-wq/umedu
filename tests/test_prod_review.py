@@ -1,8 +1,11 @@
 """Проверка прода: меню umedu, отвязка младше 14, старые адреса, проверка кода на сервере, заголовки."""
 import re
+from pathlib import Path
 
 from app import config
 from test_app import client, login  # noqa: F401
+
+JS = Path(__file__).resolve().parents[1] / "app" / "static" / "js"
 
 
 def _child(client, grade="4"):
@@ -126,3 +129,52 @@ def test_physics_plan_has_no_fipi_self_checks(client, monkeypatch):
     lab = client.get("/u2/lab/ohm").text
     assert "fipi.ru" not in lab
     assert "ХимЛабе" not in client.get("/u2/lab").text
+
+
+def _payload(src, marker):
+    """Объект, который уходит в запрос, а не поле ответа r.passed рядом."""
+    window = src[src.index(marker):src.index(marker) + 700]
+    found = re.search(r"JSON\.stringify\(\{([^}]*)\}", window) or re.search(r"/attempt',\s*\{([^}]*)\}", window)
+    assert found, window[:160]
+    return found.group(1)
+
+
+def test_every_code_client_sends_passed_including_codequest(client, monkeypatch):
+    """КодКвест без флага umedu и страницы u2 сообщают браузерный результат. Без passed сервер пишет 0."""
+    monkeypatch.setattr(config, "UMEDU2", False)
+    monkeypatch.setattr(config, "CHEM_SITE", False)
+    app_js = (JS / "app.js").read_text(encoding="utf-8")
+    code_js = (JS / "u2-code.js").read_text(encoding="utf-8")
+    robot_js = (JS / "u2-robot.js").read_text(encoding="utf-8")
+    assert "passed" in _payload(app_js, "'/api/task/'")
+    assert "passed" in _payload(app_js, "'/api/robot/'")
+    assert "passed" in _payload(code_js, "/u2/api/play/")
+    assert "passed" in _payload(robot_js, "/u2/api/play/")
+    for path in JS.glob("*.js"):
+        src = path.read_text(encoding="utf-8")
+        for m in re.finditer(r"/api/(?:task|robot)/|/u2/api/play/", src):
+            assert "passed" in _payload(src, src[m.start():m.end()]), path.name
+    from test_app import login_as, sid_of
+    t = login_as(client, "teacher")
+    for n in range(2, 9):
+        client.post("/teacher/lesson/%d/open" % n, data={"csrf": t})
+    s = login_as(client, "student")
+    assert client.get("/oge/robot/under").status_code == 200
+    h = {"X-CSRF-Token": s}
+    from app.content.robot import TASK_BY_ID
+    from app.db import connect
+    sid = sid_of()
+    missing = client.post("/api/robot/under/attempt",
+                          json={"code": TASK_BY_ID["under"]["solution"], "seed": 1}, headers=h).json()
+    assert missing["passed"] is False and missing["xp"] == 0
+    row = connect().execute(
+        "SELECT passed FROM robot_attempts WHERE student_id = ? AND task_id = 'under' ORDER BY id DESC LIMIT 1",
+        (sid,)).fetchone()
+    assert row[0] == 0
+    ok = client.post("/api/robot/under/attempt",
+                     json={"code": TASK_BY_ID["under"]["solution"], "seed": 1, "passed": True}, headers=h).json()
+    assert ok["passed"] is True
+    row = connect().execute(
+        "SELECT passed FROM robot_attempts WHERE student_id = ? AND task_id = 'under' ORDER BY id DESC LIMIT 1",
+        (sid,)).fetchone()
+    assert row[0] == 1

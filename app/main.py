@@ -17,7 +17,8 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -130,6 +131,53 @@ async def hide_senior_from_primary(request: Request, call_next):
     return await call_next(request)
 
 
+# Старые разделы КодКвеста. На umedu ученика ведём в /u2. КодКвест (без флага) и ХимЛаб не трогаем.
+# Учитель на umedu по-прежнему открывает свои страницы.
+_LEGACY_STUDENT = (
+    "/oge", "/playground", "/ru", "/trainer", "/bots", "/map", "/lesson", "/task", "/homework",
+    "/daily", "/cheatsheet", "/portfolio", "/achievements", "/season", "/shop", "/checks",
+    "/certificate", "/today", "/snippets",
+)
+
+
+def _legacy_student_path(path):
+    return any(path == p or path.startswith(p + "/") for p in _LEGACY_STUDENT)
+
+
+@app.middleware("http")
+async def umedu_legacy_to_u2(request: Request, call_next):
+    path = request.url.path
+    if (config.UMEDU2 and not config.CHEM_SITE and request.method in ("GET", "HEAD")
+            and _legacy_student_path(path)):
+        from .db import connect
+        conn = connect()
+        try:
+            user = auth.load_user(request, conn)
+            st = students.get_student(conn, user["id"]) if user and user["role"] == "student" else None
+        finally:
+            conn.close()
+        # Младшим эти адреса закрывает другой слой (404). Остальных учеников и гостей ведём в план.
+        if st is None or not students.is_primary_grade(st.get("grade")):
+            if user is None or user["role"] == "student":
+                return RedirectResponse("/u2/today", status_code=303)
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def head_like_get(request: Request, call_next):
+    """HEAD на HTML-страницы не должен отвечать 405: отдаём те же заголовки, что и GET, без тела."""
+    if request.method != "HEAD":
+        return await call_next(request)
+    request.scope["method"] = "GET"
+    response = await call_next(request)
+    if isinstance(response, (FileResponse, StreamingResponse)):
+        return response
+    response.body = b""
+    if "content-length" in response.headers:
+        response.headers["content-length"] = "0"
+    return response
+
+
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     path = request.url.path
@@ -153,6 +201,11 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
     response.headers["Content-Security-Policy"] = csp
+    # HSTS только когда страница открыта по https (сам сайт или nginx с X-Forwarded-Proto).
+    # По http заголовок не ставим: иначе локальная разработка начинает ругаться.
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    if proto == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000"
     if request.url.path.startswith("/static/vendor/"):
         response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
     if request.url.path.startswith(("/parent/", "/family", "/teacher/students", "/teacher/student/")):
@@ -182,7 +235,8 @@ async def _login_redirect(request: Request, exc):
 @app.exception_handler(StarletteHTTPException)
 async def _http_error(request: Request, exc):
     """Ошибки форм и страниц — понятной страницей с кнопкой «Назад», а не JSON; API отвечает JSON, как раньше."""
-    if request.url.path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
+    if (request.url.path.startswith("/api/") or request.url.path.startswith("/u2/api/")
+            or "application/json" in request.headers.get("accept", "")):
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
     detail = exc.detail if isinstance(exc.detail, str) else ""
     if exc.status_code == 404 and detail in ("", "Not Found"):
@@ -446,6 +500,49 @@ def healthz():
     if missed:
         body["vendor_missing"] = missed
     return body
+
+
+@app.api_route("/robots.txt", methods=["GET", "HEAD"])
+def robots():
+    # python.familysrv.ru и ХимЛаб — семейные сайты, их не индексируем.
+    if not (config.UMEDU2 and not config.CHEM_SITE):
+        return Response("User-agent: *\nDisallow: /\n", media_type="text/plain")
+    body = "\n".join([
+        "User-agent: *",
+        "Disallow: /account",
+        "Disallow: /teacher",
+        "Disallow: /family",
+        "Disallow: /parent",
+        "Disallow: /for-parents",
+        "Allow: /",
+        "",
+    ])
+    return Response(body, media_type="text/plain")
+
+
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"])
+def favicon():
+    logo = APP_DIR / "static" / "img" / "brand" / "umedu-mark.svg"
+    if logo.is_file():
+        return FileResponse(logo, media_type="image/svg+xml")
+    return Response(status_code=204)
+
+
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
+def sitemap(request: Request):
+    """Публичные страницы. Кабинеты ученика и родителя в карту не кладём."""
+    base = (config.BASE_URL or str(request.base_url)).rstrip("/")
+    paths = []
+    if config.UMEDU2 and not config.CHEM_SITE:
+        paths = ["/", "/welcome", "/login", "/privacy", "/consent", "/gallery"]
+        if config.OPEN_SIGNUP:
+            paths += ["/join", "/family/login", "/family/new-child"]
+    body = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"]
+    for path in paths:
+        body.append("<url><loc>%s%s</loc></url>" % (base, path))
+    body.append("</urlset>")
+    return Response("\n".join(body) + "\n", media_type="application/xml")
 
 
 # ------------------------------------------------------------------ ученик: главная

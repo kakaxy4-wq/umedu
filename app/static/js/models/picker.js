@@ -6,7 +6,6 @@
   var buttons = document.querySelectorAll("[data-src]");
   if (!frame || !buttons.length) return;
   var external = frame.getAttribute("data-external") === "phet";
-  var openLink = document.getElementById("phet-open");
   var status = document.getElementById("phet-status");
   var ticket = 0;
   var timer = 0;
@@ -26,7 +25,7 @@
     timer = setTimeout(function () {
       if (my !== ticket || !status) return;
       status.className = "model-status is-bad";
-      status.textContent = "Симуляция не открылась. Сайт phet.colorado.edu не ответил. Нажми «Открыть в новой вкладке». Если и там пусто, из этой сети сайт Колорадо недоступен.";
+      status.textContent = "Симуляция не открылась внутри страницы. Открой «Оптика», «Электрические цепи» или «Молекулы» — они на этом сайте.";
     }, WAIT_MS);
   }
 
@@ -44,7 +43,6 @@
     frame.title = title;
     if (note) note.textContent = btn.getAttribute("data-note") || "";
     if (external) {
-      if (openLink) openLink.href = src;
       var my = ++ticket;
       frame.src = withSignal(src);
       arm(my);

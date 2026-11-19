@@ -700,15 +700,17 @@ async def u2_play(exam_id: str, raw: str, request: Request, conn=Depends(get_db)
         raise HTTPException(400)
     if not 0 < seed < 10 ** 7:
         raise HTTPException(400)
-    passed = bool(data.get("passed"))
     if mode == "robot":
         task = robot_content.TASKS[seed % len(robot_content.TASKS)]
         hint, steps = task["hint"], [task["hint"], "Проверь программу на короткой стене и на длинной.",
                                      "Крась клетку в том же цикле, где идёшь вдоль стены."]
         solution = {"py": task["solution"], "ku": task["kumir"]}
+        code = str(data.get("code", ""))[:50_000]
     else:
         v = oge16_gen.make(seed)
         hint, steps, solution = v["steps"][0], v["steps"], {"py": v["solution"]}
+        code = str(data.get("code", ""))[:100_000]
+    passed = bool(data.get("passed")) and bool(code.strip())
     if not passed and int(data.get("hint") or 0) != 1:
         return {"ok": False, "pending": True, "hint": hint}
     _budget(conn, sid, today)

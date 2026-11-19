@@ -213,8 +213,8 @@ def test_math_trainer(client, monkeypatch):  # noqa: F811
     res = client.post("/u2/train/oge-math-2026/9", data={"csrf": csrf, "seed": 11, "answer": "999999", "hint": 1}).text
     assert "Неверно" in res and v["answer"].replace("-", "−") in res.replace("-", "−")
     assert kn.load_states(connect(), sid_of(), "oge-math-2026")[9]["n"] == 1
-    page = client.get("/u2/train/oge-math-2026/20").text                     # часть 2 тоже проверяет сайт
-    assert 'name="answer"' in page and 'name="score"' not in page
+    page = client.get("/u2/train/oge-math-2026/20", follow_redirects=False)
+    assert page.status_code == 303 and "seed=" in page.headers["location"]
 
 
 def test_subject_mentions_regional_scale(client, monkeypatch):  # noqa: F811

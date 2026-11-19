@@ -23,6 +23,19 @@ from .main import (FILE_EXT, back, cert_signer, check_states, is_teacher, need_s
 
 router = APIRouter()
 
+_ATTEMPT_DAY = 1000
+
+
+def _code_budget(conn, table, sid):
+    """Дешёвый предел попыток за день. Код ученика здесь не исполняется."""
+    if table not in ("task_attempts", "oge_drill", "robot_attempts"):
+        return
+    n = conn.execute(
+        "SELECT COUNT(*) FROM %s WHERE student_id = ? AND created_at >= ?" % table,
+        (sid, config.today().isoformat())).fetchone()[0]
+    if n >= _ATTEMPT_DAY:
+        raise HTTPException(429, "На сегодня проверок достаточно — продолжим завтра.")
+
 
 @router.get("/today", response_class=HTMLResponse)
 def today_page(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
@@ -153,23 +166,30 @@ async def task_attempt(task_id: str, request: Request, conn=Depends(get_db), use
         raise HTTPException(404)
     data = await request.json()
     code = str(data.get("code", ""))[:100_000]
-    passed = bool(data.get("passed"))
+    # Код ученика на сервере не запускаем: это учебный тренажёр, проверку делает браузер.
+    # Пустой код не может быть засчитан, даже если браузер прислал passed.
+    passed = bool(data.get("passed")) and bool(code.strip())
     if seed16:                                     # вариант №16 из тренажёра — своя таблица и трофеи
         v = oge16_gen.make(seed16)
+        if user["role"] == "student" and v["lesson"] > game.unlocked_upto(conn, user["id"]):
+            raise HTTPException(404)
+        if user["role"] == "student":
+            _code_budget(conn, "oge_drill", user["id"])
         result = {"first": False, "xp": 0, "notices": []}
         if user["role"] == "student":
-            if v["lesson"] > game.unlocked_upto(conn, user["id"]):
-                raise HTTPException(404)
             result.update(oge_drill.code_attempt(conn, user["id"], seed16, passed, code))
             result["notices"] = game.pop_notices(conn, user["id"])
         if passed:
             result["solution"] = v["solution"]
+        result["passed"] = passed
         return result
-    result = {"first": False, "xp": 0, "notices": []}
+    if user["role"] == "student" and task["lesson"] > game.unlocked_upto(conn, user["id"]):
+        raise HTTPException(404)
+    if user["role"] == "student":
+        _code_budget(conn, "task_attempts", user["id"])
+    result = {"first": False, "xp": 0, "notices": [], "passed": passed}
     if user["role"] == "student":
         sid = user["id"]
-        if task["lesson"] > game.unlocked_upto(conn, sid):
-            raise HTTPException(404)
         already = task_id in game.solved_task_ids(conn, sid)
         with conn:
             conn.execute("INSERT INTO task_attempts (student_id, task_id, code, passed, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -486,6 +506,9 @@ def for_parents(request: Request, conn=Depends(get_db), user=Depends(auth.curren
 def for_parents_action(action: str = Form("new"), parent_id: int = Form(0), conn=Depends(get_db),
                        user=Depends(auth.check_csrf)):
     sid = _for_parents_only(user)
+    st = students.get_student(conn, sid)
+    if action == "unlink" and st and (st["minor"] or students.is_primary_grade(st.get("grade"))):
+        raise HTTPException(403, "Отвязать кабинет может родитель. Тебе ещё нет 14 лет.")
     with conn:
         if action == "revoke":
             conn.execute("UPDATE users SET parent_token = NULL WHERE id = ?", (sid,))

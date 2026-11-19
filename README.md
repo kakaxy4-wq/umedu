@@ -38,6 +38,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 bash scripts/fetch_vendor.sh          # Pyodide, CodeMirror и шрифты — хранятся у себя, чужие CDN не нужны
 python manage.py init                 # база и учётка преподавателя
 CQ_DATA_DIR=./data CQ_COOKIE_SECURE=0 uvicorn app.main:app --reload
+python scripts/check_static.py http://127.0.0.1:8000   # после запуска: нет 404 на /static и wasm как application/wasm
 python -m pytest                      # тесты
 ```
 

@@ -166,3 +166,7 @@ if [[ "$ready" -ne 1 ]]; then
   exit 1
 fi
 echo "Стенд ${NAME} на ветке ${BRANCH}, healthz отвечает."
+if ! "$CODE/.venv/bin/python" "$CODE/scripts/check_static.py" "http://localhost:${PORT}"; then
+  echo "Статика неполная. Смотри список выше. Обычно помогает повторный fetch_vendor.sh." >&2
+  exit 1
+fi

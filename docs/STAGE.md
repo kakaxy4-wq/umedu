@@ -56,7 +56,9 @@ deploy/add_stage.sh stage stage.umedu.ru 8091 main
 
 Это стенд: данные учебные, их можно стереть. Настоящие фамилии, телефоны и почту туда не кладут.
 
-Проверка: `curl -fsS http://localhost:8091/healthz` и в браузере `https://stage.umedu.ru` —
+Проверка: `curl -fsS http://localhost:8091/healthz` (в теле `"vendor": "ok"`), затем
+`python scripts/check_static.py http://localhost:8091` — должно закончиться «Статика на месте».
+В браузере `https://stage.umedu.ru` —
 плашка стенда на месте, страница не для индексации.
 
 ## Обновить ветку на стенде

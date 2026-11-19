@@ -29,7 +29,10 @@ pip install -r requirements.txt
 bash scripts/fetch_vendor.sh
 CQ_DATA_DIR=/var/lib/umedu python manage.py init
 CQ_DATA_DIR=/var/lib/umedu uvicorn app.main:app --host 127.0.0.1 --port 8000
+python scripts/check_static.py http://127.0.0.1:8000
 ```
+
+`check_static.py` после каждого запуска и каждой выкладки: он открывает главную, вход, страницу задачи и лаборатории, собирает все ссылки на `/static`, добавляет файлы из списка vendor и проверяет, что каждый отвечает 200. Для `.wasm` тип должен быть `application/wasm`. Ненулевой код — список дыр. `/healthz` при этом остаётся 200, чтобы балансировщик не снял сайт: в теле будет `"vendor": "missing"`, если файлов нет на диске.
 
 Запуск как службы — любой менеджер процессов (systemd, supervisor).
 

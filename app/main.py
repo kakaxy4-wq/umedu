@@ -7,6 +7,8 @@
 """
 import asyncio
 import json
+import logging
+import mimetypes
 import os
 import re
 import secrets
@@ -37,12 +39,19 @@ from .db import get_db, get_setting, init_db
 
 APP_DIR = Path(__file__).resolve().parent
 STATIC_VERSION = secrets.token_hex(4)
+# Иначе .wasm уходит как application/octet-stream, и браузер отказывается его запускать.
+mimetypes.add_type("application/wasm", ".wasm")
+log = logging.getLogger("umedu")
 
 
 @asynccontextmanager
 async def lifespan(_app):
     config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     init_db()
+    from .vendor_assets import missing as vendor_missing
+    missed = vendor_missing()
+    if missed:
+        log.warning("нет файлов для запуска кода (%s). Команда: bash scripts/fetch_vendor.sh", ", ".join(missed))
     tasks = [asyncio.create_task(weekly.scheduler())] if os.environ.get("CQ_WEEKLY", "1") == "1" else []
     if account.purge_enabled():
         # Раз в сутки снимаем аккаунты, которыми не пользовались год. Ошибка здесь не должна ронять сайт.
@@ -428,7 +437,15 @@ def logout(request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)
 
 @app.get("/healthz")
 def healthz():
-    return {"ok": True}
+    """200 всегда. Балансировщик смотрит на код ответа: пустой vendor не снимает сайт с приёма,
+    страницы при этом открываются. Дыру в статике после выкладки ловит scripts/check_static.py.
+    В теле: vendor=ok или vendor=missing и список файлов."""
+    from .vendor_assets import missing as vendor_missing
+    missed = vendor_missing()
+    body = {"ok": True, "vendor": "missing" if missed else "ok"}
+    if missed:
+        body["vendor_missing"] = missed
+    return body
 
 
 # ------------------------------------------------------------------ ученик: главная

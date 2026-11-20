@@ -1264,3 +1264,6 @@ html[data-site="public"] h1 { font-weight: 800; }
 .wordmark b { color: var(--accent); font-weight: inherit; }
 .wordmark i { color: var(--accent2); font-style: normal; }
 .topbar .wordmark b { color: #fff; }
+
+.stage-banner { margin: 0; padding: 8px 12px; background: #c6ff1a; color: #14112a; text-align: center;
+  font-weight: 700; font-size: 14px; line-height: 1.35; }

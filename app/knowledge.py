@@ -12,6 +12,7 @@
 import math
 from datetime import date, timedelta
 
+from . import config
 from . import exam_model as em
 
 PRIOR = 0.3                   # p номера, по которому ничего не знаем
@@ -37,14 +38,14 @@ def update(state, score, today=None, influence=1.0):
     st = decay(state, today) if state else {"p": PRIOR, "n": 0}
     alpha = max(ALPHA_MIN, ALPHA_FIRST / (1 + st["n"])) * min(max(float(influence), 0.0), 1.0)
     p = st["p"] + alpha * (min(max(score, 0.0), 1.0) - st["p"])
-    return {"p": round(p, 4), "n": st["n"] + 1, "last": (today or date.today()).isoformat()}
+    return {"p": round(p, 4), "n": st["n"] + 1, "last": (today or config.today()).isoformat()}
 
 
 def decay(state, today=None):
     """p с учётом забывания на сегодня. Без даты последней попытки — как есть."""
     if not state or not state.get("last"):
         return dict(state or {"p": PRIOR, "n": 0})
-    days = ((today or date.today()) - date.fromisoformat(state["last"])).days
+    days = ((today or config.today()) - date.fromisoformat(state["last"])).days
     k = 0.5 ** (max(days, 0) / HALF_LIFE_DAYS)
     return {**state, "p": round(PRIOR + (state["p"] - PRIOR) * k, 4)}
 
@@ -170,7 +171,7 @@ def path_to_goal(exam, states, goal, today=None, only=None):
         _, n, p = best
         reps = math.ceil(math.log((1 - MASTER_P) / (1 - p)) / math.log(1 - LEARN_RATE))
         steps.append({"n": n, "p": p, "reps": reps})
-        states[n] = {"p": MASTER_P, "n": max(states.get(n, {}).get("n", 0), 1), "last": (today or date.today()).isoformat()}
+        states[n] = {"p": MASTER_P, "n": max(states.get(n, {}).get("n", 0), 1), "last": (today or config.today()).isoformat()}
     return {"steps": steps, "reached": True}
 
 
@@ -223,7 +224,7 @@ def enroll(conn, sid, exam_id, goal=None, exam_date=None):
     em.load(exam_id)                                   # неизвестный экзамен — ошибка сразу, а не мусор в базе
     conn.execute("INSERT INTO exam_enroll (student_id, exam_id, goal, exam_date, created_at) VALUES (?, ?, ?, ?, ?) "
                  "ON CONFLICT(student_id, exam_id) DO UPDATE SET goal = excluded.goal, exam_date = excluded.exam_date",
-                 (sid, exam_id, goal, exam_date, date.today().isoformat()))
+                 (sid, exam_id, goal, exam_date, config.today().isoformat()))
 
 
 def exams_of(conn, sid):
@@ -238,7 +239,7 @@ def load_states(conn, sid, exam_id):
 
 def log_forecast(conn, sid, exam_id, today=None):
     """Пересчитывает прогноз и записывает его за сегодня (одна строка в день, последняя попытка дня побеждает)."""
-    today = today or date.today()
+    today = today or config.today()
     exam = em.load(exam_id)
     fc = forecast(exam, load_states(conn, sid, exam_id), today)
     key = "grade" if exam["scale"]["kind"] == "grade" else "test"
@@ -250,7 +251,7 @@ def log_forecast(conn, sid, exam_id, today=None):
 
 
 def history(conn, sid, exam_id, days=90, today=None):
-    since = ((today or date.today()) - timedelta(days=days)).isoformat()
+    since = ((today or config.today()) - timedelta(days=days)).isoformat()
     return [dict(r) for r in conn.execute(
         "SELECT day, primary_mean, low, high, result FROM forecast_log WHERE student_id = ? AND exam_id = ? AND day >= ? "
         "ORDER BY day", (sid, exam_id, since))]
@@ -262,7 +263,7 @@ def seed(conn, sid, exam_id, key, p, today=None):
     conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) VALUES (?, ?, ?, ?, 0, ?) "
                  "ON CONFLICT(student_id, exam_id, task_key) DO UPDATE SET p = excluded.p, last = excluded.last "
                  "WHERE skill_state.n = 0",
-                 (sid, exam_id, str(key), round(min(max(p, 0.0), 1.0), 4), (today or date.today()).isoformat()))
+                 (sid, exam_id, str(key), round(min(max(p, 0.0), 1.0), 4), (today or config.today()).isoformat()))
 
 
 def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, update_state=True, influence=1.0):
@@ -274,7 +275,8 @@ def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, up
     if key not in em.points(exam):
         raise KeyError(f"{exam_id}: нет номера {key!r}")
     if not update_state:
-        day = (today or date.today()).isoformat()
+        # московская дата, а не UTC: тренировка после полуночи по МСК должна попадать в «сегодня»
+        day = (today or config.today()).isoformat()
         conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, seed, given, day) "
                      "VALUES (?, ?, ?, ?, ?, ?, ?)", (sid, exam_id, str(key), score, seed, given, day))
         return load_states(conn, sid, exam_id).get(key)
@@ -290,7 +292,7 @@ def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, up
 def activity(conn, sid, today=None):
     """Дни занятий по журналу попыток: серия (дней подряд, сегодняшний ещё не потерян, пока он не кончился)
     и неделя пн–вс — какие дни уже были."""
-    today = today or date.today()
+    today = today or config.today()
     monday = today - timedelta(days=today.weekday())
     since = min(monday, today - timedelta(days=400)).isoformat()
     days = {date.fromisoformat(d) for (d,) in conn.execute(

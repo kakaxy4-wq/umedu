@@ -3,7 +3,7 @@
 # shellcheck shell=bash
 
 stage_repo() {
-  printf '%s\n' "git@github.com:<owner>/<repo>.git"
+  printf '%s\n' "${CQ_STAGE_REPO:-git@github.com:<owner>/<repo>.git}"
 }
 
 stage_valid_name() {

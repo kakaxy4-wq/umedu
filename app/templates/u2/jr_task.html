@@ -17,6 +17,7 @@
 {% elif user.role == 'student' %}
 <form method="post" action="/u2/p/{{ course.id }}/{{ task.id }}" class="jr-form">
   <input type="hidden" name="csrf" value="{{ user.csrf }}">
+  {% if task.hint %}<p class="u2-hint">{{ task.hint }}</p>{% endif %}
   {% if task.choices %}
     {% for c in task.choices %}
     <button class="jr-choice" name="answer" value="{{ c }}">{{ c }}</button>

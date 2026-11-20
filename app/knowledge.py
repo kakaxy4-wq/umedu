@@ -12,6 +12,7 @@
 import math
 from datetime import date, timedelta
 
+from . import config
 from . import exam_model as em
 
 PRIOR = 0.3                   # p номера, по которому ничего не знаем
@@ -274,7 +275,8 @@ def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, up
     if key not in em.points(exam):
         raise KeyError(f"{exam_id}: нет номера {key!r}")
     if not update_state:
-        day = (today or date.today()).isoformat()
+        # московская дата, а не UTC: тренировка после полуночи по МСК должна попадать в «сегодня»
+        day = (today or config.today()).isoformat()
         conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, seed, given, day) "
                      "VALUES (?, ?, ?, ?, ?, ?, ?)", (sid, exam_id, str(key), score, seed, given, day))
         return load_states(conn, sid, exam_id).get(key)

@@ -11,7 +11,7 @@
 - HTTPS only, `usesCleartextTraffic=false`, в trust-anchors только `system`. Пиннинга нет.
 - User-Agent `umedu-android/{version}`, без идентификатора устройства.
 - Облачный бэкап выключен (`allowBackup=false` и data extraction rules).
-- В release-графе нет play-services / firebase / crashlytics / ads / appmetrica / mytracker / appsflyer / facebook — ловит `tests/test_android_gates.py`.
+- В release-графе нет play-services / firebase / crashlytics / ads / appmetrica / mytracker / appsflyer / facebook — ловит `tools/test_gates.py` в репозитории umedu-android.
 - Крошка падения: `app/crash_report.py` режет всё кроме белого списка. Тест подсовывает черновик ответа.
 
 Access в памяти, refresh в Tink — этап 4. SQLCipher, Play Integrity, FLAG_SECURE — не делаем.

@@ -16,6 +16,11 @@ def _all_variants():
             t = primary_gen.make_random(grade)
             assert t, (grade, seed)
             out.append(t)
+        for seed in range(40):
+            random.seed(500000 + grade * 1000 + seed)
+            t = primary_gen.make_random(grade, "russian")
+            assert t, (grade, seed)
+            out.append(t)
     return out
 
 
@@ -36,7 +41,9 @@ def test_task_by_id_deterministic_and_consistent():
 def test_arithmetic_independent():
     for t in _all_variants():
         parts = t["id"].split("-")
-        kind, nums = parts[1], [_int(p) for p in parts[2:]]
+        kind, nums = parts[1], [_int(p) for p in parts[2:] if p.isdigit()]
+        if kind == "rud":
+            continue  # словарные слова проверяются отдельным тестом
         a = nums[0]
         if kind == "mul":
             assert t["accept"][0] == str(a * nums[1])
@@ -69,16 +76,65 @@ def test_hint_is_teaching_not_answer():
     for t in _all_variants():
         assert t["hint"], t["id"]
         assert norm(t["hint"]) != norm(t["explain"]), t["id"]
+        if not str(t["accept"][0]).isdigit():
+            continue  # у выбора буквы обе кнопки и так видны, проверяем только числа
         # ответ не упоминается в подсказке как отдельное число (45 содержит «5», но 5 — не ответ)
         hit = re.search(r"(?<!\d)%s(?!\d)" % re.escape(str(t["accept"][0])), t["hint"])
         assert not hit, "подсказка не должна раскрывать ответ: " + t["id"]
 
 
-def test_today_plan_alternates_gen_and_static(client):
+def test_russian_words():
+    from app.primary import norm
+    for grade, words in primary_gen.RU_WORDS.items():
+        assert len(words) >= 30, grade
+        ids = [primary_gen._rud(w)["id"] for w, i, b in words]
+        assert len(set(ids)) == len(ids), "слова повторяются: %s" % grade
+        for word, idx, bad in words:
+            t = primary_gen.task_by_id("gen-rud-%s" % word)
+            assert t and t["id"] == "gen-rud-%s" % word
+            assert t["grade"] == grade and t["subject"] == "russian"
+            masked = word[:idx] + "?" + word[idx + 1:]
+            assert masked in t["prompt"], word
+            assert t["choices"] == [word[idx], bad] and word[idx] != bad
+            assert check(t, word[idx]) and not check(t, bad)
+            assert word[idx] not in bad  # ловушка не совпадает с ответом
+            assert t["hint"] and t["explain"] and word.capitalize() in t["explain"]
+            assert norm(t["hint"]) != norm(t["explain"])
+    for bad_id in ["gen-rud-неттакого", "gen-rud-б?рег", "gen-rud-", "gen-rud-берег-лишний"]:
+        assert primary_gen.task_by_id(bad_id) is None, bad_id
+
+
+def test_russian_in_plan_balance(client, monkeypatch):
+    from app import config, students
+    from app.db import connect
+    from app.primary import get_task, record, today_plan
+    monkeypatch.setattr(config, "UMEDU2", True)
+    monkeypatch.setattr(config, "CHEM_SITE", False)
+    conn = connect()
+    with conn:
+        sid = students.create_student(conn, "qa-gen-ru", "Тест Русский", "parol-6", grade=3)
+        conn.execute("UPDATE users SET grade = 3, subjects = 'primary', minor = 1 WHERE id = ?", (sid,))
+    seen_gen = seen_static = 0
+    for _ in range(30):
+        ru = [x for x in today_plan(conn, sid, 3) if x["subject"] == "russian"][0]
+        if ru["id"].startswith("gen-rud-"):
+            seen_gen += 1
+            assert ru["choices"], "у словарных слов кнопки"
+        else:
+            seen_static += 1
+        task = get_task(ru["id"])
+        with conn:
+            record(conn, sid, task, True, task["accept"][0])
+    assert seen_gen >= 5 and seen_static >= 5, "чередование генератора и статики по русскому"
+
+
+def test_today_plan_alternates_gen_and_static(client, monkeypatch):
     from app import config, students
     from app.db import connect
     from app.primary import get_task, record, today_plan
 
+    monkeypatch.setattr(config, "UMEDU2", True)
+    monkeypatch.setattr(config, "CHEM_SITE", False)
     conn = connect()
     with conn:
         sid = students.create_student(conn, "qa-gen-3", "Тест Третий", "parol-6", grade=3)

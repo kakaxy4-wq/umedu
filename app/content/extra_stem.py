@@ -364,10 +364,16 @@ def _game(r, ask):
         ans = 1 if win[n] else 2
         data = {"kind": "game-one", "n": n}
     elif ask == "strat":
-        moves = r.choice([(1, 2), (1, 3), (2, 3)])
-        limit = r.choice([10, 12, 15])
+        # Ответ «1» вырожденный: при ходах от 2 игрок просто не может пойти. Такие пары не берём.
+        options = []
+        for moves in ((1, 2), (1, 3), (2, 3)):
+            for limit in (10, 12, 15):
+                table = _game_win(limit, moves)
+                losing = [i for i in range(1, limit + 1) if not table[i]]
+                if len(losing) >= 2 and losing[0] > 1:
+                    options.append((moves, limit, losing[0]))
+        moves, limit, ans = r.choice(options)
         win = _game_win(limit, moves)
-        ans = next(i for i in range(1, limit + 1) if not win[i])
         text = ("Берут %d или %d камня, последний ход выигрывает. Какое наименьшее число камней от 1 до %d "
                 "проигрышно для первого игрока, если второй не ошибается?" % (moves[0], moves[1], limit))
         data = {"kind": "game-strat", "moves": list(moves), "limit": limit}

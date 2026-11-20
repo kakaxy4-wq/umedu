@@ -147,6 +147,8 @@ _SERVICE = (
     "wrongly", "Solve for", "Article 1", "сердце в колене", "любой камень",
     "посадник всегда", "по действующей норме", "как минимальный возраст",
     "дёшево, часто", "для вопроса выберем",
+    "в значении императива", "химический элемент только", "при двух основах", "надо сужать",
+    "платочный мама", "мамин из платка",
 )
 _LATIN = re.compile(r"[A-Za-z]{4,}")
 _LATIN_OK = {"true", "false", "none", "html", "href"}
@@ -301,6 +303,16 @@ def kim_status_markdown():
             lines.append("| %s | %s | %s | %s |" % (key, titles.get(key) or "—", points.get(key, ""), label))
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def test_inf20_losing_position_is_not_trivial():
+    """ЕГЭ информатика №20: ответ не «1» и разбор называет ходы этого варианта."""
+    for seed in range(1, 41):
+        v = onsite_extra.make("ege-inf-2026", 20, seed)
+        assert int(v["answer"]) > 1, (seed, v["text"], v["answer"])
+        moves = (v.get("data") or {}).get("moves")
+        assert moves and all(str(m) in v["explain"] for m in moves)
+        assert "кратные 3" not in v["explain"] or moves == [1, 2]
 
 
 def test_kim_status_table_is_committed():

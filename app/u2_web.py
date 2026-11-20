@@ -765,7 +765,7 @@ def _lab_or_404(lab_id):
 
 def _primary_task(conn, user, subject_id, task_id):
     found = _primary_student(conn, user)
-    task = primary.BY_ID.get(task_id)
+    task = primary.get_task(task_id)
     if not found or subject_id not in primary.SUBJECT_BY_ID or not task:
         raise HTTPException(404)
     sid, st = found

@@ -7,6 +7,8 @@ import ast
 import re
 
 from . import game
+from .content.primary_gen import make_random as _gen_random
+from .content.primary_gen import task_by_id as _gen_task
 from .content.primary_tasks import TASKS
 
 SUBJECTS = (
@@ -53,7 +55,13 @@ def public(task):
     numeric = not task["choices"] and all(re.fullmatch(r"\d+", a) for a in task["accept"])
     return {"id": task["id"], "grade": task["grade"], "subject": task["subject"], "topic": task["topic"],
             "prompt": task["prompt"], "choices": task["choices"], "numeric": numeric,
+            "hint": task.get("hint", ""),
             "letter": not task["choices"] and not numeric and all(len(a) == 1 for a in task["accept"])}
+
+
+def get_task(task_id):
+    """Статичное задание или сгенерированное (id вида gen-...). Неизвестный id — None."""
+    return BY_ID.get(task_id) or _gen_task(task_id)
 
 
 def _solved(conn, sid):
@@ -69,17 +77,33 @@ def _needs_review(conn, sid):
 
 
 def today_plan(conn, sid, grade):
-    """По одному заданию на предмет: сначала новое, иначе то, где последняя попытка неверная."""
+    """По одному заданию на предмет: сначала недавняя ошибка, потом новое, иначе повторение.
+
+    По математике новые задания берём и из генератора (бесконечные варианты), и из
+    статичного набора — чередуем, пока статика не кончится, потом только генератор.
+    """
     done, review = _solved(conn, sid), _needs_review(conn, sid)
     out = []
     for subj in SUBJECTS:
         pool = tasks_for(grade, subj["id"])
+        missed = [t for t in pool if t["id"] in review]
         fresh = [t for t in pool if t["id"] not in done]
-        if fresh:
-            pick, why = fresh[0], "новое"
+        if missed:
+            pick, why = missed[0], "повтори"
         else:
-            missed = [t for t in pool if t["id"] in review]
-            pick, why = (missed[0] if missed else pool[0]), "повтори"
+            gen_task = None
+            if subj["id"] == "math":
+                pool_ids = {t["id"] for t in pool}
+                gen_done = len([d for d in done if d.startswith("gen-")])
+                static_done = len([d for d in done if d in pool_ids])
+                if gen_done < static_done or not fresh:
+                    gen_task = _gen_random(grade, done)
+            if gen_task:
+                pick, why = gen_task, "новое"
+            elif fresh:
+                pick, why = fresh[0], "новое"
+            else:
+                pick, why = pool[0], "повтори"
         out.append({**public(pick), "why": why, "subject_title": subj["title"], "emoji": subj["emoji"]})
     return out
 
@@ -137,6 +161,14 @@ def record(conn, sid, task, ok, given):
 
 
 def next_open(grade, subject, current_id, solved):
+    if current_id.startswith("gen-"):
+        nxt = _gen_random(grade, set(solved) | {current_id}, tries=6)
+        if nxt:
+            return nxt
+        for t in tasks_for(grade, subject):
+            if t["id"] not in solved:
+                return t
+        return None
     pool = tasks_for(grade, subject)
     ids = [t["id"] for t in pool]
     if current_id not in ids:

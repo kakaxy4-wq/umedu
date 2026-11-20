@@ -456,17 +456,6 @@ CREATE TABLE IF NOT EXISTS u2_badge (           -- достижения umedu 2.
     earned_at TEXT NOT NULL,
     PRIMARY KEY (student_id, code)
 );
--- Начальная школа (3–4 класс): только новые строки, users и экзамены не трогаем.
--- Откат без потери остальных данных: DROP TABLE IF EXISTS primary_attempt;
-CREATE TABLE IF NOT EXISTS primary_attempt (
-    id INTEGER PRIMARY KEY,
-    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    task_id TEXT NOT NULL,
-    ok INTEGER NOT NULL,
-    given TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_primary_attempt_student ON primary_attempt(student_id, id);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,
@@ -513,30 +502,6 @@ CREATE TABLE IF NOT EXISTS api_attempt_keys (      -- один ключ идем
     answer TEXT NOT NULL,
     response TEXT NOT NULL,            -- замороженный JSON ответа: повтор возвращает его дословно
     created_at TEXT NOT NULL
-);
--- Вход через Яндекс ID (и позже VK): привязка внешнего id к users, одноразовый state и
--- незавершённая регистрация нового аккаунта. CREATE TABLE IF NOT EXISTS — старая база догоняет при старте.
-CREATE TABLE IF NOT EXISTS oauth_identities (
-    provider TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    email TEXT,
-    created_at TEXT NOT NULL,
-    PRIMARY KEY (provider, subject)
-);
-CREATE INDEX IF NOT EXISTS idx_oauth_identities_user ON oauth_identities(user_id);
-CREATE TABLE IF NOT EXISTS oauth_states (
-    state_hash TEXT PRIMARY KEY,
-    provider TEXT NOT NULL,
-    expires_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS oauth_pending (
-    token_hash TEXT PRIMARY KEY,
-    provider TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    email TEXT NOT NULL,
-    display_name TEXT NOT NULL,
-    expires_at TEXT NOT NULL
 );
 """
 

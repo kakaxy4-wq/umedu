@@ -10,52 +10,7 @@ const decoder = new TextDecoder();
 
 function post(msg) { self.postMessage(msg); }
 
-function reasonOf(err) {
-  // 404 и 500 — это ответ сервера, fetch его не прячет в исключение.
-  // TypeError и «нет сети» — уже связь у ребёнка.
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'network';
-  if (err instanceof TypeError) return 'network';
-  const text = String(err && err.message || err);
-  if (/Failed to fetch|NetworkError|Load failed|network error/i.test(text)) return 'network';
-  return 'server';
-}
-
-async function probe(url, wasm) {
-  let res;
-  try {
-    res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-  } catch (err) {
-    err.reason = reasonOf(err);
-    throw err;
-  }
-  if (!res.ok) {
-    const err = new Error(url + ' → ' + res.status);
-    err.reason = 'server';
-    throw err;
-  }
-  if (!wasm) return;
-  let type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-  if (!type) {
-    const full = await fetch(url, { cache: 'force-cache' });
-    if (!full.ok) {
-      const err = new Error(url + ' → ' + full.status);
-      err.reason = 'server';
-      throw err;
-    }
-    type = (full.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-  }
-  if (type !== 'application/wasm') {
-    const err = new Error(url + ' тип ' + (type || 'пустой'));
-    err.reason = 'server';
-    throw err;
-  }
-}
-
 async function init(msg) {
-  for (const file of ['pyodide.js', 'pyodide.asm.js', 'python_stdlib.zip']) {
-    await probe(BASE + file, false);
-  }
-  await probe(BASE + 'pyodide.asm.wasm', true);
   importScripts(BASE + 'pyodide.js');
   pyodide = await loadPyodide({ indexURL: BASE, stdout: () => {}, stderr: () => {} });
   if (msg.inputBuffer) {
@@ -130,6 +85,6 @@ self.onmessage = async (e) => {
       post({ type: 'checked', id: msg.id, result: JSON.parse(res) });
     }
   } catch (err) {
-    post({ type: 'fatal', id: msg.id, reason: err.reason || reasonOf(err), error: String(err && err.message || err) });
+    post({ type: 'fatal', id: msg.id, error: String(err && err.message || err) });
   }
 };

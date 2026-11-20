@@ -17,6 +17,8 @@
    В GitHub это Deploy key репозитория `<owner>/<repo>` с выключенным Allow write access.
    На сервере в `~/.ssh/known_hosts` должен быть ключ github.com, либо скрипт примет его сам
    (`StrictHostKeyChecking=accept-new`).
+   По умолчанию стенд тянет ветку из репозитория-шаблона `git@github.com:<owner>/<repo>.git`;
+   задайте свой через `CQ_STAGE_REPO` (например, `git@github.com:kakaxy4-wq/umedu.git`).
 3. **Свободный порт** от 1024 до 65535. Для одобренного стенда — `8091`.
    Uvicorn слушает его на всех интерфейсах, чтобы контейнер nginx дотянулся до хоста.
    Снаружи порт закрывает ufw: пускается только подсеть docker-сети Traefik.

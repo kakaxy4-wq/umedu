@@ -1,8 +1,0 @@
-{% if oauth_providers %}
-<p class="login-or">или</p>
-<div class="login-oauth">
-  {% for p in oauth_providers %}
-  <a class="btn btn-big btn-oauth" href="/auth/{{ p.id }}">{% if p.id == 'yandex' %}<span class="oauth-mark" aria-hidden="true">Я</span>{% endif %}{{ p.button }}</a>
-  {% endfor %}
-</div>
-{% endif %}

@@ -21,11 +21,11 @@ def test_config_and_catalog_are_public(client):  # noqa: F811
     oge = {s["id"]: s for s in tracks["oge"]["subjects"]}
     assert oge["math"]["status"] == "live" and oge["math"]["required"] is True
     assert oge["inf"]["status"] == "live" and oge["phys"]["status"] == "live"
-    assert oge["rus"]["status"] == "live" and oge["rus"]["required"] is True
-    assert oge["hist"]["status"] == "live" and oge["hist"]["required"] is False
+    assert oge["rus"]["status"] == "soon" and oge["rus"]["required"] is True   # пока только самопроверка
+    assert oge["hist"]["status"] == "soon" and oge["hist"]["required"] is False
     ege = {s["id"]: s for s in tracks["ege"]["subjects"]}
     assert {"math-base", "math-profile", "inf", "phys"} <= {k for k, s in ege.items() if s["status"] == "live"}
-    assert ege["rus"]["status"] == "live" and ege["rus"]["required"] is True
+    assert ege["rus"]["status"] == "soon" and ege["rus"]["required"] is True
 
 
 def test_live_means_server_checks_answers():
@@ -134,12 +134,11 @@ def test_attempt_writes_nothing(client):  # noqa: F811
 
 
 def test_unknown_exam_and_number_are_404(client):  # noqa: F811
-    assert client.get("/api/v1/tasks/oge-rus-2026/1?seed=1").status_code == 200
-    assert client.get("/api/v1/tasks/oge-rus-2026/99?seed=1").status_code == 404
+    assert client.get("/api/v1/tasks/oge-rus-2026/1?seed=1").status_code == 404   # русский пока только самопроверка
     assert client.get(f"/api/v1/tasks/{EXAM}/99?seed=1").status_code == 404
     assert client.get("/api/v1/tasks/nope-2026/1?seed=1").status_code == 404
     r = client.post("/api/v1/attempts", json={"idempotency_key": "k" * 12, "exam_id": "oge-rus-2026",
-                                              "n": 99, "seed": 1, "answer": "1"})
+                                              "n": 1, "seed": 1, "answer": "1"})
     assert r.status_code == 404
 
 
@@ -555,42 +554,12 @@ def test_today_requires_session(client):  # noqa: F811
     assert _today(client, _session(client), exam="nope-2026").status_code == 404
 
 
-def test_today_russian_is_checked_on_site(client):  # noqa: F811
-    page = _today(client, _session(client), exam="oge-rus-2026")
-    assert page.status_code == 200 and page.json()["plan"]
+def test_today_exam_without_app_tasks_is_404(client):  # noqa: F811
+    # oge-rus-2026 есть в модели, но номеров, которые приложение само проверяет, там нет
+    assert _today(client, _session(client), exam="oge-rus-2026").status_code == 404
 
 
 def test_today_trainer_flag_pauses(client, monkeypatch):  # noqa: F811
     from app import config
     monkeypatch.setattr(config, "API_FLAG_TRAINER", False)
     assert _today(client, _session(client)).status_code == 503
-
-
-def test_profile_errors_and_skills_need_a_real_token(client):  # noqa: F401
-    """Этап 6: без Bearer — 401, с токеном гостя и с токеном входа — профиль, а не 500.
-
-    _api_user возвращает (id, таблица). Эти маршруты раньше индексировали кортеж как словарь,
-    а без заголовка падали ещё на хеше пустого токена.
-    """
-    from app import api_v1
-    api_v1._sessions.clear()
-    for path in ("/api/v1/me", "/api/v1/errors/oge-inf-2026", "/api/v1/skills/oge-inf-2026"):
-        assert client.get(path).status_code == 401, path
-        assert client.get(path, headers={"Authorization": "Bearer nope"}).status_code == 401, path
-    assert client.delete("/api/v1/account").status_code == 401
-
-    guest = _session(client, device="device-profile-guest")
-    headers = {"Authorization": "Bearer " + guest}
-    me = client.get("/api/v1/me", headers=headers)
-    assert me.status_code == 200 and me.json()["display_name"] == "Гость" and me.json()["id"]
-    assert client.get("/api/v1/errors/oge-inf-2026", headers=headers).json()["items"] == []
-    skills = client.get("/api/v1/skills/oge-inf-2026", headers=headers)
-    assert skills.status_code == 200 and skills.json()["skills"]
-
-    reg = _register(client, {**ADULT, "email": "profile-pupil@example.com"})
-    assert reg.status_code == 200
-    token = reg.json()["token"]
-    logged = client.get("/api/v1/me", headers={"Authorization": "Bearer " + token})
-    assert logged.status_code == 200 and logged.json()["display_name"] == "profile-pupil"
-    assert client.delete("/api/v1/account", headers={"Authorization": "Bearer " + token}).status_code == 204
-    assert client.get("/api/v1/me", headers={"Authorization": "Bearer " + token}).status_code == 401

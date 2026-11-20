@@ -10,6 +10,11 @@ BASIS: ученик помечает слова-подлежащие и слов
 """
 import re
 
+try:
+    from . import packs as _packs
+except Exception:  # pragma: no cover
+    _packs = None
+
 RULES = {
     "odn": ("Однородные члены", "Между однородными членами без союзов ставится запятая. Перед союзами а, но, да (= но) — "
             "запятая. Одиночный союз и запятой не отделяется: «хлеб и сыр». Повторяющиеся союзы и…и, ни…ни, то…то — запятая перед вторым и следующими."),
@@ -580,3 +585,13 @@ def check_dictation(d, letters, commas):
     extra = sorted(got - set(d["need"]))
     return {"letters": lres, "need": sorted(d["need"]), "missing": missing, "extra": extra,
             "errors": sum(not x["ok"] for x in lres) + len(missing) + len(extra)}
+
+# Контент как данные: если есть пакет ru_rules.yaml — RULES берём из него (масштабирование).
+try:
+    if _packs is not None:
+        _loaded = _packs.load_ru_rules()
+        if _loaded:
+            RULES.clear()
+            RULES.update(_loaded)
+except Exception:
+    pass

@@ -21,7 +21,7 @@
   {% if not exam %}<details><summary>💡 Подсказка</summary><p>{{ task.hint }}</p></details>{% endif %}
 </section>
 
-<div id="robot-app" class="robot-app" data-task="{{ task.id }}" data-user="{{ user.id }}" data-seed="{{ seed }}"{% if exam %} data-exam="1"{% endif %}>
+<div id="robot-app" class="robot-app" data-task="{{ task.id }}" data-user="{{ user.id }}"{% if exam %} data-exam="1"{% endif %}>
   <script type="application/json" id="robot-fields">{{ fields|tojson }}</script>
   <section class="card robot-board">
     <div class="row between">

@@ -36,9 +36,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 var(
 a { color: var(--link); }
 h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 
-.u2-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px;
+.u2-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
   background: var(--ultra); color: #fff; }
-.u2-nav { display: none; }
 .u2-logo { display: flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; font: 700 18px var(--head); }
 .u2-logo img { width: 26px; height: 26px; }
 .u2-who { font-size: 14px; opacity: .85; }
@@ -49,10 +48,6 @@ h1, h2 { font-family: var(--head); font-weight: 700; margin: 0; }
 .u2-back { display: inline-block; margin-top: 4px; font-size: 14px; text-decoration: none; }
 .u2-hint { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
 
-.u2-card[hidden] { display: none; }
-html.u2 .cb-bar .btn { display: inline-flex; align-items: center; margin: 0 8px 8px 0; padding: 10px 16px;
-  border: 0; border-radius: 12px; background: var(--ultra); color: #fff; font: 600 15px var(--body); cursor: pointer; }
-html.u2 .cb-bar .btn.btn-ghost { background: transparent; color: var(--link); border: 1px solid var(--line); }
 .u2-card { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 18px;
   padding: 16px; margin-bottom: 12px; color: inherit; text-decoration: none; }
 .u2-card h2 { font-size: 16px; }
@@ -111,25 +106,8 @@ html.u2 .cb-bar .btn.btn-ghost { background: transparent; color: var(--link); bo
   background: var(--bg); color: var(--text); font: 15px var(--body); }
 .u2-pick-row .u2-btn { margin-top: 0; }
 
-.u2-tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; height: 72px;
+.u2-tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center;
   background: var(--card); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
-@media (min-width: 1024px) {
-  .u2-tabs { display: none; }
-  .u2-nav { display: flex; gap: 4px; margin-left: auto; }
-  .u2-nav a { color: #fff; text-decoration: none; font: 600 15px var(--body); padding: 8px 14px; border-radius: 999px; }
-  .u2-nav a.on { background: rgba(255,255,255,.16); }
-  .u2-main { max-width: 880px; padding: 32px 32px 48px; }
-  .u2-top { height: 64px; padding: 0 32px; }
-}
-.u2-next { background: var(--ultra); color: #fff; border: 0; }
-.u2-next h2 { font: 700 26px/34px var(--head); margin: 8px 0; }
-.u2-next p { color: #E4E2FF; }
-.u2-next .u2-btn { background: var(--lime); color: var(--ink); }
-.u2-eyebrow { font: 700 12px/16px var(--body); letter-spacing: .08em; text-transform: uppercase; color: #CFCBFF; margin: 0; }
-.u2-btn, .u2-tab, .u2-card, .u2-nav a { transition: background .2s ease-out, border-color .2s ease-out, color .2s ease-out; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-}
 .u2-tab { flex: 1; max-width: 160px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0;
   color: var(--muted); text-decoration: none; font-size: 12px; }
 .u2-dot { width: 22px; height: 6px; border-radius: 99px; background: var(--line); }
@@ -290,29 +268,3 @@ html.u2 .cb-bar .btn.btn-ghost { background: transparent; color: var(--link); bo
   .u2-main { padding-left: 12px; padding-right: 12px; }
   .ru-sentence { font-size: 1.1rem; }
 }
-
-/* 3–4 класс: крупнее и спокойнее, без экзаменационной сетки */
-html.u2.junior body { font-size: 20px; line-height: 1.45; }
-html.u2.junior .u2-h1 { font-size: 32px; line-height: 1.2; }
-html.u2.junior .u2-h2 { font-size: 22px; }
-html.u2.junior .u2-main { max-width: 640px; }
-html.u2.junior .u2-card { padding: 20px; border-radius: 22px; }
-html.u2.junior .u2-card h2 { font-size: 22px; }
-html.u2.junior .u2-tab { font-size: 15px; }
-html.u2.junior .u2-btn { font-size: 20px; padding: 16px 22px; border-radius: 16px; }
-html.u2.junior .jr-lead { font-size: 20px; margin: 0 0 16px; }
-html.u2.junior .jr-prompt { font-size: 26px; line-height: 1.35; margin: 8px 0 0; }
-html.u2.junior h1.jr-prompt { margin: 12px 0 20px; }
-html.u2.junior .jr-score { font: 800 28px var(--head); margin: 8px 0 0; }
-html.u2.junior .jr-choice { display: block; width: 100%; text-align: left; margin-top: 12px; padding: 16px 18px;
-  border-radius: 16px; border: 2px solid var(--line); background: var(--card); color: var(--text);
-  font: 600 20px/1.35 var(--body); cursor: pointer; }
-html.u2.junior .jr-choice:hover, html.u2.junior .jr-choice:focus-visible { border-color: var(--ultra); }
-html.u2.junior .jr-input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 4px; padding: 16px 18px;
-  border-radius: 16px; border: 2px solid var(--line); background: var(--card); color: var(--text); font: 600 28px var(--body); }
-html.u2.junior .jr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-html.u2.junior .jr-list a, html.u2.junior .jr-list li { display: block; padding: 14px 16px; border-radius: 16px;
-  background: var(--card); border: 1px solid var(--line); color: inherit; text-decoration: none; font-size: 18px; }
-html.u2.junior .jr-ok { color: var(--good); font-weight: 700; margin-right: 6px; }
-html.u2.junior .jr-bad { color: var(--weak); font-weight: 700; margin-right: 6px; }
-html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }

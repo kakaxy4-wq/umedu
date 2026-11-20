@@ -12,11 +12,7 @@
     <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
     <button class="btn btn-big">Войти</button>
   </form>
-  {% if open_signup %}
-  <p class="muted small">Кабинета ещё нет? <a href="/family/new-child">Создать кабинет</a> — для родителя и ребёнка.</p>
-  {% else %}
   <p class="muted small">Кабинета ещё нет? Его заводят по ссылке для родителей от преподавателя.</p>
-  {% endif %}
   <p class="muted small"><a href="/login">Вход для ученика и преподавателя →</a></p>
 </div>
 {% endblock %}

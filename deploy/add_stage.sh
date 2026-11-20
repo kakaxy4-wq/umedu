@@ -170,6 +170,7 @@ else
   git -C "$CODE" checkout -B "$BRANCH" "origin/${BRANCH}"
 fi
 
+chown -R codequest:codequest "$CODE"
 if [[ ! -x "$CODE/.venv/bin/python" ]]; then
   runuser -u codequest -- python3 -m venv "$CODE/.venv"
 fi
@@ -194,7 +195,11 @@ printf '%s\n' "$INSTANCE_TEXT" > "$INSTANCE_FILE"
 chmod 644 "$UNIT_FILE" "$NGINX_FILE" "$COMPOSE_FILE" "$INSTANCE_FILE"
 
 runuser -u codequest -- bash -c "set -a; . '$ENV_FILE'; set +a; exec '$CODE/.venv/bin/python' '$CODE/manage.py' migrate"
-runuser -u codequest -- bash -c "set -a; . '$ENV_FILE'; set +a; exec '$CODE/.venv/bin/python' '$CODE/manage.py' seed_demo"
+if grep -q seed_demo "$CODE/manage.py"; then
+  runuser -u codequest -- bash -c "set -a; . '$ENV_FILE'; set +a; exec '$CODE/.venv/bin/python' '$CODE/manage.py' seed_demo"
+else
+  echo "manage.py не умеет seed_demo — демо-данные пропущены (база и код не тронуты)."
+fi
 
 systemctl daemon-reload
 systemctl enable "$SERVICE"
@@ -212,7 +217,7 @@ if [[ "$ready" -ne 1 ]]; then
   echo "Служба ${SERVICE} не ответила на http://localhost:${PORT}/healthz. Журнал: journalctl -u ${SERVICE}" >&2
   exit 1
 fi
-if ! "$CODE/.venv/bin/python" "$CODE/scripts/check_static.py" "http://localhost:${PORT}"; then
+if ! (cd "$CODE" && .venv/bin/python scripts/check_static.py "http://localhost:${PORT}"); then
   echo "Статика неполная. Смотри список выше. Обычно помогает повторный fetch_vendor.sh." >&2
   exit 1
 fi

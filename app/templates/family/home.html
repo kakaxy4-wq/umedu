@@ -8,11 +8,8 @@
 <a class="card family-kid" href="/family/child/{{ k.st.id }}">
   <span class="family-kid-rank">{{ k.me.level.emoji }}</span>
   <span class="check-body">
-    <b>{{ k.st.display_name }}</b>
-    {% if umedu2 and k.st.grade in (3, 4) %}<small class="muted">{{ k.st.grade }} класс</small>
-    <small>Математика, русский язык и окружающий мир</small>
-    {% else %}<small class="muted">{{ k.me.level.title }}</small>
-    <small>Дней с занятиями за неделю: {{ k.days }} из 7 · последний вход {{ k.st.last_seen_at|ago }}{% if k.fc and k.fc.enough_data %} · прогноз ОГЭ: <b>{{ k.fc.grade }}</b>{% endif %}</small>{% endif %}
+    <b>{{ k.st.display_name }}</b> <small class="muted">{{ k.me.level.title }}</small>
+    <small>Дней с занятиями за неделю: {{ k.days }} из 7 · последний вход {{ k.st.last_seen_at|ago }}{% if k.fc and k.fc.enough_data %} · прогноз ОГЭ: <b>{{ k.fc.grade }}</b>{% endif %}</small>
   </span>
   <span class="btn btn-small btn-ghost">Подробнее →</span>
 </a>

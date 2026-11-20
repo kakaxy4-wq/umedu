@@ -3,16 +3,6 @@
 {% block title %}Сегодня{% endblock %}
 {% block content %}
 <h1 class="u2-h1">Сегодня · {{ total }} минут</h1>
-{% set nxt = namespace(step=none, card=none) %}
-{% for p in plans %}{% if nxt.step is none and p.steps %}{% set nxt.step = p.steps[0] %}{% set nxt.card = p.card %}{% endif %}{% endfor %}
-{% if nxt.step %}
-<section class="u2-card u2-next">
-  <p class="u2-eyebrow">Следующий шаг</p>
-  <h2>№{{ nxt.step.n }} · {{ nxt.step.title }}</h2>
-  <p>Решается прямо здесь: ответ проверим сразу и покажем разбор.</p>
-  <a class="u2-btn" href="/u2/train/{{ nxt.card.id }}/{{ nxt.step.n }}">Начать задание →</a>
-</section>
-{% endif %}
 {% if intro %}
 <section class="u2-card u2-intro" aria-labelledby="intro-h">
   <h2 id="intro-h">Первые шаги</h2>
@@ -42,19 +32,15 @@
 {% for p in plans %}
 <section class="u2-card">
   <div class="u2-card-head"><h2>{{ p.card.title }}</h2><span class="u2-chip">{{ p.minutes }} мин</span></div>
-  {% if p.steps %}
   <ol class="u2-plan">
     {% for it in p.steps %}
-    <li><a href="/u2/train/{{ p.card.id }}/{{ it.n }}"><span class="u2-num">№{{ it.n }}{% if it.times > 1 %} × {{ it.times }}{% endif %}</span><span class="u2-why">{{ it.title }}{% if it.why == 'повторение' %}<small>повторение: давно не было</small>{% elif it.why == 'тренировка' %}<small>тренировка, прогноз не меняет</small>{% elif it.times > 1 %}<small>слабое место: {{ it.times }} варианта подряд</small>{% endif %}</span><span class="u2-min">{{ it.minutes }} мин</span></a></li>
+    <li><a href="/u2/train/{{ p.card.id }}/{{ it.n }}"><span class="u2-num">№{{ it.n }}{% if it.times > 1 %} × {{ it.times }}{% endif %}</span><span class="u2-why">{{ it.title }}{% if it.why == 'повторение' %}<small>повторение: давно не было</small>{% elif it.times > 1 %}<small>слабое место: {{ it.times }} варианта подряд</small>{% endif %}</span><span class="u2-min">{{ it.minutes }} мин</span></a></li>
     {% endfor %}
   </ol>
-  {% else %}
-  <p class="u2-hint">По этому экзамену заданий, которые меняют прогноз, на сайте пока нет. Никуда переходить не нужно.</p>
-  {% endif %}
   {% if p.card.mock %}<p class="u2-hint">Проверить себя в условиях экзамена: <a href="/u2/mock/{{ p.card.id }}">мини-пробник на 25 минут</a>.</p>{% endif %}
 </section>
 {% endfor %}
-<p class="u2-hint"><a href="/u2/lab">Лаборатория опытов</a> — вопрос, измерение, закон. <a href="/u2/models">Интерактивные модели</a> — покрутить.</p>
+<p class="u2-hint"><a href="/u2/lab">Лаборатория опытов</a> — вопрос, измерение, закон.</p>
 <h2 class="u2-h2">Прогноз</h2>
 {% for c in cards %}
 <a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">

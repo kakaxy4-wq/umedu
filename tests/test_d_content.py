@@ -213,10 +213,7 @@ def test_robot_and_code_open_inside_u2(client, monkeypatch):  # noqa: F811
     pending = client.post("/u2/api/play/oge-inf-2026/15", json={"seed": 4, "passed": False, "code": "вверх()"},
                           headers=h).json()
     assert pending["pending"] and "hint" in pending
-    from app.content import robot as rc
-    task = rc.TASKS[4 % len(rc.TASKS)]
-    done = client.post("/u2/api/play/oge-inf-2026/15",
-                       json={"seed": 4, "passed": True, "hint": 1, "code": task["solution"]},
+    done = client.post("/u2/api/play/oge-inf-2026/15", json={"seed": 4, "passed": True, "hint": 1, "code": "ok"},
                        headers=h).json()
     assert done["ok"] and "solution" in done
 
@@ -247,6 +244,5 @@ def test_plan_filter_does_not_change_other_exams():
     states = {n: {"p": 0.1, "n": 0, "last": D.isoformat()} for n in range(1, 14)}
     plain = [s["n"] for s in kn.plan(ex, states, 30, D)]
     assert 1 in plain                                              # изложение по-прежнему в модели
-    allowed = u2_onsite.onsite("oge-rus-2026")
-    only = [s["n"] for s in kn.plan(ex, states, 30, D, only=allowed)]
-    assert only and set(only) <= allowed and 8 in allowed and 13 in allowed
+    only = [s["n"] for s in kn.plan(ex, states, 30, D, only=u2_onsite.onsite("oge-rus-2026"))]
+    assert only and set(only) <= {2, 3, 4, 5, 6, 7}

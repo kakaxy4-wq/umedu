@@ -19,12 +19,7 @@
     <label>Логин — придумайте сами, он нужен для входа
       <input name="login" value="{{ form.login or '' }}" required pattern="[a-zA-Z0-9_.\-]{2,32}" autocomplete="off" autocapitalize="off" placeholder="anya9"></label>
     <label>Пароль — не меньше 6 символов
-      <input id="join-password" name="password" type="password" value="{{ suggested }}" required minlength="6" autocomplete="new-password" autocapitalize="off"></label>
-    <p class="small muted">Мы придумали пароль — сохрани его. Можно посмотреть и скопировать.</p>
-    <p class="row">
-      <button type="button" class="btn btn-small btn-ghost" id="join-show">Показать</button>
-      <button type="button" class="btn btn-small btn-ghost" id="join-copy">Скопировать</button>
-    </p>
+      <input name="password" value="{{ suggested }}" required minlength="6" autocomplete="new-password" autocapitalize="off"></label>
     <label>Код приглашения преподавателя (необязательно)
       <input name="invite_code" value="{{ form.invite_code or '' }}" maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="ABCD1234"></label>
     <p class="small muted">Если у вас есть код от репетитора — введите его, и вы попадёте в его группу. Без кода вы работаете самостоятельно.</p>
@@ -38,10 +33,6 @@
       Подробнее — в <a href="/privacy" target="_blank" rel="noopener">политике</a>.</p>
     <button class="btn btn-big">Зарегистрироваться</button>
   </form>
-  {% include "_oauth_buttons.html" %}
   <p class="small"><a href="/login">Уже есть аккаунт — войти</a></p>
 </section>
-{% endblock %}
-{% block scripts %}
-<script src="/static/js/join.js?v={{ v }}"></script>
 {% endblock %}

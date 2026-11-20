@@ -39,26 +39,8 @@ def _earned_today(conn, sid):
                         "AND created_at >= ?", (sid, config.today().isoformat())).fetchone()[0]
 
 
-def load_variant(num, seed):
-    """№11, №13 и №14 собирает oge_u2, остальные номера первой части — oge_gen."""
-    from .content import oge_u2
-    if num in oge_u2.GENERATORS:
-        return oge_u2.make(num, seed)
-    return oge_gen.make(num, seed)
-
-
-def drill_numbers():
-    """На КодКвесте тренажёр как раньше: только номера oge_gen. №11, №13 и №14 — на umedu."""
-    from . import config
-    from .content import oge_u2
-    nums = set(oge_gen.GENERATORS)
-    if config.UMEDU2 and not config.CHEM_SITE:
-        nums |= set(oge_u2.GENERATORS)
-    return nums
-
-
 def answer(conn, sid, num, seed, given, record=True):
-    v = load_variant(num, seed)
+    v = oge_gen.make(num, seed)
     ok = oge_gen.check(v, given)
     res = {"ok": ok, "answer": v["answer"], "explain": v["explain"], "xp": 0}
     if not record:

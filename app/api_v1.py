@@ -9,9 +9,8 @@ app/knowledge.py, что и на сайте. Попытку проверяет �
 api_attempt_keys — повтор с тем же ключом возвращает сохранённый ответ и второй раз попытку не пишет.
 
 Регистрация по решению владельца (29.10.2026): 14 лет и старше — сам; младше 14 — аккаунт создаёт
-и подтверждает родитель, в API такой путь пока только отказ с подсказкой. Яндекс ID на сайте —
-app/oauth_web.py (кнопка, если заданы YANDEX_CLIENT_ID и YANDEX_CLIENT_SECRET). В API по-прежнему
-только почта. VK ID — позже, тем же интерфейсом провайдера. Telegram для входа не делаем.
+и подтверждает родитель, в API такой путь пока только отказ с подсказкой. VK ID и Яндекс ID — позже,
+нужны приложения у VK/Яндекса (client_id/secret), Telegram для входа не делаем.
 """
 import hashlib
 import re
@@ -41,7 +40,7 @@ _MINOR = "Младше 14 аккаунт создаёт родитель — п�
 _EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 # live — у предмета есть номера, где сервер сам выдаёт вариант и проверяет ответ (u2_web.GENERATED).
-# Баллы — из app/content/exams, не из памяти.
+# Остальные soon: там пока только самопроверка по банку ФИПИ. Баллы — из app/content/exams, не из памяти.
 # Обязательные: русский и математика ОГЭ; на ЕГЭ русский (математику выбирают — базу или профиль).
 _TRACKS = (("oge", "ОГЭ"), ("ege", "ЕГЭ"))
 _REQUIRED = {"oge-rus-2026", "oge-math-2026", "ege-rus-2026"}
@@ -348,7 +347,7 @@ _sessions = {}                            # ip -> [время создания �
 def get_numbers(exam_id: str):
     """Список номеров заданий, которые сервер умеет генерировать для экзамена (этап 6)."""
     from .u2_web import GENERATED
-    nums = sorted(n for n in GENERATED.get(exam_id, ()) if isinstance(n, int))
+    nums = sorted(GENERATED.get(exam_id, ()))
     if not nums:
         raise HTTPException(404, "Экзамен не найден или не поддерживается")
     return NumbersOut(exam_id=exam_id, numbers=nums)
@@ -357,7 +356,9 @@ def get_numbers(exam_id: str):
 @router.get("/errors/{exam_id}", response_model=ErrorsOut)
 def get_errors(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
     """Последние ошибки ученика по экзамену (этап 6)."""
-    user = _require_student(conn, authorization)
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
     rows = conn.execute(
         "SELECT task_key, seed, given, day FROM skill_attempt "
         "WHERE student_id = ? AND exam_id = ? AND score < 1 ORDER BY id DESC LIMIT 20",
@@ -374,14 +375,18 @@ def get_errors(exam_id: str, conn=Depends(get_db), authorization: str | None = H
 
 @router.get("/me", response_model=MeOut)
 def get_me(conn=Depends(get_db), authorization: str | None = Header(default=None)):
-    user = _require_student(conn, authorization)
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
     return MeOut(id=user["id"], display_name=user.get("display_name", ""), grade=user.get("grade"),
                  subjects=user.get("subjects"))
 
 
 @router.delete("/account", status_code=204)
 def delete_account(conn=Depends(get_db), authorization: str | None = Header(default=None)):
-    user = _require_student(conn, authorization)
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
     from . import account
     if not account.delete_student(conn, user["id"]):
         raise HTTPException(403, "Нельзя удалить этот аккаунт")
@@ -402,7 +407,9 @@ def post_crash(payload: dict, conn=Depends(get_db)):
 
 @router.get("/skills/{exam_id}", response_model=SkillsOut)
 def get_skills(exam_id: str, conn=Depends(get_db), authorization: str | None = Header(default=None)):
-    user = _require_student(conn, authorization)
+    user = _api_user(conn, _bearer(authorization))
+    if not user:
+        raise HTTPException(401, "Нужна авторизация")
     from . import skills as skillmod
     summ = skillmod.progress_summary(conn, user["id"], exam_id)
     out = [SkillOut(id=sid, title=info["title"], p=info["p"], n=info["n"], mastered=info["mastered"])
@@ -453,8 +460,6 @@ def _bearer(authorization):
 
 def _api_user(conn, token):
     """Кто за токеном: гость (api_sessions) или вход по почте (api_logins). (user_id, таблица) или None."""
-    if not token:
-        return None
     th = _token_hash(token)
     row = conn.execute("SELECT s.user_id, 'api_sessions' FROM api_sessions s JOIN users u ON u.id = s.user_id "
                        "WHERE s.token_hash = ? AND u.active = 1", (th,)).fetchone()
@@ -463,18 +468,6 @@ def _api_user(conn, token):
     row = conn.execute("SELECT l.user_id, 'api_logins' FROM api_logins l JOIN users u ON u.id = l.user_id "
                        "WHERE l.token_hash = ? AND u.active = 1", (th,)).fetchone()
     return (row[0], "api_logins") if row else None
-
-
-def _require_student(conn, authorization):
-    """Строка ученика по Bearer. Нет токена или токен чужой — 401."""
-    found = _api_user(conn, _bearer(authorization))
-    if not found:
-        raise HTTPException(401, "Нужна авторизация")
-    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'student' AND active = 1",
-                       (found[0],)).fetchone()
-    if not row:
-        raise HTTPException(401, "Нужна авторизация")
-    return dict(row)
 
 
 @router.post("/sessions", response_model=SessionOut)
@@ -552,9 +545,7 @@ def post_attempt(body: AttemptIn, conn=Depends(get_db), authorization: str | Non
                                (body.idempotency_key,)).fetchone()
             return AttemptOut.model_validate_json(row["response"])
         try:
-            from .content import onsite_extra
-            kn.record(conn, uid, body.exam_id, body.n, 1.0 if ok else 0.0, seed=body.seed, given=body.answer,
-                      update_state=not onsite_extra.is_practice(body.exam_id, body.n))
+            kn.record(conn, uid, body.exam_id, body.n, 1.0 if ok else 0.0, seed=body.seed, given=body.answer)
         except KeyError:
             raise HTTPException(404)
         conn.execute("UPDATE %s SET last_seen_at = ? WHERE token_hash = ?" % table, (now, _token_hash(token)))

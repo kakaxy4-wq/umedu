@@ -7,8 +7,6 @@
 """
 import asyncio
 import json
-import logging
-import mimetypes
 import os
 import re
 import secrets
@@ -17,17 +15,16 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
-from starlette.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from markupsafe import Markup, escape
 from starlette.concurrency import run_in_threadpool
 
-from . import (account, art, auth, config, events, game, levels, learning_path, oauth_providers,
-               oge_drill, parent_bot, primary, russian, season, students, subjects, theme, today,
-               weekly)
+from . import (account, art, auth, config, events, game, levels, oge_drill, parent_bot, russian, season, students,
+               subjects, theme, today, learning_path,
+    learning_path, weekly)
 
 from .content.checks import CHECK_BY_ID, CHECKS, grade
 from .content.glossary import add_abbr
@@ -41,19 +38,12 @@ from .db import get_db, get_setting, init_db
 
 APP_DIR = Path(__file__).resolve().parent
 STATIC_VERSION = secrets.token_hex(4)
-# Иначе .wasm уходит как application/octet-stream, и браузер отказывается его запускать.
-mimetypes.add_type("application/wasm", ".wasm")
-log = logging.getLogger("umedu")
 
 
 @asynccontextmanager
 async def lifespan(_app):
     config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     init_db()
-    from .vendor_assets import missing as vendor_missing
-    missed = vendor_missing()
-    if missed:
-        log.warning("нет файлов для запуска кода (%s). Команда: bash scripts/fetch_vendor.sh", ", ".join(missed))
     tasks = [asyncio.create_task(weekly.scheduler())] if os.environ.get("CQ_WEEKLY", "1") == "1" else []
     if account.purge_enabled():
         # Раз в сутки снимаем аккаунты, которыми не пользовались год. Ошибка здесь не должна ронять сайт.
@@ -79,20 +69,6 @@ FILE_EXT = IMAGE_EXT | {".py", ".txt", ".zip", ".pdf", ".json", ".md", ".exe", "
 CSP = ("default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; "
        "img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; media-src 'self'; "
        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
-# Страницы моделей umedu могут вставлять официальный iframe PhET. На остальных страницах заголовок прежний.
-CSP_MODELS = (CSP.replace("worker-src 'self'", "worker-src 'self' blob:", 1)
-              + "; frame-src 'self' https://phet.colorado.edu")
-CSP_MOLECULES = CSP_MODELS.replace("script-src 'self' 'wasm-unsafe-eval'",
-                                   "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'", 1)
-# Готовые чужие страницы (микрокосмос, оптика, цепи) — отдельные документы со своим скриптом.
-CSP_MODEL_FILE = ("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; "
-                  "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; "
-                  "worker-src 'self' blob:; font-src 'self' data:; media-src 'self'; "
-                  "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'")
-
-
-def _models_on():
-    return config.UMEDU2 and not config.CHEM_SITE
 
 
 # страницы курса Python и игры «КодКвеста» — на сайте химии их нет
@@ -115,106 +91,20 @@ async def chem_site_only(request: Request, call_next):
 
 
 @app.middleware("http")
-async def hide_senior_from_primary(request: Request, call_next):
-    """3–4 класс на umedu не видит ОГЭ, Python, игры и модели. КодКвест без флага и ХимЛаб не затрагиваются."""
-    path = request.url.path
-    if config.UMEDU2 and not config.CHEM_SITE and primary.hidden_path(path):
-        from .db import connect
-        conn = connect()
-        try:
-            user = auth.load_user(request, conn)
-            if user and user["role"] == "student":
-                st = students.get_student(conn, user["id"])
-                if st and students.is_primary_grade(st.get("grade")):
-                    return Response("Not Found", status_code=404)
-        finally:
-            conn.close()
-    return await call_next(request)
-
-
-# Старые разделы КодКвеста. На umedu ученика ведём в /u2. КодКвест (без флага) и ХимЛаб не трогаем.
-# Учитель на umedu по-прежнему открывает свои страницы.
-_LEGACY_STUDENT = (
-    "/oge", "/playground", "/ru", "/trainer", "/bots", "/map", "/lesson", "/task", "/homework",
-    "/daily", "/cheatsheet", "/portfolio", "/achievements", "/season", "/shop", "/checks",
-    "/certificate", "/today", "/snippets",
-)
-
-
-def _legacy_student_path(path):
-    return any(path == p or path.startswith(p + "/") for p in _LEGACY_STUDENT)
-
-
-@app.middleware("http")
-async def umedu_legacy_to_u2(request: Request, call_next):
-    path = request.url.path
-    if (config.UMEDU2 and not config.CHEM_SITE and request.method in ("GET", "HEAD")
-            and _legacy_student_path(path)):
-        from .db import connect
-        conn = connect()
-        try:
-            user = auth.load_user(request, conn)
-            st = students.get_student(conn, user["id"]) if user and user["role"] == "student" else None
-        finally:
-            conn.close()
-        # Младшим эти адреса закрывает другой слой (404). Остальных учеников и гостей ведём в план.
-        if st is None or not students.is_primary_grade(st.get("grade")):
-            if user is None or user["role"] == "student":
-                return RedirectResponse("/u2/today", status_code=303)
-    return await call_next(request)
-
-
-@app.middleware("http")
-async def head_like_get(request: Request, call_next):
-    """HEAD на HTML-страницы не должен отвечать 405: отдаём те же заголовки, что и GET, без тела."""
-    if request.method != "HEAD":
-        return await call_next(request)
-    request.scope["method"] = "GET"
-    response = await call_next(request)
-    if isinstance(response, (FileResponse, StreamingResponse)):
-        return response
-    response.body = b""
-    if "content-length" in response.headers:
-        response.headers["content-length"] = "0"
-    return response
-
-
-@app.middleware("http")
 async def security_headers(request: Request, call_next):
-    path = request.url.path
-    if path.startswith("/static/models/") and not _models_on():
-        return Response("Not Found", status_code=404)
     response = await call_next(request)
     await run_in_threadpool(events.record, request, response.status_code)
     # Изоляция страницы нужна, чтобы Python в браузере мог ждать input() и останавливаться кнопкой «Стоп»
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    csp, coep = CSP, "require-corp"
-    if path.startswith("/static/models/") and path.endswith(".html"):
-        csp = CSP_MODEL_FILE
-    elif _models_on() and path.startswith("/u2/models/molecules"):
-        csp = CSP_MOLECULES
-    elif _models_on() and path.startswith("/u2/models"):
-        csp = CSP_MODELS
-        if path.startswith("/u2/models/phet"):
-            coep = "unsafe-none"
-    response.headers["Cross-Origin-Embedder-Policy"] = coep
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
-    response.headers["Content-Security-Policy"] = csp
-    # HSTS только когда страница открыта по https (сам сайт или nginx с X-Forwarded-Proto).
-    # По http заголовок не ставим: иначе локальная разработка начинает ругаться.
-    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-    if proto == "https":
-        response.headers["Strict-Transport-Security"] = "max-age=31536000"
+    response.headers.setdefault("Content-Security-Policy", CSP)
     if request.url.path.startswith("/static/vendor/"):
         response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
     if request.url.path.startswith(("/parent/", "/family", "/teacher/students", "/teacher/student/")):
         # страница родителя и карточки доступа — не кэшировать и не индексировать
-        response.headers["Cache-Control"] = "no-store"
-        response.headers["X-Robots-Tag"] = "noindex, nofollow"
-    if path.startswith("/auth/"):
-        # в callback есть одноразовый code — его нельзя оставлять в кэше прокси
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
@@ -236,8 +126,7 @@ async def _login_redirect(request: Request, exc):
 @app.exception_handler(StarletteHTTPException)
 async def _http_error(request: Request, exc):
     """Ошибки форм и страниц — понятной страницей с кнопкой «Назад», а не JSON; API отвечает JSON, как раньше."""
-    if (request.url.path.startswith("/api/") or request.url.path.startswith("/u2/api/")
-            or "application/json" in request.headers.get("accept", "")):
+    if request.url.path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
     detail = exc.detail if isinstance(exc.detail, str) else ""
     if exc.status_code == 404 and detail in ("", "Not Found"):
@@ -368,7 +257,6 @@ def render(request, name, conn, user=None, **ctx):
         "umedu2": config.UMEDU2,
         "source_url": config.SOURCE_URL,
         "logo": theme.LOGO,
-        "oauth_providers": oauth_providers.enabled(),
     })
     if user:
         sid = ctx.pop("sid", None) or subject_id(conn, user)
@@ -376,7 +264,6 @@ def render(request, name, conn, user=None, **ctx):
         ctx["subject"] = students.get_student(conn, sid) if sid else None
         ctx.setdefault("me", game.stats(conn, sid) if sid else None)
         ctx["student_name"] = ctx["subject"]["display_name"] if ctx["subject"] else ""
-        ctx["junior"] = bool(ctx["subject"] and students.is_primary_grade(ctx["subject"].get("grade")))
         ctx["solo"] = bool(ctx["subject"] and ctx["subject"].get("self_paced"))
         ctx["subj"] = subjects.of(ctx["subject"]) if ctx["subject"] else []
         ctx["subjects_all"] = subjects.SUBJECTS
@@ -492,58 +379,7 @@ def logout(request: Request, conn=Depends(get_db), user=Depends(auth.check_csrf)
 
 @app.get("/healthz")
 def healthz():
-    """200 всегда. Балансировщик смотрит на код ответа: пустой vendor не снимает сайт с приёма,
-    страницы при этом открываются. Дыру в статике после выкладки ловит scripts/check_static.py.
-    В теле: vendor=ok или vendor=missing и список файлов."""
-    from .vendor_assets import missing as vendor_missing
-    missed = vendor_missing()
-    body = {"ok": True, "vendor": "missing" if missed else "ok"}
-    if missed:
-        body["vendor_missing"] = missed
-    return body
-
-
-@app.api_route("/robots.txt", methods=["GET", "HEAD"])
-def robots():
-    # python.familysrv.ru и ХимЛаб — семейные сайты, их не индексируем.
-    if not (config.UMEDU2 and not config.CHEM_SITE):
-        return Response("User-agent: *\nDisallow: /\n", media_type="text/plain")
-    body = "\n".join([
-        "User-agent: *",
-        "Disallow: /account",
-        "Disallow: /teacher",
-        "Disallow: /family",
-        "Disallow: /parent",
-        "Disallow: /for-parents",
-        "Allow: /",
-        "",
-    ])
-    return Response(body, media_type="text/plain")
-
-
-@app.api_route("/favicon.ico", methods=["GET", "HEAD"])
-def favicon():
-    logo = APP_DIR / "static" / "img" / "brand" / "umedu-mark.svg"
-    if logo.is_file():
-        return FileResponse(logo, media_type="image/svg+xml")
-    return Response(status_code=204)
-
-
-@app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
-def sitemap(request: Request):
-    """Публичные страницы. Кабинеты ученика и родителя в карту не кладём."""
-    base = (config.BASE_URL or str(request.base_url)).rstrip("/")
-    paths = []
-    if config.UMEDU2 and not config.CHEM_SITE:
-        paths = ["/", "/welcome", "/login", "/privacy", "/consent", "/gallery"]
-        if config.OPEN_SIGNUP:
-            paths += ["/join", "/family/login", "/family/new-child"]
-    body = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-            "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"]
-    for path in paths:
-        body.append("<url><loc>%s%s</loc></url>" % (base, path))
-    body.append("</urlset>")
-    return Response("\n".join(body) + "\n", media_type="application/xml")
+    return {"ok": True}
 
 
 # ------------------------------------------------------------------ ученик: главная
@@ -608,8 +444,7 @@ def oge_progress(conn, sid):
     for num in OGE_NUMBERS:
         tasks = [t for t in OGE_TASKS if t["oge"] == num]
         out[num] = {"tasks": tasks, "solved": len([t for t in tasks if t["id"] in solved]), "trial": trial_topics.get(num),
-                    "drill": drill.get(num) if num in oge_drill.drill_numbers() or num == 16 else None,
-                    "has_drill": num in oge_drill.drill_numbers()}
+                    "drill": drill.get(num) if num in oge_gen.GENERATORS or num == 16 else None, "has_drill": num in oge_gen.GENERATORS}
     out[15]["robot"] = (len(robot_solved(conn, sid)), len(robot_content.TASKS))
     return out
 
@@ -663,10 +498,8 @@ from .family_web import router as family_router  # noqa: E402
 from .teacher_web import router as teacher_router  # noqa: E402
 from .signup_web import router as signup_router  # noqa: E402
 from .u2_web import router as u2_router  # noqa: E402
-from .models_web import router as models_router  # noqa: E402
 from .api_v1 import router as api_v1_router  # noqa: E402
 from .account_web import router as account_router  # noqa: E402
-from .oauth_web import router as oauth_router  # noqa: E402
 app.include_router(student_router)
 app.include_router(oge_router)
 app.include_router(russian_router)
@@ -675,10 +508,8 @@ app.include_router(family_router)
 app.include_router(teacher_router)
 app.include_router(signup_router)
 app.include_router(u2_router)
-app.include_router(models_router)
 app.include_router(api_v1_router)
 app.include_router(account_router)
-app.include_router(oauth_router)
 from .chem_web import router as chem_router  # noqa: E402 — после всех общих функций, которыми он пользуется
 
 app.include_router(chem_router)

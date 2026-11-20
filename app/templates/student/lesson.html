@@ -19,12 +19,8 @@
   <p>Реши <b>{{ pace.need }}</b> {{ 'задачу' if pace.need == 1 else 'задачи' }} этого урока — и он засчитается{% if not pace.last %}, а следующий откроется сам{% endif %}. Решено: <b>{{ [pace.have, pace.need]|min }} из {{ pace.need }}</b>.</p>
   <div class="progress"><i style="width: {{ (100 * ([pace.have, pace.need]|min) / pace.need)|int }}%"></i></div>
   {% elif user.role == 'student' %}
-  {% if umedu2 %}
-  <p>Задачи этого урока — на этой же странице, сайт проверяет ответ сам.</p>
-  {% else %}
   <p>В этом уроке нет задач с автопроверкой — прочитай его, повтори примеры у себя и отметь, когда разберёшься.</p>
   <form method="post" action="/lesson/{{ lesson.num }}/self-done">{{ csrf_field(user) }}<button class="btn">✅ Урок изучен{% if not pace.last %} — дальше{% endif %}</button></form>
-  {% endif %}
   {% endif %}
 </section>
 {% endif %}

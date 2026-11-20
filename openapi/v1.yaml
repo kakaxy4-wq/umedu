@@ -167,6 +167,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TheoryOut"
+  /api/v1/plan:
+    get:
+      operationId: getPlan
+      summary: План на сегодня (шаги с навыками)
+      responses:
+        "200":
+          description: План.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanOut"
+        "401":
+          description: Нужна авторизация.
   /api/v1/sessions:
     post:
       operationId: postSession
@@ -809,3 +822,42 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TheoryLesson"
+    PlanStep:
+      type: object
+      additionalProperties: false
+      required: [key, title, href, done]
+      properties:
+        key:
+          type: string
+        emoji:
+          type: string
+        title:
+          type: string
+        href:
+          type: string
+        done:
+          type: boolean
+        note:
+          type: string
+        skill_id:
+          type: string
+    PlanOut:
+      type: object
+      additionalProperties: false
+      required: [steps, done, total, complete]
+      properties:
+        schema_version:
+          type: integer
+          enum: [1]
+        exam_id:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanStep"
+        done:
+          type: integer
+        total:
+          type: integer
+        complete:
+          type: boolean

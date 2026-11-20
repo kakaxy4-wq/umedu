@@ -12,7 +12,6 @@
     <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
     <button class="btn btn-big">Войти</button>
   </form>
-  {% include "_oauth_buttons.html" %}
   {% if open_signup %}<p class="small">Первый раз? <a href="/join">Зарегистрироваться бесплатно →</a></p>
   {% elif signup and chem_site %}<p class="small">Первый раз? <a href="/join">Регистрация по коду преподавателя →</a></p>{% endif %}
   {% if public_site %}<p class="muted small"><a href="/welcome">Что это за платформа →</a></p>{% endif %}

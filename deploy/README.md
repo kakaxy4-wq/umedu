@@ -1,20 +1,5 @@
 # deploy/ — systemd-юниты для экземпляров на одном сервере
 
-После `systemctl restart` и ответа `/healthz` скрипты стенда запускают
-`python scripts/check_static.py http://localhost:<порт>`. Ненулевой код значит, что
-какой-то файл `/static` (Pyodide, CodeMirror, шрифты) не отдался или wasm пришёл не как
-`application/wasm`. На проде ту же команду нужно выполнить в конце `update.sh` против
-публичного адреса. `/healthz` специально остаётся 200: балансировщик не снимает сайт,
-а в JSON смотрят поле `vendor`.
-
-Приложение само отдаёт `Strict-Transport-Security: max-age=31536000`, если запрос пришёл по https
-или nginx передал `X-Forwarded-Proto: https`. На чистом http (локально) заголовка нет.
-Если TLS обрывается на nginx и заголовок нужен ещё до приложения, в server-блок https:
-
-```nginx
-add_header Strict-Transport-Security "max-age=31536000" always;
-```
-
 ## Удаление неактивных аккаунтов: `codequest-purge@.service` + `codequest-purge@.timer`
 
 Политика (/privacy) обещает удалять аккаунт через год после последнего занятия. Это делает

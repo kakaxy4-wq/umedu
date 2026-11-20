@@ -73,11 +73,11 @@ def oge_code16(request: Request, seed: int = 0, conn=Depends(get_db), user=Depen
 @router.get("/oge/drill/{num}", response_class=HTMLResponse)
 def oge_drill_page(num: int, request: Request, seed: int = 0, conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
-    if num not in oge_drill.drill_numbers():
+    if num not in oge_gen.GENERATORS:
         raise HTTPException(404)
     if not 0 < seed < 10 ** 7:
         return back("/oge/drill/%d?seed=%d" % (num, random.randrange(1, 10 ** 6)))
-    v = oge_drill.load_variant(num, seed)
+    v = oge_gen.make(num, seed)
     return render(request, "student/oge_drill.html", conn, user, num=num, seed=seed, variant=oge_gen.public(v),
                   text=oge_drill.rich(v["text"]), title=OGE_NUMBERS[num][0], st=oge_drill.stats(conn, sid).get(num),
                   res=None, given="")
@@ -87,10 +87,10 @@ def oge_drill_page(num: int, request: Request, seed: int = 0, conn=Depends(get_d
 def oge_drill_answer(num: int, request: Request, seed: int = Form(...), answer: str = Form(""), conn=Depends(get_db),
                      user=Depends(auth.check_csrf)):
     sid = need_sid(conn, user)
-    if num not in oge_drill.drill_numbers() or not 0 < seed < 10 ** 7:
+    if num not in oge_gen.GENERATORS or not 0 < seed < 10 ** 7:
         raise HTTPException(404)
     res = oge_drill.answer(conn, sid, num, seed, answer[:100], record=user["role"] == "student")
-    v = oge_drill.load_variant(num, seed)
+    v = oge_gen.make(num, seed)
     return render(request, "student/oge_drill.html", conn, user, num=num, seed=seed, variant=oge_gen.public(v),
                   text=oge_drill.rich(v["text"]), title=OGE_NUMBERS[num][0], st=oge_drill.stats(conn, sid).get(num),
                   res=res, given=answer[:100])
@@ -128,12 +128,10 @@ def robot_page(task_id: str, request: Request, exam: int = 0, conn=Depends(get_d
     nxt = ids[ids.index(task_id) + 1] if ids.index(task_id) + 1 < len(ids) else None
     exam = bool(exam)
     # На экзамене поля каждый раз новые и программа пишется с чистого листа; эталон не показываем до решения.
-    # Сид уходит на страницу и обратно: сервер собирает те же поля и сам прогоняет программу.
-    seed = random.randrange(1, 10 ** 6)
-    fields = robot_content.fields_for(task, seed)
+    fields = robot_content.fields_for(task, random.randrange(10 ** 6) if exam else None)
     code = robot_content.EXAM_STARTER if exam else (last["code"] if last else task["starter"])
     return render(request, "student/robot.html", conn, user, task=robot_content.public(task),
-                  fields=fields, seed=seed, code=code, exam=exam, starter=robot_content.EXAM_STARTER if exam else task["starter"],
+                  fields=fields, code=code, exam=exam, starter=robot_content.EXAM_STARTER if exam else task["starter"],
                   solved=solved, xp=robot_content.XP, help=robot_content.COMMANDS_HELP,
                   next_task=robot_content.TASK_BY_ID.get(nxt) if nxt else None,
                   answer=task if (solved or is_teacher(user)) and not exam else None)
@@ -146,14 +144,7 @@ async def robot_attempt(task_id: str, request: Request, conn=Depends(get_db), us
         raise HTTPException(404)
     data = await request.json()
     code = str(data.get("code", ""))[:50_000]
-    try:
-        seed = int(data.get("seed", 0))
-    except (TypeError, ValueError):
-        seed = 0
-    passed = bool(data.get("passed")) and bool(code.strip())
-    if user["role"] == "student":
-        from .student_web import _code_budget
-        _code_budget(conn, "robot_attempts", user["id"])
+    passed = bool(data.get("passed"))
     result = {"first": False, "xp": 0, "notices": []}
     if user["role"] == "student":
         sid = user["id"]
@@ -168,7 +159,6 @@ async def robot_attempt(task_id: str, request: Request, conn=Depends(get_db), us
                 season.maybe_drop(conn, sid, "Робот: «%s»" % task["title"])
                 result.update({"first": True, "xp": robot_content.XP})
         result["notices"] = game.pop_notices(conn, sid)
-    result["passed"] = passed
     if passed:
         result["solution"] = task["solution"]
         result["kumir"] = task["kumir"]

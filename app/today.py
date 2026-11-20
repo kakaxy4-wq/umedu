@@ -4,7 +4,7 @@
 ОГЭ по самому слабому номеру, одна новая задача текущего урока. Шаг считается сделанным по реальным событиям в
 базе за сегодня — отдельного учёта нет. Весь план — сундук (дроп) один раз в день.
 """
-from . import config, game, oge_drill, russian, season, subjects, students
+from . import config, game, oge_drill, russian, season, skills, subjects, students
 from .content.tasks import TASKS
 from .forecast import EASY_FIRST as OGE_START_ORDER
 
@@ -21,7 +21,21 @@ def _count(conn, sql, *args):
 
 
 def _oge_pick(conn, sid):
-    """Номер для тренировки: начатый и не освоенный с худшей точностью, иначе следующий по порядку."""
+    """Выбрать номер ОГЭ: сначала навык с низким мастерством (skill tree),
+    иначе незавершённые с низким процентом, иначе следующий по порядку."""
+    # Используем skill tree только если у ученика уже есть данные мастерства;
+    # иначе — классический порядок OGE_START_ORDER (первый номер — 4).
+    try:
+        summ = skills.progress_summary(conn, sid, "oge-inf-2026")
+        if any(info.get("n", 0) > 0 for info in summ.values()):
+            nxt = skills.next_skills(conn, sid, "oge-inf-2026", limit=1)
+            if nxt:
+                try:
+                    return int(nxt[0].key)
+                except (ValueError, TypeError):
+                    pass
+    except Exception:
+        pass
     st = oge_drill.stats(conn, sid)
     started = [(v["ok"] / v["n"], n) for n, v in st.items() if v["n"] and not v["mastered"]]
     if started:

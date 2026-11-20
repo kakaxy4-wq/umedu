@@ -60,8 +60,6 @@ def create_student(conn, username, display_name, password, full_name="", grade=N
         conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
                      (sid, "chem%d_entry" % grade, now))
         return sid
-    if is_primary_grade(grade):
-        return sid
     conn.execute("INSERT OR IGNORE INTO lesson_state (student_id, num, opened_at) VALUES (?, 1, ?)", (sid, now))
     conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, 'entry', ?)", (sid, now))
     return sid
@@ -69,20 +67,6 @@ def create_student(conn, username, display_name, password, full_name="", grade=N
 
 # ------------------------------------------------------------------ открытая регистрация (CQ_SIGNUP=open)
 GRADES = {7: "7 и младше", 8: "8 класс", 9: "9 класс", 10: "10 и старше"}
-# 3 и 4 класс — только umedu (CQ_UMEDU2 и не ХимЛаб). КодКвест без флага и химия их не предлагают.
-PRIMARY_GRADE_NUMS = (3, 4)
-
-
-def signup_grades():
-    if config.UMEDU2 and not config.CHEM_SITE:
-        return {3: "3 класс", 4: "4 класс", **GRADES}
-    return GRADES
-
-
-def is_primary_grade(grade):
-    return bool(config.UMEDU2 and not config.CHEM_SITE and grade in PRIMARY_GRADE_NUMS)
-
-
 SIGNUPS_PER_HOUR = 5                      # с одного адреса — от ботов и «мультиаккаунтов»
 _signups = {}                             # ip -> [время регистрации]
 
@@ -101,8 +85,7 @@ def signup(conn, name, grade, login, password, consent, ip="?", age14=False, par
     name, login = name.strip()[:40], login.strip().lower()
     if not name:
         return None, "Напиши имя или ник — так к тебе будут обращаться."
-    grades = signup_grades()
-    if grade not in grades:
+    if grade not in GRADES:
         return None, "Выбери класс."
     if not valid_login(login):
         return None, "Логин — латинские буквы, цифры, точка, дефис или _, от 2 до 32 символов."
@@ -117,25 +100,19 @@ def signup(conn, name, grade, login, password, consent, ip="?", age14=False, par
     if conn.execute("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1 AND guest = 0").fetchone()[0] >= MAX_STUDENTS:
         return None, "Сейчас все места заняты — загляни через пару дней."
     _teacher_id = teacher_by_invite(conn, invite_code) if invite_code else None
-    sid = create_student(conn, login, name, password, grade=grade)
-    primary = is_primary_grade(grade)
-    chosen = [] if primary else ([s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"])
+    sid = create_student(conn, login, name, password)
+    chosen = [s for s in config.SUBJECTS if s in ("python", "russian")] or ["python"]
     # parent_id — аккаунт заводит родитель, ученику меньше 14 лет. Сам с 14 лет: minor = 0.
-    # «primary» не входит в subjects.SUBJECTS: Python и русский 8 класса такому ученику не подмешиваются.
     conn.execute("UPDATE users SET grade = ?, self_paced = 1, consent = ?, subjects = ?, minor = ?, teacher_id = ? WHERE id = ?",
                  (grade, "%s · %s%s" % (CONSENT_VERSION, game.now_iso(), " · родитель #%d" % parent_id if parent_id else ""),
-                  "primary" if primary else subjects.serialize(chosen), 1 if parent_id else 0, _teacher_id, sid))
-    if not primary:
-        for cid in ["oge1"] + (["ru_entry"] if "russian" in chosen else []):
-            conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
-                         (sid, cid, game.now_iso()))
+                  subjects.serialize(chosen), 1 if parent_id else 0, _teacher_id, sid))
+    for cid in ["oge1"] + (["ru_entry"] if "russian" in chosen else []):
+        conn.execute("INSERT OR IGNORE INTO check_state (student_id, id, opened_at) VALUES (?, ?, ?)",
+                     (sid, cid, game.now_iso()))
     _signups.setdefault(ip, []).append(time.time())
-    if primary:
-        game.add_notice(conn, sid, "👋", "Привет! Сегодня три коротких задания: математика, русский и окружающий мир.", big=True)
-    else:
-        game.add_notice(conn, sid, "👋", "Привет! Начни с плана на сегодня — 10–15 минут, в конце сундук.", big=True)
+    game.add_notice(conn, sid, "👋", "Привет! Начни с плана на сегодня — 10–15 минут, в конце сундук.", big=True)
     game.tell_teacher(conn, sid, "🆕 %s: %s, %s" % ("Завёл родитель" if parent_id else "Зарегистрировался сам", name,
-                                                  grades[grade]), "/teacher/students")
+                                                  GRADES[grade]), "/teacher/students")
     return sid, None
 
 
@@ -164,14 +141,6 @@ def list_students(conn, include_archived=False, teacher_id=None):
         params.append(teacher_id)
     sql += " ORDER BY active DESC, display_name COLLATE NOCASE"
     return [dict(r) for r in conn.execute(sql, params)]
-
-
-def set_grade(conn, sid, grade):
-    """Смена класса в профиле. Чужой номер не записываем. Прогресс по заданиям не стираем."""
-    if grade not in signup_grades():
-        return False
-    conn.execute("UPDATE users SET grade = ? WHERE id = ? AND role = 'student'", (grade, sid))
-    return True
 
 
 def set_password(conn, sid, password):

@@ -2,22 +2,6 @@
 (function () {
   'use strict';
   const V = document.documentElement.dataset.v || '1';
-  // 404/500 на наших файлах — вина сервера. Интернет упоминаем только когда связи нет.
-  const MSG_SERVER = 'Запуск кода временно не работает — мы уже чиним. Твой код сохранён.';
-  const MSG_NET = 'Нет связи с сайтом. Проверь интернет и обнови страницу. Твой код сохранён.';
-  const MSG_EDITOR = 'Подсветка кода временно не работает — мы уже чиним. Твой код на месте.';
-
-  function hintFor(reason) {
-    return reason === 'network' ? MSG_NET : MSG_SERVER;
-  }
-
-  function reasonOf(err) {
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'network';
-    if (err instanceof TypeError) return 'network';
-    const text = String(err && err.message || err);
-    if (/Failed to fetch|NetworkError|Load failed|network error/i.test(text)) return 'network';
-    return 'server';
-  }
 
   // ------------------------------------------------------------------ PyRunner
   class PyRunner {
@@ -50,11 +34,8 @@
       });
       this.worker.onmessage = (e) => this._onMessage(e.data);
       this.worker.onerror = (e) => {
-        const reason = this._loadReason || reasonOf(e);
-        const err = new Error(e.message || 'Не удалось запустить Python');
-        err.reason = reason;
-        this._readyReject && this._readyReject(err);
-        this._finish({ error: { type: 'Ошибка загрузки', hint: hintFor(reason), traceback: String(e.message || '') } });
+        this._readyReject && this._readyReject(new Error(e.message || 'Не удалось запустить Python'));
+        this._finish({ error: { type: 'Error', hint: 'Python не загрузился. Обнови страницу.', traceback: String(e.message || '') } });
       };
       this.worker.postMessage(init);
       return this.ready;
@@ -71,14 +52,8 @@
         case 'done':
         case 'checked': this._finish(msg.result); break;
         case 'fatal':
-          this._loadReason = msg.reason || reasonOf(msg.error);
-          if (!this.job) {
-            const err = new Error(msg.error || 'Не удалось запустить Python');
-            err.reason = this._loadReason;
-            this._readyReject && this._readyReject(err);
-            break;
-          }
-          this._finish({ error: { type: 'Ошибка загрузки', hint: hintFor(this._loadReason), traceback: msg.error } });
+          if (!this.job) { this._readyReject && this._readyReject(new Error(msg.error)); break; }
+          this._finish({ error: { type: 'Error', hint: 'Внутренняя ошибка запуска.', traceback: msg.error } });
           break;
       }
     }
@@ -383,9 +358,7 @@
       }
       bar.append(this.resetBtn, this.status);
       if (this.mode !== 'playground') {
-        const copy = el('button', 'btn btn-ghost', 'Копировать');
-        copy.type = 'button';
-        copy.setAttribute('aria-label', 'Скопировать код');
+        const copy = el('button', 'btn btn-ghost', '⧉');
         copy.title = 'Скопировать код';
         copy.onclick = () => navigator.clipboard && navigator.clipboard.writeText(this.getCode()).then(() => this._status('Скопировано'));
         bar.append(copy);
@@ -442,12 +415,6 @@
         this.textarea.addEventListener('keydown', (e) => {
           if (e.key === 'Tab') { e.preventDefault(); document.execCommand('insertText', false, '    '); }
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) this.run();
-        });
-        const editorUrl = '/static/vendor/codemirror/codemirror.js';
-        fetch(editorUrl, { method: 'HEAD', cache: 'no-store' }).then((res) => {
-          this._showError({ type: 'Ошибка загрузки', hint: res.ok ? MSG_EDITOR : MSG_SERVER, traceback: editorUrl + ' → ' + res.status });
-        }).catch((err) => {
-          this._showError({ type: 'Ошибка загрузки', hint: reasonOf(err) === 'network' ? MSG_NET : MSG_SERVER, traceback: String(err && err.message || err) });
         });
       }
 
@@ -519,7 +486,7 @@
       if (!runner.ready) this._status(PY_LOADING);
       try { await runner.start(); } catch (e) {
         this._status('');
-        this._showError({ type: 'Ошибка загрузки', hint: hintFor(e.reason || reasonOf(e)), traceback: String(e.message || e) });
+        this._showError({ type: 'Ошибка загрузки', hint: 'Не получилось загрузить Python в браузере. Проверь интернет и обнови страницу.', traceback: String(e.message || e) });
         return false;
       }
       this._status('');

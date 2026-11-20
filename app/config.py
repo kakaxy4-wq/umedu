@@ -61,11 +61,6 @@ API_FLAG_GUESTS = os.environ.get("CQ_API_FLAG_GUESTS", "1") != "0"
 API_SESSIONS_PER_HOUR = int(os.environ.get("CQ_API_SESSIONS_PER_HOUR", "20"))
 API_FLAG_AUTH = os.environ.get("CQ_API_FLAG_AUTH", "1") != "0"
 API_REGISTER_PER_HOUR = int(os.environ.get("CQ_API_REGISTER_PER_HOUR", "10"))
-# Яндекс ID на сайте. Оба значения пустые — кнопки нет, маршруты /auth/yandex отвечают 404.
-# Так КодКвест и ХимЛаб (отдельные базы, те же исходники) не меняются, пока переменные не заданы.
-# Секрет только из окружения, в репозиторий не попадает.
-YANDEX_CLIENT_ID = os.environ.get("YANDEX_CLIENT_ID", "").strip()
-YANDEX_CLIENT_SECRET = os.environ.get("YANDEX_CLIENT_SECRET", "").strip()
 API_NOTICE_KIND = os.environ.get("CQ_API_NOTICE_KIND", "").strip()
 API_NOTICE_TEXT = os.environ.get("CQ_API_NOTICE_TEXT", "").strip()
 

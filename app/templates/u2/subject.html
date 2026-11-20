@@ -19,20 +19,11 @@
 {% if path %}
 <section class="u2-card">
   <h2>Путь к цели {% if c.kind == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}</h2>
-  {% if not path.steps %}
-  <p class="u2-hint">Заданий, которые меняют прогноз, по этому экзамену пока нет.</p>
-  {% endif %}
   {% if path.steps %}
   <p class="u2-hint">{% if path.reached %}Хватит освоить {{ path.steps|length }} {{ 'номер' if path.steps|length % 10 == 1 and path.steps|length % 100 != 11 else ('номера' if path.steps|length % 10 in (2, 3, 4) and path.steps|length % 100 not in (12, 13, 14) else 'номеров') }} — довести шанс решить до 90 %.
     Начни сверху: там больше всего баллов.{% else %}Даже если освоить все номера ниже до 90 %, по прогнозу до цели не хватает — нужны и остальные. Начни с этих:{% endif %}</p>
   <ul class="u2-nums">
     {% for s in path.steps %}<li><a href="/u2/train/{{ c.id }}/{{ s.n }}"><b>{{ s.label }}</b> {{ s.title }}<small>сейчас {{ (s.p * 100)|round|int }} % · около {{ s.reps }} {{ 'тренировки' if s.reps % 10 in (2, 3, 4) and s.reps % 100 not in (12, 13, 14) else ('тренировка' if s.reps % 10 == 1 and s.reps % 100 != 11 else 'тренировок') }}</small></a></li>{% endfor %}
-  </ul>
-  {% endif %}
-  {% if path.practice %}
-  <p class="u2-hint">Дальше — тренировка. Она не входит в «хватит освоить» и прогноз не меняет.</p>
-  <ul class="u2-nums">
-    {% for s in path.practice %}<li><a href="/u2/train/{{ c.id }}/{{ s.n }}"><b>{{ s.label }}</b> {{ s.title }}<small>тренировка</small></a></li>{% endfor %}
   </ul>
   {% endif %}
 </section>
@@ -43,12 +34,8 @@
   <div class="u2-card-head"><h2>{{ g.name }}</h2><span class="u2-chip">{{ (g.p * 100)|round|int }}%</span></div>
   <div class="u2-cells">
     {% for t in tasks if t.n in g.tasks %}
-    {% if t.mode == 'soon' %}
-    <span class="u2-cell" title="№{{ t.n }} скоро появится на сайте"><b>{{ t.n }}</b><small>скоро</small></span>
-    {% else %}
     <a class="u2-cell" href="/u2/train/{{ c.id }}/{{ t.n }}" style="--p: {{ t.p }}" title="№{{ t.n }}: решишь с вероятностью {{ (t.p * 100)|round|int }}%, попыток {{ t.n_try }}">
       <b>{{ t.n }}</b><small>{{ t.points }} б.</small></a>
-    {% endif %}
     {% endfor %}
   </div>
 </section>
@@ -61,7 +48,7 @@
   {% endfor %}
 </section>
 {% endif %}
-<p class="u2-hint">Нажми на номер, чтобы потренировать его. Источник шкалы: {{ c.exam.source|replace('lenta.ru ', '') }}.</p>
+<p class="u2-hint">Нажми на номер, чтобы потренировать его. Источник шкалы: {{ c.exam.source }}.</p>
 {% if c.kind == 'grade' %}<p class="u2-hint">Перевод в отметку — по рекомендациям Рособрнадзора. Регион может утвердить свою шкалу:
   уточни в школе, если отметка близко к границе.</p>{% endif %}
 {% endblock %}

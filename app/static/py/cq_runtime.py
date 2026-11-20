@@ -281,7 +281,7 @@ def check(code, tests_json):
                     err = format_error(e)
                     res["detail"] = t.get("msg") or ("Ошибка проверки: %s" % err["hint"])
         if hidden and not res["ok"]:
-            res["detail"] = "Скрытый тест не пройден. Сверься с условием и проверь края, которые в нём названы."
+            res["detail"] = "Скрытый тест не пройден. Проверь крайние случаи (0, отрицательные числа, пустой ввод…)."
         results.append(res)
 
     _turtle._ops = []  # при проверке рисунок не анимируем

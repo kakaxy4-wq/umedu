@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" class="u2{% if junior %} junior{% endif %}">
+<html lang="ru" class="u2">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,11 +13,6 @@
 <body>
 <header class="u2-top">
   <a class="u2-logo" href="/u2/today"><img src="/static/img/brand/umedu-mark.svg" alt=""> umedu</a>
-  <nav class="u2-nav" aria-label="Разделы">
-    {% for key, label in tabs %}
-    <a href="/u2/{{ key }}" class="{{ 'on' if key == tab }}"{% if key == tab %} aria-current="page"{% endif %}>{{ {'today': 'Сегодня', 'subjects': 'Уроки', 'progress': 'Успехи', 'me': 'Я'}.get(key, label) if junior else label }}</a>
-    {% endfor %}
-  </nav>
   <span class="u2-who">{{ student_name }}</span>
 </header>
 <main class="u2-main{% block main_class %}{% endblock %}">
@@ -26,7 +21,7 @@
 <nav class="u2-tabs" aria-label="Разделы">
   {% for key, label in tabs %}
   <a href="/u2/{{ key }}" class="u2-tab{% if key == tab %} on{% endif %}"{% if key == tab %} aria-current="page"{% endif %}>
-    <span class="u2-dot" aria-hidden="true"></span>{{ {'today': 'Сегодня', 'subjects': 'Уроки', 'progress': 'Успехи', 'me': 'Я'}.get(key, label) if junior else label }}</a>
+    <span class="u2-dot" aria-hidden="true"></span>{{ label }}</a>
   {% endfor %}
 </nav>
 {% block scripts %}{% endblock %}

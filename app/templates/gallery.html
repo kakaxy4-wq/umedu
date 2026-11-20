@@ -2,11 +2,11 @@
 {% block title %}Галерея проектов{% endblock %}
 {% block content %}
 <h1>🌍 Проекты учеников</h1>
-<p class="muted">{% if umedu2 %}Работы, которыми ученики поделились на этом сайте.{% else %}Программы, игры и рисунки, сделанные на курсе Python.{% endif %}</p>
+<p class="muted">Программы, игры и рисунки, сделанные на курсе Python.</p>
 <div class="project-grid">
   {% for p in projects %}
   <a class="card project" href="/p/{{ p.slug }}">
-    {% if p.image_path %}<img src="/files/project/{{ p.id }}/image" alt="" class="project-img">{% else %}<div class="project-img placeholder">{% if umedu2 %}✏️{% else %}🐍{% endif %}</div>{% endif %}
+    {% if p.image_path %}<img src="/files/project/{{ p.id }}/image" alt="" class="project-img">{% else %}<div class="project-img placeholder">🐍</div>{% endif %}
     <h3>{{ p.title }}</h3>
     {% if p.author %}<small class="muted">автор: {{ p.author }}</small>{% endif %}
     <p class="muted small">{{ p.description[:140] }}</p>

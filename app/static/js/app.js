@@ -1160,10 +1160,9 @@
         if (rr.ops) animate(rr.ops, rr); else { anim++; draw(fields[current]); }
       }
       try {
-        const r = await api('/api/robot/' + taskId + '/attempt', { code, seed: Number(root.dataset.seed || 0), passed });
-        const serverOk = !!(r && r.passed);
+        const r = await api('/api/robot/' + taskId + '/attempt', { code, passed });
         handleNotices(r);
-        if (serverOk) {
+        if (passed) {
           if (!r.first) confetti(60);
           const badge = document.getElementById('robot-badge');
           if (badge) { badge.textContent = '✅ Решено'; badge.classList.add('ok'); }

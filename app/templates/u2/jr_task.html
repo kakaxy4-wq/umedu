@@ -9,6 +9,7 @@
   <h2>{{ 'Верно!' if res.ok else 'Пока не так' }}</h2>
   {% if not res.ok %}<p>Правильный ответ: <b>{{ res.answer }}</b></p>{% endif %}
   <p>{{ res.explain }}</p>
+  {% if res.note %}<p class="u2-hint">{{ res.note }}</p>{% endif %}
   <div class="u2-actions">
     {% if res.next_id %}<a class="u2-btn" href="/u2/p/{{ course.id }}/{{ res.next_id }}">Дальше</a>{% endif %}
     <a class="u2-btn ghost" href="/u2/today">На сегодня</a>

@@ -5,11 +5,16 @@
 """
 import ast
 import re
+from datetime import timedelta
 
-from . import game
+from . import config, game
 from .content.primary_gen import make_random as _gen_random
 from .content.primary_gen import task_by_id as _gen_task
 from .content.primary_tasks import TASKS
+
+# Ошибка — повтор завтра; верный ответ по расписанию — через 1, 3, 7, 14 дней, потом «выучено».
+# Как в «Русском» у старших (russian.INTERVALS).
+REVIEW_INTERVALS = [1, 3, 7, 14]
 
 SUBJECTS = (
     {"id": "math", "title": "Математика", "emoji": "🔢"},
@@ -69,27 +74,33 @@ def _solved(conn, sid):
         "SELECT DISTINCT task_id FROM primary_attempt WHERE student_id = ? AND ok = 1", (sid,))}
 
 
-def _needs_review(conn, sid):
-    last = {}
-    for r in conn.execute("SELECT task_id, ok FROM primary_attempt WHERE student_id = ? ORDER BY id", (sid,)):
-        last[r["task_id"]] = r["ok"]
-    return {tid for tid, ok in last.items() if not ok}
+def _due_review(conn, sid, grade):
+    """Задания, пришедшие по расписанию повторения (due <= сегодня), старшие — первыми."""
+    today = config.today().isoformat()
+    out = []
+    for r in conn.execute("SELECT task_id FROM primary_review WHERE student_id = ? AND due <= ? "
+                          "ORDER BY due, task_id", (sid, today)):
+        t = get_task(r["task_id"])
+        if t and t["grade"] == grade:
+            out.append(t)
+    return out
 
 
 def today_plan(conn, sid, grade):
-    """По одному заданию на предмет: сначала недавняя ошибка, потом новое, иначе повторение.
+    """По одному заданию на предмет: сначала повторение по расписанию, потом новое, иначе повторение.
 
     По математике новые задания берём и из генератора (бесконечные варианты), и из
     статичного набора — чередуем, пока статика не кончится, потом только генератор.
     """
-    done, review = _solved(conn, sid), _needs_review(conn, sid)
+    done = _solved(conn, sid)
+    due = _due_review(conn, sid, grade)
     out = []
     for subj in SUBJECTS:
         pool = tasks_for(grade, subj["id"])
-        missed = [t for t in pool if t["id"] in review]
         fresh = [t for t in pool if t["id"] not in done]
-        if missed:
-            pick, why = missed[0], "повтори"
+        rev = next((t for t in due if t["subject"] == subj["id"]), None)
+        if rev:
+            pick, why = rev, "повтори"
         else:
             gen_task = None
             if subj["id"] == "math":
@@ -128,7 +139,7 @@ def summary(conn, sid, grade):
     recent = []
     for r in conn.execute(
             "SELECT task_id, ok FROM primary_attempt WHERE student_id = ? ORDER BY id DESC LIMIT 5", (sid,)):
-        t = BY_ID.get(r["task_id"])
+        t = get_task(r["task_id"])
         if not t or t["grade"] != grade:
             continue
         recent.append({"prompt": t["prompt"], "ok": bool(r["ok"]), "topic": t["topic"],
@@ -147,17 +158,40 @@ def subject_view(conn, sid, grade, subject_id):
 
 
 def answer(conn, sid, task, given):
-    """Пишет попытку. Возвращает (верно, следующее задание или None). Вызывать внутри `with conn`."""
+    """Пишет попытку и двигает расписание повторения.
+
+    Возвращает (верно, следующее задание или None, пометка ученику или None).
+    Вызывать внутри `with conn`.
+    """
     ok = check(task, given)
-    record(conn, sid, task, ok, given)
+    note = record(conn, sid, task, ok, given)
     nxt = next_open(task["grade"], task["subject"], task["id"], _solved(conn, sid))
-    return ok, nxt
+    return ok, nxt, note
 
 
 def record(conn, sid, task, ok, given):
+    """Пишет попытку и ведёт расписание повторения. Возвращает пометку ученику или None."""
     conn.execute(
         "INSERT INTO primary_attempt (student_id, task_id, ok, given, created_at) VALUES (?, ?, ?, ?, ?)",
         (sid, task["id"], 1 if ok else 0, str(given or "")[:200], game.now_iso()))
+    row = conn.execute("SELECT box, due FROM primary_review WHERE student_id = ? AND task_id = ?",
+                       (sid, task["id"])).fetchone()
+    if not ok:
+        due = (config.today() + timedelta(days=1)).isoformat()
+        conn.execute("INSERT INTO primary_review (student_id, task_id, box, due) VALUES (?, ?, 0, ?) "
+                     "ON CONFLICT(student_id, task_id) DO UPDATE SET box = 0, due = excluded.due",
+                     (sid, task["id"], due))
+        return "Повторим завтра."
+    if row and row["due"] <= config.today().isoformat():
+        box = row["box"] + 1
+        if box >= len(REVIEW_INTERVALS):
+            conn.execute("DELETE FROM primary_review WHERE student_id = ? AND task_id = ?", (sid, task["id"]))
+            return "Выучено — больше не повторяем."
+        due = (config.today() + timedelta(days=REVIEW_INTERVALS[box])).isoformat()
+        conn.execute("UPDATE primary_review SET box = ?, due = ? WHERE student_id = ? AND task_id = ?",
+                     (box, due, sid, task["id"]))
+        return "Повторим через %d дн." % REVIEW_INTERVALS[box]
+    return None
 
 
 def next_open(grade, subject, current_id, solved):

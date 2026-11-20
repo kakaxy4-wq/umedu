@@ -798,11 +798,11 @@ def u2_primary_answer(subject_id: str, task_id: str, request: Request, answer: s
     only_student(user)
     sid, st, task = _primary_task(conn, user, subject_id, task_id)
     with conn:
-        ok, nxt = primary.answer(conn, sid, task, answer)
+        ok, nxt, note = primary.answer(conn, sid, task, answer)
     return _page(request, conn, user, "today", "u2/jr_task.html", task=primary.public(task),
                  course=primary.SUBJECT_BY_ID[subject_id], grade=st["grade"],
                  res={"ok": ok, "answer": task["accept"][0], "explain": task["explain"],
-                      "next_id": nxt["id"] if nxt else None})
+                      "note": note, "next_id": nxt["id"] if nxt else None})
 
 
 @router.get("/lab", response_class=HTMLResponse)

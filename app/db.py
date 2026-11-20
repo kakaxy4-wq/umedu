@@ -467,6 +467,15 @@ CREATE TABLE IF NOT EXISTS primary_attempt (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_primary_attempt_student ON primary_attempt(student_id, id);
+-- интервальное повторение младших классов: ошибка — завтра, верный ответ по расписанию
+-- 1–3–7–14 (как «Русский» у старших). Откат без потери остальных данных: DROP TABLE IF EXISTS primary_review;
+CREATE TABLE IF NOT EXISTS primary_review (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    task_id TEXT NOT NULL,
+    box INTEGER NOT NULL DEFAULT 0,
+    due TEXT NOT NULL,
+    PRIMARY KEY (student_id, task_id)
+);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

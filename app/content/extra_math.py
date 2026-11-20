@@ -287,12 +287,28 @@ def _lcm_below(r):
                 {"kind": "lcm", "a": a, "b": b, "n": n})
 
 
+def _remainder(r):
+    b = r.randint(6, 25)
+    q = r.randint(5, 40)
+    rest = r.randint(1, b - 1)
+    a = b * q + rest
+    text = "Чему равен остаток от деления числа %d на число %d?" % (a, b)
+    expl = "%d = %d · %d + %d, значит, остаток равен %d." % (a, b, q, rest, rest)
+    return _out(text, rest, expl,
+                ["Разделим %d на %d с остатком." % (a, b),
+                 "%d = %d · %d + %d." % (a, b, q, rest),
+                 "Остаток — %d." % rest],
+                {"kind": "remainder", "a": a, "b": b})
+
+
 def recompute(data):
     """Тот же ответ из data, без текста условия. Им пользуется тест."""
     k = data["kind"]
     if k == "quad":
         p, q = data["p"], data["q"]
         return {"sum": p + q, "big": max(p, q), "small": min(p, q)}[data["ask"]]
+    if k == "remainder":
+        return data["a"] % data["b"]
     if k == "work":
         a, b = data["a"], data["b"]
         return a * b // (a + b)
@@ -347,7 +363,7 @@ def recompute(data):
 
 
 MATH = {
-    ("oge-math-2026", 20): _quad,
+    ("oge-math-2026", 20): lambda r: r.choice([_quad, _remainder])(r),
     ("oge-math-2026", 21): lambda r: r.choice([_work, _motion])(r),
     ("oge-math-2026", 23): _angles,
     ("oge-math-2026", 25): _inscribed,
@@ -370,7 +386,7 @@ MATH = {
 }
 
 ABOUT = {
-    ("oge-math-2026", 20): "Квадратное уравнение с целыми корнями: сумма или один из корней.",
+    ("oge-math-2026", 20): "Квадратное уравнение с целыми корнями или остаток от деления.",
     ("oge-math-2026", 21): "Текстовая задача: совместная работа или путь при постоянной скорости.",
     ("oge-math-2026", 22): "Квадратное неравенство: наибольшее целое решение.",
     ("oge-math-2026", 23): "Треугольник: третий угол по сумме 180°.",

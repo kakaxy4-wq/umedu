@@ -420,6 +420,7 @@ def render(request, name, conn, user=None, **ctx):
         "logo": theme.LOGO,
         "oauth_providers": oauth_providers.enabled(),
         "stage": config.STAGE,
+        "app_version": config.VERSION,
     })
     if user:
         sid = ctx.pop("sid", None) or subject_id(conn, user)
@@ -548,7 +549,7 @@ def healthz():
     В теле: vendor=ok или vendor=missing и список файлов."""
     from .vendor_assets import missing as vendor_missing
     missed = vendor_missing()
-    body = {"ok": True, "vendor": "missing" if missed else "ok"}
+    body = {"ok": True, "vendor": "missing" if missed else "ok", "version": config.VERSION}
     if missed:
         body["vendor_missing"] = missed
     return body

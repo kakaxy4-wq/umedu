@@ -8,6 +8,8 @@ import re
 from datetime import timedelta
 
 from . import config, game
+from .content.primary_gen import count_solved as _gen_count
+from .content.primary_gen import has_kinds as _gen_has
 from .content.primary_gen import make_random as _gen_random
 from .content.primary_gen import task_by_id as _gen_task
 from .content.primary_tasks import TASKS
@@ -103,12 +105,12 @@ def today_plan(conn, sid, grade):
             pick, why = rev, "повтори"
         else:
             gen_task = None
-            if subj["id"] == "math":
+            if _gen_has(grade, subj["id"]):
                 pool_ids = {t["id"] for t in pool}
-                gen_done = len([d for d in done if d.startswith("gen-")])
+                gen_done = _gen_count(done, grade, subj["id"])
                 static_done = len([d for d in done if d in pool_ids])
                 if gen_done < static_done or not fresh:
-                    gen_task = _gen_random(grade, done)
+                    gen_task = _gen_random(grade, subj["id"], done)
             if gen_task:
                 pick, why = gen_task, "новое"
             elif fresh:
@@ -196,7 +198,7 @@ def record(conn, sid, task, ok, given):
 
 def next_open(grade, subject, current_id, solved):
     if current_id.startswith("gen-"):
-        nxt = _gen_random(grade, set(solved) | {current_id}, tries=6)
+        nxt = _gen_random(grade, subject, set(solved) | {current_id}, tries=6)
         if nxt:
             return nxt
         for t in tasks_for(grade, subject):

@@ -747,7 +747,9 @@ def test_russian_content_is_consistent():
     from app.content.checks import CHECK_BY_ID
     assert len(ru.COMMA_ITEMS) >= 30 and len(ru.SPELL_ITEMS) >= 50
     assert all(i["rule"] in ru.RULES for i in ru.ITEMS.values())
-    assert all(i["answer"] in i["options"] and ("_" in i["text"] or i["text"].startswith("(не)") or i["rule"] == "fig") for i in ru.SPELL_ITEMS)
+    # виды-анализы (ОГЭ): предложение целиком без пропуска, выбор кнопкой
+    no_blank = ("fig", "syn2", "punct3")
+    assert all(i["answer"] in i["options"] and ("_" in i["text"] or i["text"].startswith("(не)") or i["rule"] in no_blank) for i in ru.SPELL_ITEMS)
     assert all("_" not in ru.spelled(i) and "(" not in ru.spelled(i) for i in ru.SPELL_ITEMS)
     assert any(not i["gaps"] for i in ru.COMMA_ITEMS)                    # есть «ловушки» без запятых
     assert CHECK_BY_ID["ru_entry"]["subject"] == "russian"

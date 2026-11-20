@@ -7,13 +7,81 @@ from fastapi.responses import HTMLResponse
 
 from . import auth, chem, config, students
 from .db import get_db
-from .main import back, render
+from .main import back, only_student, render
 
 router = APIRouter()
 
 
 def _ip(request):
     return request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
+
+
+@router.get("/signup-teacher", response_class=HTMLResponse)
+def signup_teacher_page(request: Request, conn=Depends(get_db)):
+    """Регистрация репетитора. Как и регистрация учеников, открыта только при CQ_SIGNUP=open (issue #13)."""
+    if not config.OPEN_SIGNUP:
+        raise HTTPException(404)
+    return render(request, "signup_teacher.html", conn, None, suggested=students.generate_password(), form={}, error=None)
+
+
+@router.post("/signup-teacher", response_class=HTMLResponse)
+def signup_teacher(request: Request, name: str = Form(""), login: str = Form(""), password: str = Form(""),
+                   consent: str = Form(""), website: str = Form(""), conn=Depends(get_db)):
+    ip = _ip(request)
+    if not config.OPEN_SIGNUP:
+        raise HTTPException(404)
+
+    def again(error):
+        return render(request, "signup_teacher.html", conn, None, suggested=students.generate_password(),
+                      form={"name": name, "login": login}, error=error)
+
+    if website:
+        return again("Не получилось. Обновите страницу и попробуйте ещё раз.")
+    if students.signup_limited(ip):
+        return again("С этого адреса уже много регистраций. Попробуй через час.")
+    name = name.strip()[:60]
+    login = login.strip().lower()
+    if not name:
+        return again("Напишите, как к вам обращаться.")
+    if not students.valid_login(login):
+        return again("Логин — латиница, цифры, точка, дефис, 2–32 символа.")
+    if len(password) < 6:
+        return again("Пароль — хотя бы 6 символов.")
+    if not consent:
+        return again("Отметьте согласие на обработку данных.")
+    error = None
+    tid = code = None
+    with conn:
+        if conn.execute("SELECT 1 FROM users WHERE username = ?", (login,)).fetchone():
+            error = "Такой логин уже занят."
+        else:
+            tid = conn.execute(
+                "INSERT INTO users (username, password_hash, role, display_name) VALUES (?, ?, 'teacher', ?)",
+                (login, auth.hash_password(password), name)).lastrowid
+            code = students.make_invite_code(conn, tid)
+    if error:
+        return again(error)
+    return _done(conn, tid, "/teacher/students")
+
+
+@router.get("/account/join-teacher", response_class=HTMLResponse)
+def join_teacher_page(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    only_student(user)
+    return render(request, "account/join_teacher.html", conn, user, ok=None, error=None, code="")
+
+
+@router.post("/account/join-teacher", response_class=HTMLResponse)
+def join_teacher(request: Request, code: str = Form(""), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    only_student(user)
+    code = code.strip().upper()[:16]
+    teacher_id = students.teacher_by_invite(conn, code)
+    if not teacher_id:
+        return render(request, "account/join_teacher.html", conn, user, ok=None,
+                      error="Код не найден. Проверьте буквы — их даёт преподаватель.", code=code)
+    with conn:
+        students.attach_student_to_teacher(conn, user["id"], teacher_id)
+    return render(request, "account/join_teacher.html", conn, user,
+                  ok="Готово: вы в группе. Преподаватель видит ваш прогресс в своём кабинете.", error=None, code=code)
 
 
 def _done(conn, sid, to):

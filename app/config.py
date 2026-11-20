@@ -53,6 +53,8 @@ OPEN_SIGNUP = SIGNUP_MODE == "open" and not CHEM_SITE
 UMEDU2 = os.environ.get("CQ_UMEDU2", "0") == "1"
 # тестовый стенд: плашка и noindex. На КодКвесте, ХимЛабе и проде флаг выключен — страницы те же
 STAGE = os.environ.get("CQ_STAGE", "0") == "1"
+# версия релиза: видна в /healthz и в подвале страниц; меняется вместе с тегом v0.99, v1.0…
+VERSION = os.environ.get("CQ_VERSION", "0.99")
 TRAINER_DAILY_XP_CAP = int(os.environ.get("CQ_TRAINER_DAILY_XP_CAP", "30"))
 # API приложения: безопасные значения зашиты здесь. Нет конфига на клиенте — функция в этом положении.
 API_HARD_MIN_BUILD = int(os.environ.get("CQ_API_HARD_MIN_BUILD", "1"))

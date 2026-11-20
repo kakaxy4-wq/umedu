@@ -14,6 +14,8 @@
   python manage.py delete-student <логин> [--apply]
   python manage.py delete-parent <логин> [--apply]
                                         — удалить один аккаунт; без --apply только показывает, что пропадёт
+  python manage.py seed_demo            — демо-класс для стенда: ученики, родитель, попытки за 2 недели
+                                        — только при CQ_STAGE=1; повторный запуск базу не меняет
 
 Учеников удобнее добавлять на сайте: «👥 Ученики» → «Добавить ученика».
 """
@@ -197,6 +199,32 @@ def cmd_backup():
     print("Копия: %s" % dest)
 
 
+def cmd_seed_demo():
+    """Демо-класс для стенда. Без CQ_STAGE=1 отказ: на проде и КодКвесте запускать нельзя."""
+    from app.demo import DemoRefused, seed_demo
+
+    if not config.STAGE:
+        sys.stderr.write("seed_demo только для тестового стенда (CQ_STAGE=1). База не изменена.\n")
+        sys.exit(1)
+    init_db()
+    try:
+        report = seed_demo(connect())
+    except DemoRefused as exc:
+        sys.stderr.write(str(exc) + "\n")
+        sys.exit(1)
+    if report["created"]:
+        print("Демо-класс записан: %d учеников, попыток %d, дни %s … %s." % (
+            report["members"], report["attempts"], report["first_day"], report["last_day"]))
+    else:
+        print("Демо уже есть, база не изменена. Попыток %d, дни %s … %s." % (
+            report["attempts"], report["first_day"], report["last_day"]))
+    print("Преподаватель: %s. Пароль demo-teacher — только если учётки ещё не было, иначе пароль прежний." % report["teacher"])
+    for login in report["students"]:
+        print("Ученик %s / %s" % (login, report["passwords"][login]))
+    print("Родитель %s / %s" % (report["parent"], report["passwords"][report["parent"]]))
+    print("Пароли только для стенда. Данные можно стереть.")
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:
@@ -220,6 +248,8 @@ if __name__ == "__main__":
         cmd_delete_student(args[1], apply="--apply" in args[2:])
     elif args[0] == "delete-parent" and len(args) >= 2:
         cmd_delete_parent(args[1], apply="--apply" in args[2:])
+    elif args[0] == "seed_demo":
+        cmd_seed_demo()
     elif args[0] == "has-users":
         init_db()
         sys.exit(0 if connect().execute("SELECT COUNT(*) FROM users").fetchone()[0] else 1)

@@ -316,3 +316,6 @@ html.u2.junior .jr-list a, html.u2.junior .jr-list li { display: block; padding:
 html.u2.junior .jr-ok { color: var(--good); font-weight: 700; margin-right: 6px; }
 html.u2.junior .jr-bad { color: var(--weak); font-weight: 700; margin-right: 6px; }
 html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
+
+.stage-banner { margin: 0; padding: 8px 12px; background: #c6ff1a; color: #14112a; text-align: center;
+  font-weight: 700; font-size: 14px; line-height: 1.35; }

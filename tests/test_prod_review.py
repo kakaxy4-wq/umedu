@@ -77,6 +77,24 @@ def test_passed_needs_nonempty_code(client):
     assert claimed["passed"] is True and claimed["xp"] == 10
 
 
+def test_head_static_and_page_keep_length(client, caplog):
+    """HEAD на файл и на страницу: пустое тело, длина как у GET, без исключения ASGI."""
+    import logging
+    from pathlib import Path
+    caplog.set_level(logging.ERROR)
+    static = client.head("/static/js/app.js")
+    size = (Path(__file__).resolve().parents[1] / "app" / "static" / "js" / "app.js").stat().st_size
+    assert static.status_code == 200 and static.content == b""
+    assert static.headers["content-length"] == str(size)
+    assert static.headers["content-type"].startswith("text/javascript")
+    page = client.head("/login")
+    full = client.get("/login")
+    assert page.status_code == 200 and page.content == b""
+    assert page.headers["content-length"] == full.headers["content-length"]
+    assert int(page.headers["content-length"]) == len(full.content)
+    assert "Content-Length" not in caplog.text and "Exception in ASGI" not in caplog.text
+
+
 def test_head_robots_favicon_sitemap_and_hsts(client, monkeypatch):
     head = client.head("/login")
     assert head.status_code == 200 and head.content == b""

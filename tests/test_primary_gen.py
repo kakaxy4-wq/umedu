@@ -114,9 +114,12 @@ def test_russian_in_plan_balance(client, monkeypatch):
     with conn:
         sid = students.create_student(conn, "qa-gen-ru", "Тест Русский", "parol-6", grade=3)
         conn.execute("UPDATE users SET grade = 3, subjects = 'primary', minor = 1 WHERE id = ?", (sid,))
+    from datetime import date, timedelta
     seen_gen = seen_static = 0
-    for _ in range(30):
-        ru = [x for x in today_plan(conn, sid, 3) if x["subject"] == "russian"][0]
+    start = date.today() + timedelta(days=500)
+    for i in range(30):
+        day = today_plan(conn, sid, 3, start + timedelta(days=i))
+        ru = [x for x in day["items"] if x["subject"] == "russian"][0]
         if ru["id"].startswith("gen-rud-"):
             seen_gen += 1
             assert ru["choices"], "у словарных слов кнопки"
@@ -129,6 +132,8 @@ def test_russian_in_plan_balance(client, monkeypatch):
 
 
 def test_today_plan_alternates_gen_and_static(client, monkeypatch):
+    from datetime import date, timedelta
+
     from app import config, students
     from app.db import connect
     from app.primary import get_task, record, today_plan
@@ -140,8 +145,10 @@ def test_today_plan_alternates_gen_and_static(client, monkeypatch):
         sid = students.create_student(conn, "qa-gen-3", "Тест Третий", "parol-6", grade=3)
         conn.execute("UPDATE users SET grade = 3, subjects = 'primary', minor = 1 WHERE id = ?", (sid,))
     seen_gen, seen_static = 0, 0
-    for _ in range(40):
-        math = [x for x in today_plan(conn, sid, 3) if x["subject"] == "math"][0]
+    start = date.today() + timedelta(days=400)
+    for i in range(40):
+        day = today_plan(conn, sid, 3, start + timedelta(days=i))
+        math = [x for x in day["items"] if x["subject"] == "math"][0]
         if math["id"].startswith("gen-"):
             seen_gen += 1
             assert math["hint"], "у генератора есть подсказка"
@@ -150,7 +157,7 @@ def test_today_plan_alternates_gen_and_static(client, monkeypatch):
         task = get_task(math["id"])
         with conn:
             record(conn, sid, task, True, task["accept"][0])
-    assert seen_gen >= 5 and seen_static >= 5, "чередование генератора и статики"
+    assert seen_gen >= 5 and seen_static >= 5, "чередование генератора и статики по дням"
 
 
 def test_next_open_for_gen_returns_other_variant():

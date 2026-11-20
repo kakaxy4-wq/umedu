@@ -3,6 +3,8 @@
 {% block title %}Сегодня{% endblock %}
 {% block content %}
 <h1 class="u2-h1">Сегодня · {{ total }} минут</h1>
+<div class="u2-today">
+<div class="u2-today-main">
 {% set nxt = namespace(step=none, card=none) %}
 {% for p in plans %}{% if nxt.step is none and p.steps %}{% set nxt.step = p.steps[0] %}{% set nxt.card = p.card %}{% endif %}{% endfor %}
 {% if nxt.step %}
@@ -55,6 +57,8 @@
 </section>
 {% endfor %}
 <p class="u2-hint"><a href="/u2/lab">Лаборатория опытов</a> — вопрос, измерение, закон. <a href="/u2/models">Интерактивные модели</a> — покрутить.</p>
+</div>
+<aside class="u2-today-side">
 <h2 class="u2-h2">Прогноз</h2>
 {% for c in cards %}
 <a class="u2-card u2-link" href="/u2/subject/{{ c.id }}">
@@ -62,4 +66,6 @@
   {{ forecast(c, how=False) }}
 </a>
 {% endfor %}
+</aside>
+</div>
 {% endblock %}

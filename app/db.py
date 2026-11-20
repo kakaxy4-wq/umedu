@@ -476,6 +476,14 @@ CREATE TABLE IF NOT EXISTS primary_review (
     due TEXT NOT NULL,
     PRIMARY KEY (student_id, task_id)
 );
+-- фиксируем на день три задания младшеклассника (генераторы случайны — день должен быть стабильным)
+CREATE TABLE IF NOT EXISTS primary_day (
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    day TEXT NOT NULL,
+    slot INTEGER NOT NULL,
+    task_id TEXT NOT NULL,
+    PRIMARY KEY (student_id, day, slot)
+);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

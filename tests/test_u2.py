@@ -18,8 +18,9 @@ def test_enroll_and_tabs(client, monkeypatch):  # noqa: F811
     r = client.get("/u2/today", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/u2/start"      # без экзамена — сначала выбор
     start = client.get("/u2/start").text
-    assert "ОГЭ · 9 класс" in start and "ЕГЭ · 11 класс" in start
-    assert 'value="ege-lit-2026"' not in start and "скоро" in start
+    assert "ОГЭ" in start and "ЕГЭ" in start and "exam_id" not in start
+    oge = client.get("/u2/start?step=ОГЭ").text
+    assert "ОГЭ · 9 класс" in oge and 'value="ege-lit-2026"' not in oge and "скоро" in oge
 
     r = client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-05-20"},
                     follow_redirects=False)
@@ -167,10 +168,10 @@ def test_schedule_prefills_exam_date(client, monkeypatch):  # noqa: F811
     assert set(SCHEDULE["dates"]) == {i.rsplit("-", 1)[0] for i in em.all_ids()}
     monkeypatch.setattr(config, "UMEDU2", True)
     csrf = login(client, "student")
-    start = client.get("/u2/start").text
+    start = client.get("/u2/start?step=ОГЭ").text
     assert 'value="2027-06-02"' in start and "проекту расписания 2027" in start and "скажут в школе" in start
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4, "exam_date": "2027-06-28"})
-    start = client.get("/u2/start").text
+    start = client.get("/u2/start?step=ОГЭ").text
     assert 'value="2027-06-28"' in start and 'value="2027-06-02"' not in start
 
 
@@ -475,3 +476,44 @@ def test_attempt_budget_per_day(client, monkeypatch):  # noqa: F811
     assert codes == [200, 200, 429]
     assert client.post("/u2/mock/oge-math-2026", data={"csrf": csrf, "seed": 5}).status_code == 429
     assert connect().execute("SELECT COUNT(*) FROM skill_attempt WHERE student_id = ?", (sid_of(),)).fetchone()[0] == 2
+
+
+def test_forecast_is_a_range_until_there_is_evidence():
+    from datetime import date
+    from app import exam_model as em
+    from app import knowledge as kn
+    from app.content import onsite_extra
+    exam = em.load("ege-phys-2026")
+    today = date(2026, 11, 19)
+    empty = kn.forecast(exam, {}, today)
+    assert empty["attempts"] == 0 and empty["show_point"] is False and empty["confidence"] == 0
+    one = {5: {"p": 0.9, "n": 1, "last": today.isoformat()}}
+    few = kn.forecast(exam, one, today)
+    assert few["show_point"] is False and few["test_low"] <= few["test"] <= few["test_high"]
+    many = {n: {"p": 0.8, "n": 2, "last": today.isoformat()} for n in range(1, 8)}
+    assert kn.forecast(exam, many, today)["show_point"] is True
+    assert onsite_extra.weight("ege-soc-2026", 1) < onsite_extra.weight("ege-soc-2026", 1) * 10
+    assert onsite_extra.weight("ege-soc-2026", 1) == onsite_extra.weight("ege-soc-2026", 10)
+    assert onsite_extra.weight("ege-soc-2026", 1) < 0.2
+    before = kn.forecast(exam, {}, today)["primary"]
+    states = {}
+    for n in range(1, 9):
+        states[n] = kn.update(states.get(n), 1.0, today, influence=0.2)
+    after = kn.forecast(exam, states, today)["primary"]
+    assert after - before <= kn.MOCK_PRIMARY_CAP + 0.6
+
+
+def test_shared_pool_does_not_raise_every_number(client, monkeypatch):
+    from app import knowledge as kn
+    from app.db import connect
+    from test_app import sid_of
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = login(client, "student")
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-soc-2026", "goal": 70})
+    page = client.get("/u2/today").text
+    assert "Первичный балл" not in page and "первичный" not in page
+    from app.content import onsite_extra
+    right = onsite_extra.make("ege-soc-2026", 1, 1)["answer"]
+    client.post("/u2/train/ege-soc-2026/1", data={"csrf": csrf, "seed": 1, "answer": right})
+    states = kn.load_states(connect(), sid_of(), "ege-soc-2026")
+    assert 1 in states and 2 not in states and 10 not in states

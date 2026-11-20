@@ -1,0 +1,55 @@
+/* Вход, регистрация и кабинет родителя на umedu: те же токены, что внутри /u2.
+   Подключается только при флаге umedu, КодКвест и ХимЛаб этот файл не получают. */
+body.umedu-auth {
+  --ultra: #3A2BFF;
+  --lime: #C6FF1A;
+  --bg: #F6F5FB;
+  background: var(--bg);
+  color: #14112A;
+}
+body.umedu-auth.login-page {
+  background: var(--bg);
+}
+body.umedu-auth .login-card,
+body.umedu-auth .card {
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(20, 17, 42, .08);
+}
+body.umedu-auth .btn,
+body.umedu-auth button.btn {
+  background: var(--ultra);
+  color: #fff;
+  border: 0;
+  border-radius: 14px;
+  min-height: 48px;
+  font-weight: 700;
+}
+body.umedu-auth .btn-ghost,
+body.umedu-auth a.btn-ghost {
+  background: transparent;
+  color: var(--ultra);
+  border: 1px solid #D9D6EA;
+}
+body.umedu-auth .parent-page form.stack .btn,
+body.umedu-auth .parent-page .btn-small {
+  width: auto;
+  align-self: flex-start;
+}
+body.umedu-auth .parent-page .card { margin: 0 0 16px; }
+body.umedu-auth .parent-page .danger-zone {
+  border: 1px solid #E7A3A3;
+  background: #FFF6F6;
+}
+body.umedu-auth .parent-page .danger-zone .btn { background: transparent; color: #9B2330; border: 1px solid #E7A3A3; }
+body.umedu-auth .ld-hero-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(20, 17, 42, .12);
+  min-height: 220px;
+}
+body.umedu-auth .ld-hero-card b { display: block; font-size: 22px; margin-bottom: 8px; }
+body.umedu-auth .ld-hero-card span {
+  display: block; background: var(--ultra); color: #fff; border-radius: 12px;
+  padding: 12px 14px; margin-top: 12px;
+}

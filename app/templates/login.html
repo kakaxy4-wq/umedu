@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Вход{% endblock %}
-{% block body_class %}login-page{% endblock %}
+{% block body_class %}login-page{% if umedu2 %} umedu-auth{% endif %}{% endblock %}
 {% block content %}
 <div class="login-card card">
   <div class="login-hero">{% if logo %}<img src="{{ logo }}" alt="" class="login-mark">{% else %}{{ brand }}{% endif %}</div>

@@ -33,13 +33,15 @@ def test_parent_sees_primary_answers(client, monkeypatch):
     sid = connect().execute("SELECT id FROM users WHERE username = 'lena4'").fetchone()[0]
     task = re.search(r'href="/u2/p/math/(m4-[^"]+)"', page)
     assert task, page
-    client.post("/u2/p/math/%s" % task.group(1), data={"csrf": csrf, "answer": "1"})
+    from app import primary
+    right = primary.BY_ID[task.group(1)]["accept"][0]
+    client.post("/u2/p/math/%s" % task.group(1), data={"csrf": csrf, "answer": right})
     client.cookies.clear()
     assert client.post("/family/login", data={"username": "mama-ux", "password": "dlinnyi-parol"},
                        follow_redirects=False).status_code == 303
     home = client.get("/family/child/%d" % sid).text
     assert "Последние успехи" in home and "Пока пусто" not in home
-    assert "Верно" in home or "Пока не так" in home
+    assert "Верно" in home and "Пока не так" not in home
     assert "Ещё нет решённых заданий за неделю" not in home
 
 
@@ -75,7 +77,7 @@ def test_forecast_waits_for_attempts_and_code_card_is_hidden(client, monkeypatch
     csrf = login(client, "student")
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-phys-2026", "goal": 70})
     page = client.get("/u2/today").text
-    assert "Реши пару заданий, и покажем прогноз" in page
+    assert "Прогноза пока нет" in page and "первичный" not in page
     code = client.get("/u2/train/oge-inf-2026/16?seed=4")
     assert code.status_code == 404  # экзамен не выбран
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-inf-2026", "goal": 4})

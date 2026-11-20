@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ "Подготовка к ОГЭ и ЕГЭ" if umedu2 else "Подготовка к ОГЭ между занятиями" }}{% endblock %}
-{% block body_class %}landing-page{% endblock %}
+{% block body_class %}landing-page{% if umedu2 %} umedu-auth{% endif %}{% endblock %}
 {% block content %}
 <div class="landing">
 <header class="ld-top">
@@ -22,7 +22,7 @@
     </div>
     <p class="small muted">Если тебе меньше 14 лет, аккаунт заводит родитель — кнопка ниже.</p>
   </div>
-  {% if logo %}<div class="ld-hero-art" aria-hidden="true"><img src="{{ logo }}" alt="" class="logo-mark"></div>{% endif %}
+  <div class="ld-hero-card" aria-hidden="true"><b>Сегодня</b><span>Следующий шаг — номер, который решается здесь</span></div>
 </section>
 
 <section class="ld-roles" id="how">

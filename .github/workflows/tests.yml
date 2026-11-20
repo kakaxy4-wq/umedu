@@ -1,5 +1,7 @@
 name: tests
+
 on: [push, pull_request]
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -11,3 +13,20 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: node --check app/static/js/app.js
       - run: python -m pytest -q
+
+  # Копия контракта в umedu-android обязана совпадать байт в байт.
+  # Схема меняется сначала на сервере; пока PR клиента не привёл копию — здесь красно.
+  contract-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Копия контракта в umedu-android совпадает
+        env:
+          # репо того же владельца: GITHUB_TOKEN хватает и для приватного umedu-android
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git clone --depth=1 "https://x-access-token:${GH_TOKEN}@github.com/kakaxy4-wq/umedu-android.git" android
+          diff openapi/v1.yaml android/contract/openapi/v1.yaml \
+            || { echo "::error::openapi/v1.yaml разошёлся с umedu-android/contract/openapi/v1.yaml — обнови копию PR-ом в клиенте"; exit 1; }
+          diff contract.lock android/contract/contract.lock \
+            || { echo "::error::contract.lock разошёлся с umedu-android/contract/contract.lock"; exit 1; }

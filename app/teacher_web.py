@@ -191,6 +191,8 @@ def teacher_student_create(request: Request, display_name: str = Form(...), full
     password = students.generate_password()
     with conn:
         sid = students.create_student(conn, login_name, display_name, password, full_name.strip()[:80], grade=grade)
+        # multi-teacher (#13): ученик из кабинета попадает в группу этого преподавателя
+        students.attach_student_to_teacher(conn, sid, user["id"])
         if price.strip().isdigit():
             conn.execute("UPDATE users SET price = ? WHERE id = ?", (int(price), sid))
     select_student(conn, user, sid)

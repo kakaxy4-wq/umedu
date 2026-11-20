@@ -126,7 +126,7 @@ async def hide_senior_from_primary(request: Request, call_next):
             if user and user["role"] == "student":
                 st = students.get_student(conn, user["id"])
                 if st and students.is_primary_grade(st.get("grade")):
-                    return Response("Not Found", status_code=404)
+                    return _closed_page("Этого раздела в %s классе нет." % st.get("grade", ""))
         finally:
             conn.close()
     return await call_next(request)
@@ -253,6 +253,21 @@ async def security_headers(request: Request, call_next):
         # стенд не должен попасть в поиск, даже если страница сама по себе открытая
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
+
+
+def _closed_page(message):
+    """Красивая страница вместо голого Not Found. КодКвест без флага сюда не попадает."""
+    html = (
+        "<!doctype html><html lang=\"ru\"><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        "<link rel=\"stylesheet\" href=\"/static/css/u2.css\">"
+        "<title>Этого раздела нет</title></head>"
+        "<body><main class=\"u2-main\"><section class=\"u2-card\">"
+        "<h1 class=\"u2-h1\">Этого раздела нет</h1><p>%s</p>"
+        "<p><a class=\"u2-btn\" href=\"/u2/today\">На сегодня</a></p>"
+        "</section></main></body></html>" % message
+    )
+    return HTMLResponse(html, status_code=404)
 
 
 class NoStudent(Exception):

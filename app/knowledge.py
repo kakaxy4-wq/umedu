@@ -29,10 +29,13 @@ def task_minutes(task):
     return task.get("minutes") or MINUTES.get(task["answer"], 3)
 
 
-def update(state, score, today=None):
-    """state = {'p', 'n', 'last'} или None; score — доля полученных баллов за попытку (0…1)."""
+def update(state, score, today=None, influence=1.0):
+    """state = {'p', 'n', 'last'} или None; score — доля полученных баллов за попытку (0…1).
+
+    influence < 1 уменьшает шаг. Так один мини-пробник не может сдвинуть прогноз на много баллов сразу.
+    """
     st = decay(state, today) if state else {"p": PRIOR, "n": 0}
-    alpha = max(ALPHA_MIN, ALPHA_FIRST / (1 + st["n"]))
+    alpha = max(ALPHA_MIN, ALPHA_FIRST / (1 + st["n"])) * min(max(float(influence), 0.0), 1.0)
     p = st["p"] + alpha * (min(max(score, 0.0), 1.0) - st["p"])
     return {"p": round(p, 4), "n": st["n"] + 1, "last": (today or date.today()).isoformat()}
 
@@ -50,22 +53,35 @@ def _p(states, key, today):
     return decay(states.get(key), today)
 
 
+CONFIDENCE_FULL = 8       # с этого числа попыток показываем точку, до этого — вилку
+MOCK_PRIMARY_CAP = 3.0    # один пробник двигает ожидаемый первичный балл не сильнее, чем на столько
+
+
 def forecast(exam, states, today=None):
-    """Прогноз: ожидаемый первичный балл, вилка и перевод по шкале (отметка или тестовый балл)."""
-    mean, var, expected = 0.0, 0.0, {}
+    """Прогноз: ожидаемый первичный балл, вилка и перевод по шкале (отметка или тестовый балл).
+
+    Упрощённая замена и общий пул вопросов весят меньше балла КИМ: иначе один лёгкий тест
+    поднимает сразу несколько номеров. Пока попыток мало, доверие низкое и снаружи показывают вилку.
+    """
+    from .content import onsite_extra
+    mean, var, expected, attempts = 0.0, 0.0, {}, 0
     for key, pts in em.points(exam).items():
         st = _p(states, key, today)
         p = st["p"]
-        expected[key] = p * pts
-        mean += p * pts
+        attempts += st.get("n", 0)
+        w = onsite_extra.weight(exam["id"], key)
+        expected[key] = p * pts * w
+        mean += expected[key]
         # неопределённость самого p: пока попыток мало, разброс шире биномиального
-        var += pts * pts * (p * (1 - p) + 0.25 / (1 + st.get("n", 0)))
+        var += (pts * w) ** 2 * (p * (1 - p) + 0.25 / (1 + st.get("n", 0)))
     sd = math.sqrt(var)
     lo, hi = max(0, math.floor(mean - Z80 * sd)), min(exam["max_points"], math.ceil(mean + Z80 * sd))
     # условия (геометрия, грамотность) проверяем на ожидаемых баллах по номерам
     scaled = {k: em.result(exam, _scaled(expected, v)) for k, v in (("mid", mean), ("low", lo), ("high", hi))}
     key = "grade" if exam["scale"]["kind"] == "grade" else "test"
-    return {"primary": round(mean, 1), "low": lo, "high": hi,
+    confidence = round(attempts / (attempts + CONFIDENCE_FULL), 2)
+    return {"primary": round(mean, 1), "low": lo, "high": hi, "attempts": attempts,
+            "confidence": confidence, "show_point": attempts >= CONFIDENCE_FULL,
             key: scaled["mid"][key], key + "_low": scaled["low"][key], key + "_high": scaled["high"][key]}
 
 
@@ -249,7 +265,7 @@ def seed(conn, sid, exam_id, key, p, today=None):
                  (sid, exam_id, str(key), round(min(max(p, 0.0), 1.0), 4), (today or date.today()).isoformat()))
 
 
-def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, update_state=True):
+def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, update_state=True, influence=1.0):
     """Записывает попытку по номеру (или критерию) и возвращает новое состояние.
 
     update_state=False — тренировка части навыка: попытка есть в журнале, прогноз по номеру не меняется.
@@ -262,7 +278,7 @@ def record(conn, sid, exam_id, key, score, today=None, seed=None, given=None, up
         conn.execute("INSERT INTO skill_attempt (student_id, exam_id, task_key, score, seed, given, day) "
                      "VALUES (?, ?, ?, ?, ?, ?, ?)", (sid, exam_id, str(key), score, seed, given, day))
         return load_states(conn, sid, exam_id).get(key)
-    st = update(load_states(conn, sid, exam_id).get(key), score, today)
+    st = update(load_states(conn, sid, exam_id).get(key), score, today, influence)
     conn.execute("INSERT INTO skill_state (student_id, exam_id, task_key, p, n, last) VALUES (?, ?, ?, ?, ?, ?) "
                  "ON CONFLICT(student_id, exam_id, task_key) DO UPDATE SET p = excluded.p, n = excluded.n, last = excluded.last",
                  (sid, exam_id, str(key), st["p"], st["n"], st["last"]))

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Создать аккаунт{% endblock %}
-{% block body_class %}login-page{% endblock %}
+{% block body_class %}login-page{% if umedu2 %} umedu-auth{% endif %}{% endblock %}
 {% block content %}
 <section class="card login-card join-card">
   <div class="login-hero">{% if logo %}<img src="{{ logo }}" alt="" class="login-mark">{% else %}{{ brand }}{% endif %}</div>

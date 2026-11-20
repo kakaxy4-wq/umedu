@@ -14,7 +14,7 @@
     {% for r in ex.rows %}{% set fc = r.c.fc %}
     <tr>
       <th scope="row"><a href="/teacher/student/{{ r.sid }}">{{ r.name }}</a></th>
-      <td>{% if ex.kind == 'grade' %}«{{ fc.grade }}»{% else %}{{ fc.test }}{% endif %}<small>первичный {{ fc.low }}–{{ fc.high }}</small></td>
+      <td>{% if r.c.attempts == 0 %}ещё нет{% elif not fc.show_point %}вилка {% if ex.kind == 'grade' %}«{{ fc.grade_low }}»–«{{ fc.grade_high }}»{% else %}{{ fc.test_low }}–{{ fc.test_high }}{% endif %}{% else %}{% if ex.kind == 'grade' %}«{{ fc.grade }}»{% else %}{{ fc.test }}{% endif %}<small>первичный {{ fc.low }}–{{ fc.high }}</small>{% endif %}</td>
       <td>{% if r.c.goal is none %}—{% elif r.c.gap > 0 %}<b class="u2-behind">{{ '«%s»'|format(r.c.goal) if ex.kind == 'grade' else r.c.goal }}</b>{% else %}{{ '«%s»'|format(r.c.goal) if ex.kind == 'grade' else r.c.goal }} ✓{% endif %}</td>
       <td>{% for w in r.weak %}<span class="u2-weak" title="решит с вероятностью {{ (w.p * 100)|round|int }}%">{{ w.label }}</span>{% else %}—{% endfor %}</td>
       <td>{{ r.week }}</td>

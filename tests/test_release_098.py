@@ -45,7 +45,7 @@ def test_eighth_grader_path(client, monkeypatch):  # noqa: F811
     r = client.post("/login", data={"username": "syn8", "password": "kot-luna-27"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/u2/today"
     assert client.get("/", follow_redirects=False).headers["location"] == "/u2/today"
-    start = client.get("/u2/start").text
+    start = client.get("/u2/start?step=ОГЭ").text
     vals = re.findall(r'<input type="date" name="exam_date" value="([^"]*)"', start)
     assert vals and set(vals) == {""}
     assert "дату можно не указывать" in start

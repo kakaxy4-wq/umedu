@@ -70,8 +70,11 @@ def test_wrong_then_intervals_then_mastered(kid):
 
 
 def test_plan_prioritizes_due_review(kid):
+    from datetime import date, timedelta
+
     from app.primary import answer, record, today_plan
     conn, sid = kid
+    day = date.today() + timedelta(days=200)
     # ошибка по окружающему миру: в плане предмет должен прийти «повтори»
     w3 = _task(conn, "w3-01")
     with conn:
@@ -79,11 +82,11 @@ def test_plan_prioritizes_due_review(kid):
     row = _review_row(conn, sid, "w3-01")
     assert row["box"] == 0
     # срок ещё завтра — план показывает новое
-    world = [x for x in today_plan(conn, sid, 3) if x["subject"] == "world"][0]
+    world = [x for x in today_plan(conn, sid, 3, day)["items"] if x["subject"] == "world"][0]
     assert world["why"] == "новое"
     # срок наступил — план показывает то же задание «повтори»
     conn.execute("UPDATE primary_review SET due = date('now', '-1 day') WHERE student_id = ?", (sid,))
-    world = [x for x in today_plan(conn, sid, 3) if x["subject"] == "world"][0]
+    world = [x for x in today_plan(conn, sid, 3, day)["items"] if x["subject"] == "world"][0]
     assert world["id"] == "w3-01" and world["why"] == "повтори"
 
 
@@ -94,7 +97,7 @@ def test_review_of_other_grade_not_shown(kid):
     with conn:
         record(conn, sid, m4, False, "неверно")  # попытка «в 4 классе»
     conn.execute("UPDATE primary_review SET due = '2000-01-01' WHERE student_id = ?", (sid,))
-    math = [x for x in today_plan(conn, sid, 3) if x["subject"] == "math"][0]
+    math = [x for x in today_plan(conn, sid, 3)["items"] if x["subject"] == "math"][0]
     assert math["id"] != "m4-01", "задание другого класса не должно приходить в план 3 класса"
 
 
@@ -105,4 +108,4 @@ def test_correct_fresh_task_creates_no_review(kid):
         answer(conn, sid, _task(conn, "m3-02"), "72")  # верно с первого раза, не в повторении
     assert _review_row(conn, sid, "m3-02") is None
     # и ничего не сломалось в плане
-    assert len(today_plan(conn, sid, 3)) == 3
+    assert len(today_plan(conn, sid, 3)["items"]) == 3

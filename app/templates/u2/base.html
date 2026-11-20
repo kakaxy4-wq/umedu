@@ -28,7 +28,7 @@
 <nav class="u2-tabs" aria-label="Разделы">
   {% for key, label in tabs %}
   <a href="/u2/{{ key }}" class="u2-tab{% if key == tab %} on{% endif %}"{% if key == tab %} aria-current="page"{% endif %}>
-    <span class="u2-dot" aria-hidden="true"></span>{{ {'today': 'Сегодня', 'subjects': 'Уроки', 'progress': 'Успехи', 'me': 'Я'}.get(key, label) if junior else label }}</a>
+    <svg class="u2-ico" viewBox="0 0 24 24" aria-hidden="true">{% if key == 'today' %}<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" stroke-width="1.8"/>{% elif key == 'subjects' %}<path d="M5 4.5h10.5A2.5 2.5 0 0 1 18 7v13H7.5A2.5 2.5 0 0 1 5 17.5zM8 8h7M8 12h7" stroke-width="1.8" stroke-linecap="round"/>{% elif key == 'progress' %}<path d="M4 19V10M10 19V5M16 19v-7M20 19H3" stroke-width="1.8" stroke-linecap="round"/>{% else %}<circle cx="12" cy="8" r="3.2" stroke-width="1.8"/><path d="M5.5 19.5c1.2-3 3.4-4.5 6.5-4.5s5.3 1.5 6.5 4.5" stroke-width="1.8" stroke-linecap="round"/>{% endif %}</svg>{{ {'today': 'Сегодня', 'subjects': 'Уроки', 'progress': 'Успехи', 'me': 'Я'}.get(key, label) if junior else label }}</a>
   {% endfor %}
 </nav>
 {% block scripts %}{% endblock %}

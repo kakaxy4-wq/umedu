@@ -136,8 +136,10 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     found = _primary_student(conn, user)
     if found:
         sid, st = found
+        with conn:
+            day = primary.today_plan(conn, sid, st["grade"])
         return _page(request, conn, user, "today", "u2/jr_today.html",
-                     plan=primary.today_plan(conn, sid, st["grade"]), grade=st["grade"])
+                     plan=day["items"], day=day, grade=st["grade"])
     sid, today = need_sid(conn, user), config.today()
     cards = _cards(conn, sid, today)
     if not cards:
@@ -406,12 +408,15 @@ def _catalog():
 
 
 @router.get("/start", response_class=HTMLResponse)
-def u2_start(request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+def u2_start(request: Request, step: str = "", conn=Depends(get_db), user=Depends(auth.current_user)):
     sid = need_sid(conn, user)
     mine = {e["exam_id"]: e for e in kn.exams_of(conn, sid)}
     st = students.get_student(conn, sid)
-    return _page(request, conn, user, "me", "u2/start.html", catalog=_catalog(), mine=mine, schedule=SCHEDULE,
-                 grade=(st or {}).get("grade"))
+    if step not in ("", "ОГЭ", "ЕГЭ"):
+        step = ""
+    catalog = [e for e in _catalog() if not step or e["exam"] == step]
+    return _page(request, conn, user, "me", "u2/start.html", catalog=catalog, mine=mine, schedule=SCHEDULE,
+                 grade=(st or {}).get("grade"), step=step)
 
 
 @router.post("/start")
@@ -787,8 +792,13 @@ def u2_primary_subject(subject_id: str, request: Request, conn=Depends(get_db), 
 @router.get("/p/{subject_id}/{task_id}", response_class=HTMLResponse)
 def u2_primary_task(subject_id: str, task_id: str, request: Request, conn=Depends(get_db),
                     user=Depends(auth.current_user)):
-    _sid, st, task = _primary_task(conn, user, subject_id, task_id)
-    return _page(request, conn, user, "today", "u2/jr_task.html", task=primary.public(task), res=None,
+    sid, st, task = _primary_task(conn, user, subject_id, task_id)
+    misses = primary.trailing_misses(conn, sid, task["id"]) if user["role"] == "student" else 0
+    res = None
+    if misses == 1:
+        res = {"ok": False, "reveal": False, "retry": True, "answer": "", "hint": primary.hint_for(task),
+               "explain": "", "given": "", "next_id": None}
+    return _page(request, conn, user, "today", "u2/jr_task.html", task=primary.public(task), res=res,
                  course=primary.SUBJECT_BY_ID[subject_id], grade=st["grade"])
 
 
@@ -799,10 +809,16 @@ def u2_primary_answer(subject_id: str, task_id: str, request: Request, answer: s
     sid, st, task = _primary_task(conn, user, subject_id, task_id)
     with conn:
         ok, nxt, note = primary.answer(conn, sid, task, answer)
+        misses = primary.trailing_misses(conn, sid, task["id"])
+    reveal = ok or misses >= 2
+    # первая ошибка — «Почти!»: ответ не раскрываем и расписание повторения не озвучиваем
+    note = note if reveal else None
     return _page(request, conn, user, "today", "u2/jr_task.html", task=primary.public(task),
                  course=primary.SUBJECT_BY_ID[subject_id], grade=st["grade"],
-                 res={"ok": ok, "answer": task["accept"][0], "explain": task["explain"],
-                      "note": note, "next_id": nxt["id"] if nxt else None})
+                 res={"ok": ok, "reveal": reveal, "retry": not ok and not reveal,
+                      "answer": task["accept"][0] if reveal else "",
+                      "hint": primary.hint_for(task), "explain": task["explain"] if reveal else "",
+                      "note": note, "given": answer, "next_id": nxt["id"] if nxt and reveal else None})
 
 
 @router.get("/lab", response_class=HTMLResponse)
@@ -944,13 +960,17 @@ async def u2_mock_submit(exam_id: str, request: Request, conn=Depends(get_db), u
     before = _card(enr, kn.load_states(conn, sid, exam_id), today)
     items = _mock_ctx(exam, seed)
     _budget(conn, sid, today, len(items))
+    # Даже все верные ответы пробника двигают ожидаемый первичный балл не сильнее чем на MOCK_PRIMARY_CAP.
+    raw = sum(0.5 * it["t"]["points"] * onsite_extra.weight(exam_id, it["t"]["key"]) for it in items)
+    influence = 1.0 if raw <= kn.MOCK_PRIMARY_CAP else kn.MOCK_PRIMARY_CAP / raw
     with conn:
         for it in items:
             it["given"] = str(form.get("a%s" % it["t"]["key"], "")).strip()[:100]
             it["ok"] = bool(it["given"]) and _check(exam_id, it["v"], it["given"])
             it["answer"], it["explain"] = it["v"]["answer"], it["v"]["explain"]
             kn.record(conn, sid, exam_id, it["t"]["key"], 1.0 if it["ok"] else 0.0, today, seed=it["seed"],
-                      given=it["given"], update_state=not onsite_extra.is_practice(exam_id, it["t"]["key"]))
+                      given=it["given"], update_state=not onsite_extra.is_practice(exam_id, it["t"]["key"]),
+                      influence=influence)
         kn.log_forecast(conn, sid, exam_id, today)
     u2_badges.sync(conn, sid, today, mock=True)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)

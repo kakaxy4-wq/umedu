@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import oge_forecast %}
 {% block title %}Успехи: {{ st.display_name }}{% endblock %}
+{% block body_class %}{% if umedu2 %}umedu-auth{% endif %}{% endblock %}
 {% block content %}
 <div class="parent-page">
 {% if fam %}{% include "family/_bar.html" %}{% endif %}
@@ -76,9 +77,10 @@
 {% for c in u2 %}{% set k = c.kind %}
 <section class="card">
   <div class="eyebrow">🎯 {{ c.title }}{% if c.days is not none and c.days > 0 %} · до экзамена {{ c.days }} дн.{% endif %}</div>
-  <p>Прогноз: <b>{% if k == 'grade' %}«{{ c.fc.grade }}»{% else %}{{ c.fc.test }} баллов{% endif %}</b>
-    <span class="small muted">(от {% if k == 'grade' %}«{{ c.fc.grade_low }}» до «{{ c.fc.grade_high }}»{% else %}{{ c.fc.test_low }} до {{ c.fc.test_high }}{% endif %})</span>
-    {% if c.goal is not none %} · цель {% if k == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}{% if c.gap <= 0 %} — <b>достигнута</b>{% endif %}{% endif %}</p>
+  {% if c.attempts == 0 %}<p>Прогноза пока нет: заданий по этому экзамену ещё не решено.</p>{% else %}
+  <p>Прогноз: <b>{% if not c.fc.show_point %}вилка {% if k == 'grade' %}«{{ c.fc.grade_low }}»–«{{ c.fc.grade_high }}»{% else %}{{ c.fc.test_low }}–{{ c.fc.test_high }}{% endif %}{% elif k == 'grade' %}«{{ c.fc.grade }}»{% else %}{{ c.fc.test }} баллов{% endif %}</b>
+    {% if c.fc.show_point %}<span class="small muted">(от {% if k == 'grade' %}«{{ c.fc.grade_low }}» до «{{ c.fc.grade_high }}»{% else %}{{ c.fc.test_low }} до {{ c.fc.test_high }}{% endif %})</span>{% endif %}
+    {% if c.goal is not none %} · цель {% if k == 'grade' %}«{{ c.goal }}»{% else %}{{ c.goal }}{% endif %}{% if c.gap <= 0 %} — <b>достигнута</b>{% endif %}{% endif %}</p>{% endif %}
   <p class="small">Заданий за неделю: {{ c.week }}.{% if c.weak %} Что подтянуть: {% for w in c.weak %}{{ w.label }}{{ ', ' if not loop.last }}{% endfor %}.{% endif %}</p>
   {% if c.attempts < 20 %}<p class="small muted">Прогноз пока грубый: решено заданий — {{ c.attempts }}. С каждой попыткой он точнее.</p>{% endif %}
 </section>
@@ -134,14 +136,18 @@
 </div>
 {% endif %}
 
+<section class="card">
 <h2>Последние успехи</h2>
 {% if primary and jr and jr.recent %}
-<ul class="feed">{% for r in jr.recent %}<li><b class="{{ 'plus' if r.ok else 'minus' }}">{{ 'Верно' if r.ok else 'Пока не так' }}</b> {{ r.title }} · {{ r.topic }} <small class="muted">{{ r.prompt }}</small></li>{% endfor %}</ul>
+{% set wins = jr.recent|selectattr('ok')|list %}
+{% if wins %}<ul class="feed">{% for r in wins %}<li><b class="plus">Верно</b> {{ r.title }} · {{ r.topic }} <small class="muted">{{ r.prompt }}</small></li>{% endfor %}</ul>
+{% else %}<p class="muted">Верных ответов пока нет. Ошибки в этот список не попадают.</p>{% endif %}
 {% elif recent %}
-<ul class="feed">{% for e in recent %}<li><b class="{{ 'plus' if e.amount >= 0 else 'minus' }}">{{ '%+d'|format(e.amount) }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% endfor %}</ul>
+<ul class="feed">{% for e in recent if e.amount >= 0 %}<li><b class="plus">+{{ e.amount }}</b> {{ e.reason }} <small class="muted">{{ e.created_at|dt }}</small></li>{% else %}<li class="muted">Пока нет начислений. Списания сюда не попадают.</li>{% endfor %}</ul>
 {% else %}
 <p class="muted">Ещё нет решённых заданий за неделю.</p>
 {% endif %}
+</section>
 {% if in_family and st.minor %}
 <section class="card">
   <h2>Ник в галерее</h2>
@@ -153,7 +159,7 @@
     <button class="btn btn-small">Сохранить</button>
   </form>
 </section>
-<section class="card">
+<section class="card danger-zone">
   <h2>Удаление аккаунта ребёнка</h2>
   <p>Ребёнку меньше 14 лет, поэтому аккаунт удаляете вы. Пропадут ответы, прогресс, проекты и согласие.</p>
   <p><a class="btn btn-ghost" href="/family/child/{{ st.id }}/delete">Удалить аккаунт {{ st.display_name }}</a></p>

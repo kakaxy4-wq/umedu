@@ -88,37 +88,95 @@ def _due_review(conn, sid, grade):
     return out
 
 
-def today_plan(conn, sid, grade):
-    """По одному заданию на предмет: сначала повторение по расписанию, потом новое, иначе повторение.
+DAY_GOAL = 3
 
-    По математике новые задания берём и из генератора (бесконечные варианты), и из
-    статичного набора — чередуем, пока статика не кончится, потом только генератор.
-    """
+
+def _pick_subject(conn, sid, grade, subj, done, due):
+    """Одно задание предмета: повторение по расписанию, потом новое (генератор/статика), иначе повтор."""
+    pool = tasks_for(grade, subj["id"])
+    fresh = [t for t in pool if t["id"] not in done]
+    rev = next((t for t in due if t["subject"] == subj["id"]), None)
+    if rev:
+        return rev, "повтори"
+    gen_task = None
+    if _gen_has(grade, subj["id"]):
+        pool_ids = {t["id"] for t in pool}
+        gen_done = _gen_count(done, grade, subj["id"])
+        static_done = len([d for d in done if d in pool_ids])
+        if gen_done < static_done or not fresh:
+            gen_task = _gen_random(grade, subj["id"], done)
+    if gen_task:
+        return gen_task, "новое"
+    if fresh:
+        return fresh[0], "новое"
+    return pool[0], "повтори"
+
+
+def _day_rows(conn, sid, grade, today):
+    """Три задания дня фиксируются при первом заходе и не подменяются новыми."""
+    day = today.isoformat()
+    rows = list(conn.execute(
+        "SELECT slot, task_id FROM primary_day WHERE student_id = ? AND day = ? ORDER BY slot", (sid, day)))
+    if len(rows) == DAY_GOAL:
+        tasks = [get_task(r[1]) for r in rows]
+        if all(t and t["grade"] == grade for t in tasks):
+            return tasks
     done = _solved(conn, sid)
     due = _due_review(conn, sid, grade)
-    out = []
+    picks = []
     for subj in SUBJECTS:
-        pool = tasks_for(grade, subj["id"])
-        fresh = [t for t in pool if t["id"] not in done]
-        rev = next((t for t in due if t["subject"] == subj["id"]), None)
-        if rev:
-            pick, why = rev, "повтори"
-        else:
-            gen_task = None
-            if _gen_has(grade, subj["id"]):
-                pool_ids = {t["id"] for t in pool}
-                gen_done = _gen_count(done, grade, subj["id"])
-                static_done = len([d for d in done if d in pool_ids])
-                if gen_done < static_done or not fresh:
-                    gen_task = _gen_random(grade, subj["id"], done)
-            if gen_task:
-                pick, why = gen_task, "новое"
-            elif fresh:
-                pick, why = fresh[0], "новое"
-            else:
-                pick, why = pool[0], "повтори"
-        out.append({**public(pick), "why": why, "subject_title": subj["title"], "emoji": subj["emoji"]})
-    return out
+        pick, why = _pick_subject(conn, sid, grade, subj, done, due)
+        picks.append(pick)
+    conn.execute("DELETE FROM primary_day WHERE student_id = ? AND day = ?", (sid, day))
+    for slot, task in enumerate(picks):
+        conn.execute("INSERT INTO primary_day (student_id, day, slot, task_id) VALUES (?, ?, ?, ?)",
+                     (sid, day, slot, task["id"]))
+    return picks
+
+
+def _solved_on(conn, sid, today):
+    prefix = today.isoformat()
+    return {r[0] for r in conn.execute(
+        "SELECT DISTINCT task_id FROM primary_attempt WHERE student_id = ? AND ok = 1 AND created_at LIKE ?",
+        (sid, prefix + "%"))}
+
+
+def today_plan(conn, sid, grade, today=None):
+    """Три карточки дня. Задания фиксируются на день: после трёх верных ответов
+    день закрыт, новые задания не подставляются. Повторение по расписанию и
+    генераторы учитываются при подборе, «готово» видно после верного ответа."""
+    today = today or config.today()
+    solved_today = _solved_on(conn, sid, today)
+    due = _due_review(conn, sid, grade)
+    out = []
+    for task in _day_rows(conn, sid, grade, today):
+        subj = SUBJECT_BY_ID[task["subject"]]
+        done = task["id"] in solved_today
+        why = "готово" if done else next(("повтори" for t in due if t["id"] == task["id"]), "новое")
+        out.append({**public(task), "why": why, "done": done,
+                    "subject_title": subj["title"], "emoji": subj["emoji"]})
+    done_n = sum(1 for it in out if it["done"])
+    return {"items": out, "done": done_n, "goal": DAY_GOAL, "finished": done_n >= DAY_GOAL}
+
+
+def trailing_misses(conn, sid, task_id):
+    n = 0
+    for (ok,) in conn.execute(
+            "SELECT ok FROM primary_attempt WHERE student_id = ? AND task_id = ? ORDER BY id DESC LIMIT 2",
+            (sid, task_id)):
+        if ok:
+            break
+        n += 1
+    return n
+
+
+def hint_for(task):
+    """Подсказка без правильного ответа: его показываем только после второй ошибки."""
+    answer = str(task["accept"][0])
+    explain = task["explain"]
+    if answer and answer in explain:
+        return "Посмотри на числа в условии и проверь действие. Правильный ответ покажем после второй попытки."
+    return explain
 
 
 def groups(grade, subject, solved):

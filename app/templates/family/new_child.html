@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Аккаунт для ребёнка{% endblock %}
-{% block body_class %}login-page{% endblock %}
+{% block body_class %}login-page{% if umedu2 %} umedu-auth{% endif %}{% endblock %}
 {% block content %}
 <div class="login-card card join-card">
   <div class="login-hero">👪</div>

@@ -5,21 +5,16 @@ from test_app import client  # noqa: F401  (фикстура TestClient с вр�
 
 
 @pytest.fixture()
-def kid(client):
+def kid(client, monkeypatch):
     from app import config, students
     from app.db import connect
-    monkeypatch_umedu(client)
+    monkeypatch.setattr(config, "UMEDU2", True)
+    monkeypatch.setattr(config, "CHEM_SITE", False)
     conn = connect()
     with conn:
         sid = students.create_student(conn, "qa-review-3", "Тест Повторение", "parol-6", grade=3)
         conn.execute("UPDATE users SET grade = 3, subjects = 'primary', minor = 1 WHERE id = ?", (sid,))
     return conn, sid
-
-
-def monkeypatch_umedu(client):
-    from app import config
-    config.UMEDU2 = True
-    config.CHEM_SITE = False
 
 
 def _task(conn, task_id):

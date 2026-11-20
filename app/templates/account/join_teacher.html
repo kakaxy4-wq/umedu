@@ -6,6 +6,7 @@
 {% if ok %}<p class="pill good">{{ ok }}</p>{% endif %}
 {% if error %}<p class="pill bad">{{ error }}</p>{% endif %}
 <form method="post" action="/account/join-teacher" class="stack">
+  {% if user %}<input type="hidden" name="csrf" value="{{ user.csrf }}">{% endif %}
   <label>Код приглашения
     <input name="code" value="{{ code or '' }}" required maxlength="16" autocomplete="off" autocapitalize="characters" placeholder="ABCD1234"></label>
   <p class="small muted">Код даёт преподаватель. После присоединения ваши данные будут видны ему в кабинете.</p>

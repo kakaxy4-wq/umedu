@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Регистрация преподавателя{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/login">Вход</a></p>
+<h1>🧑‍🏫 Кабинет репетитора</h1>
+<p class="small muted">Ведите свою группу на этом сайте: свои ученики, домашки, сводка недели. Данные других
+  преподавателей и их учеников не видны. Регистрация открыта, пока на сайте открыта регистрация учеников.</p>
+{% if error %}<p class="pill bad">{{ error }}</p>{% endif %}
+<form method="post" action="/signup-teacher" class="stack">
+  <label>Как к вам обращаться
+    <input name="name" value="{{ form.name or '' }}" required maxlength="60" autocomplete="off" placeholder="Анна Сергеевна"></label>
+  <label>Логин — латиница, нужен для входа
+    <input name="login" value="{{ form.login or '' }}" required maxlength="32" autocomplete="off" autocapitalize="off" placeholder="anna.teacher"></label>
+  <label>Пароль — не меньше 6 символов
+    <input name="password" type="password" required minlength="6" placeholder="{{ suggested }}"></label>
+  <label class="check"><input type="checkbox" name="consent" value="1" required>
+    Согласен(а) на обработку данных преподавателя (ст. 6 закона № 152-ФЗ).</label>
+  <input name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" class="off-screen">
+  <button class="btn">Создать кабинет</button>
+</form>
+<p class="small muted">Уже есть кабинет — <a href="/login">войдите</a>. Код приглашения для учеников будет в
+  кабинете: ученик вводит его при регистрации или на странице «Присоединиться к группе».</p>
+{% endblock %}

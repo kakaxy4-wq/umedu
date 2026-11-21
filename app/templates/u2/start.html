@@ -7,6 +7,7 @@
 <div class="u2-start-grid">
   <a class="u2-card u2-link" href="/u2/start?step=ОГЭ"><h2>ОГЭ</h2><p>9 класс</p></a>
   <a class="u2-card u2-link" href="/u2/start?step=ЕГЭ"><h2>ЕГЭ</h2><p>11 класс</p></a>
+  <a class="u2-card u2-link" href="/u2/start?step=Переводной"><h2>Переводные</h2><p>в 8 и 9 классы — по формату сильных школ</p></a>
 </div>
 {% else %}
 <p class="u2-back"><a href="/u2/start">← ОГЭ или ЕГЭ</a></p>
@@ -17,7 +18,7 @@
 <p class="u2-hint">Справочник знает только {{ schedule.year }} год. Если экзамен позже, дату можно не указывать: план и прогноз без неё работают.</p>
 {% endif %}
 {% for exam, group in catalog|groupby('exam')|sort(attribute='grouper', reverse=true) %}
-<h2 class="u2-h2">{{ exam }} · {{ '9 класс' if exam == 'ОГЭ' else '11 класс' }}</h2>
+<h2 class="u2-h2">{{ exam }}{% if exam == 'ОГЭ' %} · 9 класс{% elif exam == 'ЕГЭ' %} · 11 класс{% endif %}</h2>
 {% for e in group %}
 {% if not e.ready %}
 <section class="u2-card">

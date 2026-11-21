@@ -412,9 +412,10 @@ def u2_start(request: Request, step: str = "", conn=Depends(get_db), user=Depend
     sid = need_sid(conn, user)
     mine = {e["exam_id"]: e for e in kn.exams_of(conn, sid)}
     st = students.get_student(conn, sid)
-    if step not in ("", "ОГЭ", "ЕГЭ"):
+    if step not in ("", "ОГЭ", "ЕГЭ", "Переводной"):
         step = ""
-    catalog = [e for e in _catalog() if not step or e["exam"] == step]
+    # «Переводной» — префикс: экзамены называются «Переводной в 8 класс», «Переводной в 9 класс»
+    catalog = [e for e in _catalog() if not step or e["exam"] == step or e["exam"].startswith(step + " ")]
     return _page(request, conn, user, "me", "u2/start.html", catalog=catalog, mine=mine, schedule=SCHEDULE,
                  grade=(st or {}).get("grade"), step=step)
 

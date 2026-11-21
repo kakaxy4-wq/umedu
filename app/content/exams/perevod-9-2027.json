@@ -1,0 +1,105 @@
+{
+  "id": "perevod-9-2027",
+  "exam": "Переводной в 9 класс",
+  "subject": "Математика",
+  "year": 2027,
+  "duration_min": 60,
+  "source": "Формат по спецификации ГБОУ Школа № 1535 (8 ГУМ и 8 ЕН, 2026): задания с кратким ответом — степени, многочлены, геометрия, проценты. Пороги — рабочая шкала umedu по демоверсии, не официальный документ лицея.",
+  "verified": {
+    "structure": true,
+    "scale": false
+  },
+  "max_points": 15,
+  "parts": [
+    {
+      "name": "Все задания",
+      "answer": "short",
+      "tasks": [
+        {
+          "n": 1,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 2,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 3,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 4,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 5,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 6,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 7,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 8,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 9,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 10,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 11,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 12,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 13,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 14,
+          "points": 1,
+          "answer": "number"
+        },
+        {
+          "n": 15,
+          "points": 1,
+          "answer": "number"
+        }
+      ]
+    }
+  ],
+  "scale": {
+    "kind": "grade",
+    "from": {
+      "3": 5,
+      "4": 10,
+      "5": 13
+    }
+  },
+  "conditions": []
+}

@@ -41,7 +41,10 @@ def _on(monkeypatch):
 
 
 def test_catalog_phet_links_are_official_russian():
-    assert 10 <= len(catalog.PHET) <= 15
+    assert 10 <= len(catalog.PHET) <= 30
+    # «крутить и поворачивать»: 3D-полярность и орбиты — обязательны
+    ids = {item["id"] for item in catalog.PHET}
+    assert {"molecule-polarity", "gravity-and-orbits", "states-of-matter"} <= ids
     subjects = {item["subject"] for item in catalog.PHET}
     assert subjects == {"phys", "chem", "bio", "math"}
     for item in catalog.PHET:

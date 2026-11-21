@@ -13,5 +13,5 @@ def test_version_in_healthz_and_footer(client, monkeypatch):
 
 def test_default_version(client, monkeypatch):
     from app import config
-    monkeypatch.setattr(config, "VERSION", "1.0")
-    assert client.get("/healthz").json()["version"] == "1.0"
+    monkeypatch.setattr(config, "VERSION", "1.1")
+    assert client.get("/healthz").json()["version"] == "1.1"

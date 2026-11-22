@@ -9,7 +9,7 @@
   var status = document.getElementById("phet-status");
   var ticket = 0;
   var timer = 0;
-  var WAIT_MS = 12000;
+  var WAIT_MS = 30000;  // официальная сборка PhET — один файл на ~3.4 МБ, на медленном интернете это десятки секунд
 
   function withSignal(src) {
     if (src.indexOf("postMessageOnLoad") !== -1) return src;
@@ -25,7 +25,7 @@
     timer = setTimeout(function () {
       if (my !== ticket || !status) return;
       status.className = "model-status is-bad";
-      status.textContent = "Симуляция не открылась внутри страницы. Открой «Оптика», «Электрические цепи» или «Молекулы» — они на этом сайте.";
+      status.textContent = "Симуляция грузится дольше минуты — интернет медленный. Подожди, открой страницу ещё раз или выбери «Оптику», «Цепи» и «Молекулы» — они на этом сайте.";
     }, WAIT_MS);
   }
 

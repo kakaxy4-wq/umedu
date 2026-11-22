@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/static/vendor/codemirror/codemirror.css?v={{ v }}">
 <link rel="stylesheet" href="/static/css/app.css?v={{ v }}">
 {% if umedu2 %}<link rel="stylesheet" href="/static/css/umedu-auth.css?v={{ v }}">{% endif %}
+{% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% if stage %}<p class="stage-banner" role="status">Тестовый стенд, данные могут быть стёрты</p>{% endif %}

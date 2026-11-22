@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}К уроку{% endblock %}
+{% block content %}
+<h1>📅 К уроку</h1>
+<p class="muted">Один экран перед занятием: ссылка на созвон, неделя учеников и их слабые места.
+Задание можно показать крупно на экране в Meet и попросить повторить дома.</p>
+
+<section class="card">
+  <div class="eyebrow">🎥 Созвон</div>
+  {% if valid_meet %}
+  <p><a class="btn btn-big" href="{{ meet_url }}" target="_blank" rel="noopener">Начать урок в Google Meet →</a></p>
+  <p class="muted small">{{ meet_url }}</p>
+  {% else %}
+  <p class="muted small">Вставь постоянную ссылку из Google Calendar (Meet) один раз — дальше здесь будет большая кнопка.</p>
+  {% endif %}
+  {% if bad is defined and request.url.path.endswith('bad') %}{% endif %}
+  <form method="post" action="/teacher/lesson/meet" class="stack">
+    {{ csrf_field(user) }}
+    <label>Ссылка на Meet — целиком, начиная с https
+      <input name="url" value="{{ '' if valid_meet else meet_url }}" placeholder="meet.google.com/abc-defg-hij" required></label>
+    <button class="btn">Сохранить</button>
+    {% if request.query_params.get('bad') %}<p class="pill bad">Ссылка не похожа на https-адрес. Скопируй её из Google Calendar целиком.</p>{% endif %}
+  </form>
+</section>
+
+{% for row in roster %}
+{% set st = row.st %}
+<section class="card" id="s{{ st.id }}">
+  <div class="eyebrow">👤 {{ st.display_name }}</div>
+
+  <p class="small">
+    {% if row.week.days %}Дней с занятиями: <b>{{ row.week.days }} из 7</b>.{% else %}<b>На этой неделе занятий не было.</b>{% endif %}
+    {% if row.week.primary_n %} Начальная школа: {{ row.week.primary_n }} заданий, верно {{ row.week.primary_ok }}.{% endif %}
+    {% if row.week.tasks %} Задач по программированию: {{ row.week.tasks }}.{% endif %}
+    {% if row.week.oge %} Тренажёр ОГЭ: {{ row.week.oge }}.{% endif %}
+    {% if row.week.fc %} Прогноз: {{ row.week.fc.points }} из {{ row.week.fc.max }} — «{{ row.week.fc.grade }}».{% endif %}
+  </p>
+
+  {% for e in row.exams %}
+  <div class="row between">
+    <p class="small"><b>{{ e.exam_id }}</b></p>
+    {% if e.open_count %}<p class="small">🏠 дома уже задано: {{ e.open_count }}</p>{% endif %}
+  </div>
+  {% if e.weak %}
+  <table>
+    <tr><th>Слабое место</th><th>Верно, %</th><th></th><th></th></tr>
+    {% for w in e.weak %}
+    <tr>
+      <td>№{{ w.task_key }} · {{ w.p * 100 | round(0) }}% (попыток {{ w.n }})</td>
+      <td>
+        <a class="btn btn-small" href="/teacher/board/{{ st.id }}?exam={{ e.exam_id }}&n={{ w.task_key }}">Показать крупно</a>
+      </td>
+      <td>
+        <form method="post" action="/teacher/lesson/assign">
+          {{ csrf_field(user) }}
+          <input type="hidden" name="sid" value="{{ st.id }}">
+          <input type="hidden" name="exam" value="{{ e.exam_id }}">
+          <input type="hidden" name="n" value="{{ w.task_key }}">
+          <button class="btn btn-small btn-alt">Задать домой</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted small">Пока без попыток по этому экзамену — слабые места появятся после первых заданий.</p>
+  {% endif %}
+  {% endfor %}
+  {% if not row.exams %}<p class="muted small">Экзамен ещё не выбран.</p>{% endif %}
+</section>
+{% else %}
+<section class="card"><p class="muted">Учеников в группе пока нет — добавь на странице «Ученики».</p></section>
+{% endfor %}
+{% endblock %}

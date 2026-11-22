@@ -222,8 +222,9 @@ def teacher_board(sid: int, request: Request, exam: str, n: int, seed: int = 0, 
         return back("/teacher/board/%d?exam=%s&n=%d&seed=%d" % (sid, exam, n, random.randrange(1, 10 ** 6)))
     v = _variant(exam, n, seed)
     info = _task_info(em.load(exam), n)
+    # имя v занято в render версией статики — вариант передаём как variant
     return render(request, "teacher/board.html", conn, user, st=st, exam=exam, n=n, seed=seed,
-                  v=v, info=info, reveal=bool(reveal))
+                  variant=v, info=info, reveal=bool(reveal))
 
 
 @router.post("/teacher/lesson/assign", response_class=HTMLResponse)

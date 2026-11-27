@@ -16,6 +16,7 @@
   --ultra: #3A2BFF; --lime: #C6FF1A; --ink: #14112A;
   --bg: #F6F5FB; --card: #FFFFFF; --line: #E4E2F0; --text: #14112A; --muted: #6B6688; --link: #3A2BFF;
   --weak: #FF5A4E; --mid: #FFB020; --good: #19B36B;
+  --weak-fg: #C2271C; --mid-fg: #8A5A00; --good-fg: #0E7A48; /* текст статусов, WCAG AA на карточке */
   --head: "Unbounded", system-ui, sans-serif; --body: "Golos Text", system-ui, sans-serif;
   --mono: "Kibernetyk Mono", "JetBrains Mono", ui-monospace, monospace;
   color-scheme: light;
@@ -23,11 +24,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0B0920; --card: #17143A; --line: #2E2966; --text: #F2F1FA; --muted: #A9A4C8; --link: #8D85FF;
+    --weak-fg: #FF8A82; --mid-fg: #FFB020; --good-fg: #3DDB8A;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0B0920; --card: #17143A; --line: #2E2966; --text: #F2F1FA; --muted: #A9A4C8; --link: #8D85FF;
+  --weak-fg: #FF8A82; --mid-fg: #FFB020; --good-fg: #3DDB8A;
   color-scheme: dark;
 }
 
@@ -68,7 +71,7 @@ html.u2 .cb-bar .btn.btn-ghost { background: transparent; color: var(--link); bo
 .u2-grade.g5 { background: var(--lime); color: var(--ink); }
 .u2-fc-band { color: var(--muted); font-size: 14px; }
 .u2-goal { margin-top: 8px; font-size: 14px; }
-.u2-ok { color: var(--good); }
+.u2-ok { color: var(--good-fg); }
 
 .u2-plan { list-style: none; margin: 0; padding: 0; }
 .u2-plan li { border-top: 1px solid var(--line); }
@@ -143,9 +146,12 @@ html.u2 .cb-bar .btn.btn-ghost { background: transparent; color: var(--link); bo
 .jr-dots { display: flex; gap: 8px; margin: 0 0 16px; }
 .jr-dots i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); background: #fff; }
 .jr-dots i.on { background: var(--lime); border-color: var(--lime); }
-.jr-try { background: #FFF4DE; border: 1px solid #FFD98A; border-radius: 20px; padding: 20px 24px; margin-bottom: 16px; }
-.jr-topic { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: #EEF0FF; color: var(--ultra); font-weight: 700; }
-.jr-ok { color: #1B7F3A; }
+.jr-try { background: color-mix(in srgb, var(--mid) 16%, var(--card)); border: 1px solid var(--mid);
+  border-radius: 20px; padding: 20px 24px; margin-bottom: 16px; color: var(--text); }
+.jr-try h2 { color: var(--mid-fg); margin-bottom: 6px; }
+.jr-topic { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--link) 12%, var(--card)); color: var(--link); font-weight: 700; }
+.jr-ok { color: var(--good-fg); }
 html.u2 .cb-bar { flex-wrap: nowrap; overflow-x: auto; }
 html.u2 .cb-input .btn { background: #fff; color: var(--ultra); border: 1px solid var(--line); border-radius: 12px; }
 .u2-timer { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line); padding: 8px 0; font-weight: 700; }
@@ -161,8 +167,11 @@ html.u2 .cb-input .btn { background: #fff; color: var(--ultra); border: 1px soli
 .u2-scroll { overflow-x: auto; }
 .u2-table { border-collapse: collapse; font-size: 14px; }
 .u2-table th, .u2-table td { border: 1px solid var(--line); padding: 4px 8px; text-align: center; }
-.u2-res.ok { border-color: var(--good); }
-.u2-res.bad { border-color: var(--weak); }
+.u2-res { color: var(--text); }
+.u2-res.ok { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--card)); }
+.u2-res.ok h2 { color: var(--good-fg); }
+.u2-res.bad { border-color: var(--weak); background: color-mix(in srgb, var(--weak) 16%, var(--card)); }
+.u2-res.bad h2 { color: var(--weak-fg); }
 .u2-res h2 { margin-bottom: 6px; }
 .u2-delta { font-weight: 600; }
 .u2-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -207,7 +216,7 @@ html.u2 .cb-input .btn { background: #fff; color: var(--ultra); border: 1px soli
 .u2-class { width: 100%; }
 .u2-class th, .u2-class td { text-align: left; vertical-align: top; }
 .u2-class small { display: block; color: var(--muted); font-size: 12px; }
-.u2-behind { color: var(--weak); }
+.u2-behind { color: var(--weak-fg); }
 .u2-weak { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 99px; font: 600 12px var(--mono);
   background: color-mix(in srgb, var(--weak) 18%, transparent); }
 
@@ -263,8 +272,8 @@ html.u2 .cb-input .btn { background: #fff; color: var(--ultra); border: 1px soli
 .ru-u-s { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
 .ru-u-p { text-decoration: underline double; text-underline-offset: 4px; }
 .u2-ru-result { margin-top: 12px; }
-.u2-ru-result.ok { color: var(--good); }
-.u2-ru-result.bad { color: var(--weak); }
+.u2-ru-result.ok { color: var(--good-fg); }
+.u2-ru-result.bad { color: var(--weak-fg); }
 
 /* робот и программа — без горизонтальной прокрутки страницы */
 .robot-app { display: grid; gap: 12px; }
@@ -280,8 +289,8 @@ html.u2 .cb-input .btn { background: #fff; color: var(--ultra); border: 1px soli
 .robot-code textarea, .cb-plain, .codebox textarea { width: 100%; min-height: 180px; font: 14px/1.45 var(--mono); padding: 10px;
   border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); }
 .robot-result { margin-top: 10px; }
-.robot-result.ok { color: var(--good); }
-.robot-result.bad { color: var(--weak); }
+.robot-result.ok { color: var(--good-fg); }
+.robot-result.bad { color: var(--weak-fg); }
 .cb-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
 .cb-status { color: var(--muted); font-size: 14px; }
 .examples-io { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -289,8 +298,8 @@ html.u2 .cb-input .btn { background: #fff; color: var(--ultra); border: 1px soli
 .io pre { margin: 2px 0 0; white-space: pre-wrap; font: 13px/1.4 var(--mono); }
 .u2-help { margin: 8px 0 0; padding-left: 1.1em; }
 .u2-help code { font-size: 13px; }
-.cb-results-head.ok { color: var(--good); }
-.cb-results-head.bad { color: var(--weak); }
+.cb-results-head.ok { color: var(--good-fg); }
+.cb-results-head.bad { color: var(--weak-fg); }
 .cb-tests { padding-left: 1.1em; }
 .cb-panels { margin-top: 8px; }
 .cb-console { background: var(--ink); color: #F2F1FA; border-radius: 12px; padding: 8px 10px; overflow-x: auto; }
@@ -331,8 +340,8 @@ html.u2.junior .jr-input { display: block; width: 100%; box-sizing: border-box; 
 html.u2.junior .jr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 html.u2.junior .jr-list a, html.u2.junior .jr-list li { display: block; padding: 14px 16px; border-radius: 16px;
   background: var(--card); border: 1px solid var(--line); color: inherit; text-decoration: none; font-size: 18px; }
-html.u2.junior .jr-ok { color: var(--good); font-weight: 700; margin-right: 6px; }
-html.u2.junior .jr-bad { color: var(--weak); font-weight: 700; margin-right: 6px; }
+html.u2.junior .jr-ok { color: var(--good-fg); font-weight: 700; margin-right: 6px; }
+html.u2.junior .jr-bad { color: var(--weak-fg); font-weight: 700; margin-right: 6px; }
 html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
 
 .stage-banner { margin: 0; padding: 8px 12px; background: #c6ff1a; color: #14112a; text-align: center;
@@ -348,9 +357,9 @@ html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
 .th-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 10px; border-radius: 99px;
   background: var(--card); border: 1px solid var(--line); font: 600 13px var(--body); color: var(--text); }
 .th-pill svg, .th-chip svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.th-pill-ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, var(--line)); }
+.th-pill-ok { color: var(--good-fg); border-color: color-mix(in srgb, var(--good) 40%, var(--line)); }
 .th-again { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--mid) 16%, var(--card));
-  border: 1px solid color-mix(in srgb, var(--mid) 45%, var(--line)); font-size: 15px; }
+  border: 1px solid color-mix(in srgb, var(--mid) 45%, var(--line)); color: var(--text); font-size: 15px; }
 
 .th-toc { position: sticky; top: 0; z-index: 2; display: flex; gap: 6px; margin: 0 -16px 12px; padding: 10px 16px;
   background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -400,7 +409,7 @@ html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
 .th-mistakes .th-body li { position: relative; margin: 0 0 10px; padding: 12px 14px 12px 46px; border-radius: 14px;
   background: color-mix(in srgb, var(--weak) 7%, var(--card)); border: 1px solid color-mix(in srgb, var(--weak) 22%, var(--line)); }
 .th-mistakes .th-body li::before { content: "✕"; position: absolute; left: 14px; top: 12px; display: grid; place-items: center;
-  width: 22px; height: 22px; border-radius: 50%; background: var(--weak); color: #fff; font: 700 12px/1 var(--body); }
+  width: 22px; height: 22px; border-radius: 50%; background: var(--weak); color: var(--ink); font: 700 12px/1 var(--body); }
 
 .th-deep { padding: 0; overflow: hidden; }
 .th-deep summary { display: flex; flex-direction: column; gap: 2px; padding: 16px 48px 16px 18px; cursor: pointer; list-style: none; position: relative; }
@@ -437,8 +446,8 @@ html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
   border: 1px solid var(--line); background: var(--card); color: var(--link); font: 600 13px var(--body); text-decoration: none; }
 .th-chip:hover { border-color: var(--ultra); }
 .th-offer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin: 0 0 12px;
-  padding: 14px 16px; border-radius: 18px; background: color-mix(in srgb, var(--lime) 30%, var(--card));
-  border: 1px solid color-mix(in srgb, var(--lime) 70%, var(--line)); animation: th-in .25s ease-out; }
+  padding: 14px 16px; border-radius: 18px; background: color-mix(in srgb, var(--lime) 16%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--lime) 55%, var(--line)); color: var(--text); animation: th-in .25s ease-out; }
 .th-offer[hidden] { display: none; }
 .th-offer p { margin: 0; flex: 1 1 260px; }
 .th-offer .u2-btn { margin-top: 0; }

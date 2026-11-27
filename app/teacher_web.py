@@ -173,9 +173,10 @@ def _my_students(conn, teacher_id):
 
 
 def _my_student(conn, user, sid):
-    """Ученик из группы этого преподавателя или 404 — чужих не показываем (правило #13)."""
-    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'student' AND teacher_id = ?",
-                       (sid, user["id"])).fetchone()
+    """Ученик из группы этого преподавателя или 404 — чужих не показываем (правило #13).
+    Архивных и гостей тоже: в «К уроку» их нет, значит и доски, и домашки для них быть не должно."""
+    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'student' AND active = 1 AND guest = 0 "
+                       "AND teacher_id = ?", (sid, user["id"])).fetchone()
     if not row:
         raise HTTPException(404)
     return dict(row)
@@ -193,10 +194,11 @@ def teacher_lesson_page(request: Request, conn=Depends(get_db), user=Depends(aut
         for enr in kn.exams_of(conn, sid):
             weak = teacher_lesson.weak_spots(conn, sid, enr["exam_id"])
             exams.append({"exam_id": enr["exam_id"], "weak": weak,
-                          "open_count": len(teacher_lesson.open_for_student(conn, sid))})
+                          "open_count": teacher_lesson.open_count(conn, sid, enr["exam_id"])})
         roster.append({"st": st, "week": week, "exams": exams})
     return render(request, "teacher/lesson.html", conn, user, meet_url=meet_url, roster=roster,
-                  valid_meet=teacher_lesson.valid_meet_url(meet_url) is not None)
+                  valid_meet=teacher_lesson.valid_meet_url(meet_url) is not None,
+                  meet_service=teacher_lesson.meet_service(meet_url))
 
 
 @router.post("/teacher/lesson/meet", response_class=HTMLResponse)

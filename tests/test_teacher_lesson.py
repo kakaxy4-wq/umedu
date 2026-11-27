@@ -105,3 +105,98 @@ def test_board_isolated_between_teachers(client, monkeypatch):
     # и на его «К уроку» нет ни секции Гоши, ни ссылки на его доску
     other = client.get("/teacher/lesson").text
     assert 'id="s%d"' % sid not in other and ("/teacher/board/%d" % sid) not in other
+
+
+# ---------------------------------------------------------------- неблокеры ревью PR #65
+
+def test_meet_url_only_video_hosts():
+    from app.teacher_lesson import meet_service, valid_meet_url
+    ok = {"https://meet.google.com/abc-defg-hij": "Google Meet",
+          "https://telemost.yandex.ru/j/12345678901234": "Яндекс Телемосте",
+          "https://telemost.360.yandex.ru/j/12345678901234": "Яндекс Телемосте",
+          "https://us02web.zoom.us/j/8123456789?pwd=abc": "Zoom", "https://zoom.us/j/8123456789": "Zoom",
+          "https://teams.microsoft.com/l/meetup-join/19%3a": "Microsoft Teams",
+          "https://teams.live.com/meet/9381234": "Microsoft Teams"}
+    for url, name in ok.items():
+        assert valid_meet_url(url) == url and meet_service(url) == name, url
+    bad = ["http://meet.google.com/abc", "https://evil.example/meet.google.com", "https://meet.google.com.evil.ru/abc",
+           "https://meet.google.com@evil.ru/abc", "https://user:pw@meet.google.com/abc", "https://meet.google.com:8443/abc",
+           "https://meet.google.com", "https://meet.google.com/", "https://evilzoom.us/j/1", "https://a.b.c.zoom.us/j/1",
+           "https://meet.google.com/abc def", "javascript:alert(1)", "", None, "https://meet.google.com/" + "a" * 300]
+    for url in bad:
+        assert valid_meet_url(url) is None and meet_service(url) is None, url
+
+
+def test_meet_button_names_the_service(client, monkeypatch):
+    from app import config
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    client, csrf, sid = _teacher_with_group(client)
+    client.post("/teacher/lesson/meet", data={"url": "https://telemost.yandex.ru/j/1234567", "csrf": csrf})
+    page = client.get("/teacher/lesson").text
+    assert "Начать урок в Яндекс Телемосте" in page
+    r = client.post("/teacher/lesson/meet", data={"url": "https://evil.example/j/1", "csrf": csrf}, follow_redirects=False)
+    assert r.headers["location"].endswith("bad=1")
+    assert "Начать урок в Яндекс Телемосте" in client.get("/teacher/lesson").text   # прежняя ссылка осталась
+    assert "request.url.path.endswith" not in open("app/templates/teacher/lesson.html", encoding="utf-8").read()
+
+
+def test_assign_is_idempotent_and_counted_per_exam(client, monkeypatch):
+    from app import config, knowledge as kn
+    from app import teacher_lesson as tl
+    from app.db import connect
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    monkeypatch.setattr(config, "UMEDU2", True)
+    client, csrf, sid = _teacher_with_group(client)
+    conn = connect()
+    with conn:
+        conn.execute("INSERT INTO exam_enroll (student_id, exam_id, goal, exam_date, created_at) "
+                     "VALUES (?, 'ege-math-profile-2026', 70, NULL, '2026-01-01T00:00:00')", (sid,))
+        kn.record(conn, sid, "oge-math-2026", 20, 0.0)
+        kn.record(conn, sid, "ege-math-profile-2026", 1, 0.0)
+    for _ in range(3):                                                    # тройной клик — одно задание
+        r = client.post("/teacher/lesson/assign", data={"sid": sid, "exam": "oge-math-2026", "n": 20, "csrf": csrf},
+                        follow_redirects=False)
+        assert r.status_code == 303
+    count = lambda: connect().execute("SELECT COUNT(*) FROM teacher_task WHERE student_id = ?", (sid,)).fetchone()[0]
+    assert count() == 1
+    page = client.get("/teacher/lesson").text
+    assert page.count("дома уже задано: 1") == 1                          # у профиля ЕГЭ домашки нет
+    client.post("/teacher/lesson/assign", data={"sid": sid, "exam": "ege-math-profile-2026", "n": 1, "csrf": csrf})
+    assert count() == 2 and client.get("/teacher/lesson").text.count("дома уже задано: 1") == 2
+    # старые дубли на проде (до исправления) не ломают счётчик
+    with conn:
+        conn.execute("INSERT INTO teacher_task (teacher_id, student_id, exam_id, task_key, note, day) "
+                     "SELECT teacher_id, student_id, exam_id, task_key, note, day FROM teacher_task WHERE task_key = 20")
+    assert tl.open_count(conn, sid, "oge-math-2026") == 1
+    # решено верно — в тот же день повтор всё равно дубль, на следующий день можно задать снова
+    from datetime import timedelta
+    with conn:
+        kn.record(conn, sid, "oge-math-2026", 20, 1.0)
+        assert tl.assign(conn, 1, sid, "oge-math-2026", 20) is False
+    tomorrow = config.today() + timedelta(days=1)
+    monkeypatch.setattr(config, "today", lambda: tomorrow)
+    with conn:
+        assert tl.assign(conn, 1, sid, "oge-math-2026", 20) is True
+        assert tl.assign(conn, 1, sid, "oge-math-2026", 20) is False
+
+
+def test_archived_and_guest_students_hidden_from_board(client, monkeypatch):
+    from app import config
+    from app.db import connect
+    monkeypatch.setattr(config, "OPEN_SIGNUP", True)
+    client, csrf, sid = _teacher_with_group(client)
+    assert client.get("/teacher/board/%d?exam=oge-math-2026&n=20&seed=1" % sid).status_code == 200
+    for col in ("active = 0", "guest = 1"):
+        conn = connect()
+        with conn:
+            conn.execute("UPDATE users SET active = 1, guest = 0 WHERE id = ?", (sid,))
+            conn.execute("UPDATE users SET %s WHERE id = ?" % col, (sid,))
+        assert client.get("/teacher/board/%d?exam=oge-math-2026&n=20&seed=1" % sid).status_code == 404, col
+        r = client.post("/teacher/lesson/assign", data={"sid": sid, "exam": "oge-math-2026", "n": 20, "csrf": csrf},
+                        follow_redirects=False)
+        assert r.status_code == 404, col
+
+
+def test_picker_timeout_text_matches_wait():
+    src = open("app/static/js/models/picker.js", encoding="utf-8").read()
+    assert "var WAIT_MS = 30000;" in src and "дольше 30 секунд" in src and "дольше минуты" not in src

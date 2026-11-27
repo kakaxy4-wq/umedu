@@ -11,6 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from . import teacher_lesson
 from . import account, auth, config, labs, oge_drill, primary, russian
 from . import exam_model as em
 from . import knowledge as kn
@@ -154,9 +155,12 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
             for it in items:
                 it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})
+    teacher_tasks = teacher_lesson.open_for_student(conn, sid, today)
+    for t in teacher_tasks:
+        t["title"] = _task_info(em.load(t["exam_id"]), t["task_key"])["title"]
     return _page(request, conn, user, "today", "u2/today.html", cards=cards, plans=plans,
                  total=sum(p["minutes"] for p in plans), act=kn.activity(conn, sid, today), intro=_intro(cards, plans),
-                 lab_offer=_lab_offer(conn, sid, cards, today))
+                 lab_offer=_lab_offer(conn, sid, cards, today), teacher_tasks=teacher_tasks)
 
 
 def _intro(cards, plans):

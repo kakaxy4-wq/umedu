@@ -4,6 +4,12 @@
 {% block content %}
 <h1>🎛️ Пульт преподавателя</h1>
 
+<a class="card todo-item lesson-cta" href="/teacher/lesson">
+  <span class="todo-emoji">📅</span>
+  <span><b>К уроку</b><br><small class="muted">ссылка на Meet, неделя учеников и их слабые номера — один экран перед занятием</small></span>
+  <span class="btn btn-small">Открыть →</span>
+</a>
+
 {% if pending or purchases %}
 <section class="card todo-card">
   <div class="eyebrow">🔔 Ждёт тебя · {{ pending|length + purchases|length }}</div>

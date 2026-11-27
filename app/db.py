@@ -484,6 +484,25 @@ CREATE TABLE IF NOT EXISTS primary_day (
     task_id TEXT NOT NULL,
     PRIMARY KEY (student_id, day, slot)
 );
+-- «К уроку» (issue: путь внешнего репетитора, раз в неделю, Google Meet):
+-- ссылка кабинета (meet_url) и задания, заданные преподавателем, до первой верной попытки, максимум 7 дней.
+-- Откат без потери остальных данных: DROP TABLE IF EXISTS teacher_pref; DROP TABLE IF EXISTS teacher_task;
+CREATE TABLE IF NOT EXISTS teacher_pref (
+    teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    PRIMARY KEY (teacher_id, key)
+);
+CREATE TABLE IF NOT EXISTS teacher_task (
+    id INTEGER PRIMARY KEY,
+    teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    task_key INTEGER NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    day TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_teacher_task_student ON teacher_task(student_id, day);
 -- организации и классы: экраны учителя позже, таблицы сразу, чтобы потом не переделывать
 CREATE TABLE IF NOT EXISTS org (
     id INTEGER PRIMARY KEY,

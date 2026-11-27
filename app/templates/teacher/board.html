@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf_field %}
+{% block title %}Доска · {{ st.display_name }}{% endblock %}
+{% block body_class %}board-page{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/teacher/lesson#s{{ st.id }}">← К уроку</a></p>
+<p class="board-meta">{{ st.display_name }} · {{ info.title }}{% if info.points %} · {{ info.points }} балл(а){% endif %} · вариант {{ seed }}</p>
+
+<h1 class="board-task">{{ variant.text }}</h1>
+{% if variant.table %}
+<table class="board-table">
+  {% for row in variant.table %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+</table>
+{% endif %}
+
+{% if reveal %}
+<section class="board-answer">
+  <p><b>Ответ: {{ variant.answer }}</b></p>
+  <p>{{ variant.explain }}</p>
+  {% for step in variant.steps %}<p class="small muted">{{ step }}</p>{% endfor %}
+</section>
+{% else %}
+<p><a class="btn btn-big" href="/teacher/board/{{ st.id }}?exam={{ exam }}&n={{ n }}&seed={{ seed }}&reveal=1">Показать ответ и разбор</a></p>
+{% endif %}
+
+<form method="post" action="/teacher/lesson/assign" class="board-assign">
+  {{ csrf_field(user) }}
+  <input type="hidden" name="sid" value="{{ st.id }}">
+  <input type="hidden" name="exam" value="{{ exam }}">
+  <input type="hidden" name="n" value="{{ n }}">
+  <input type="hidden" name="note" value="Разобрали вместе на уроке — повтори сам">
+  <button class="btn btn-alt">🏠 Задать это домой на неделю</button>
+</form>
+<p class="small muted">Доска — для показа экрана в Meet. Ответ не виден в странице, пока не откроешь ссылкой выше.</p>
+{% endblock %}
+{% block extra_head %}
+<style>
+.board-page { background: #fff; }
+.board-task { font-size: clamp(24px, 4vw, 40px); line-height: 1.25; max-width: 30em; }
+.board-table { font-size: 22px; border-collapse: collapse; margin: 18px 0; }
+.board-table td { border: 1px solid #ccc; padding: 10px 16px; }
+.board-answer { font-size: 22px; border: 3px solid #2e7d32; border-radius: 12px; padding: 18px; margin: 20px 0; }
+.board-meta { color: #666; }
+.board-assign { margin-top: 24px; }
+</style>
+{% endblock %}

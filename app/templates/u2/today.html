@@ -6,6 +6,17 @@
 <div class="u2-today">
 <div class="u2-today-main">
 {% set nxt = namespace(step=none, card=none) %}
+{% if teacher_tasks %}
+<section class="u2-card" aria-label="Задания от преподавателя">
+  <div class="u2-card-head"><h2>🧑‍🏫 От преподавателя</h2></div>
+  {% for t in teacher_tasks %}
+  <a class="u2-link" href="/u2/train/{{ t.exam_id }}/{{ t.task_key }}">
+    <b>№{{ t.task_key }} · {{ t.title }}</b>{% if t.note %} — {{ t.note }}{% endif %}
+  </a>
+  {% endfor %}
+</section>
+{% endif %}
+
 {% for p in plans %}{% if nxt.step is none and p.steps %}{% set nxt.step = p.steps[0] %}{% set nxt.card = p.card %}{% endif %}{% endfor %}
 {% if nxt.step %}
 <section class="u2-card u2-next">

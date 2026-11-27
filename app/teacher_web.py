@@ -2,12 +2,15 @@
 
 Маршруты вынесены из main.py; общие функции берутся оттуда. Подключается в конце main.py.
 """
+import random
 import re
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from . import analytics, auth, config, family, forecast, game, levels, notify, russian, season, students, subjects, weekly
+from . import (analytics, auth, config, family, forecast, game, knowledge as kn, levels, notify, russian,
+             season, students, subjects, teacher_lesson, weekly)
 from .db import get_db, get_setting, set_setting
 from .content.checks import CHECKS, CHECK_BY_ID
 from .content.glossary import terms_in
@@ -158,6 +161,83 @@ def teacher_invite(request: Request, regen: int = 0, conn=Depends(get_db), user=
             code = students.make_invite_code(conn, user["id"])
             conn.commit()
     return render(request, "teacher/invite.html", conn, user, code=code)
+
+# ================================================================== «К уроку»: экран раз в неделю
+def _my_students(conn, teacher_id):
+    """Строго группа этого преподавателя — без обратной совместимости list_students
+    (та «ослепляет» старую установку, показывая самостоятельных; для доски и заданий это дыра)."""
+    return [dict(r) for r in conn.execute(
+        "SELECT id, display_name, username, grade FROM users "
+        "WHERE role = 'student' AND active = 1 AND guest = 0 AND teacher_id = ? ORDER BY display_name",
+        (teacher_id,))]
+
+
+def _my_student(conn, user, sid):
+    """Ученик из группы этого преподавателя или 404 — чужих не показываем (правило #13)."""
+    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'student' AND teacher_id = ?",
+                       (sid, user["id"])).fetchone()
+    if not row:
+        raise HTTPException(404)
+    return dict(row)
+
+
+@router.get("/teacher/lesson", response_class=HTMLResponse)
+def teacher_lesson_page(request: Request, conn=Depends(get_db), user=Depends(auth.teacher_required)):
+    """Один экран к уроку: ссылка Meet, неделя каждого ученика, слабые номера, доска, домашка."""
+    meet_url = teacher_lesson.pref(conn, user["id"], teacher_lesson.MEET_URL_KEY)
+    roster = []
+    for st in _my_students(conn, user["id"]):
+        sid = st["id"]
+        week = weekly.student_week(conn, st, (config.today() - timedelta(days=6)).isoformat())
+        exams = []
+        for enr in kn.exams_of(conn, sid):
+            weak = teacher_lesson.weak_spots(conn, sid, enr["exam_id"])
+            exams.append({"exam_id": enr["exam_id"], "weak": weak,
+                          "open_count": len(teacher_lesson.open_for_student(conn, sid))})
+        roster.append({"st": st, "week": week, "exams": exams})
+    return render(request, "teacher/lesson.html", conn, user, meet_url=meet_url, roster=roster,
+                  valid_meet=teacher_lesson.valid_meet_url(meet_url) is not None)
+
+
+@router.post("/teacher/lesson/meet", response_class=HTMLResponse)
+def teacher_lesson_meet(request: Request, url: str = Form(""), conn=Depends(get_db),
+                        user=Depends(auth.check_csrf)):
+    auth.teacher_required(user)
+    url = teacher_lesson.valid_meet_url(url)
+    if not url:
+        return back("/teacher/lesson?bad=1")
+    with conn:
+        teacher_lesson.set_pref(conn, user["id"], teacher_lesson.MEET_URL_KEY, url)
+    return back("/teacher/lesson")
+
+
+@router.get("/teacher/board/{sid}", response_class=HTMLResponse)
+def teacher_board(sid: int, request: Request, exam: str, n: int, seed: int = 0, reveal: int = 0,
+                  conn=Depends(get_db), user=Depends(auth.teacher_required)):
+    """Доска: задание крупно, для показа экрана в Meet. Ответ — только по явной ссылке."""
+    st = _my_student(conn, user, sid)
+    from . import exam_model as em
+    from .u2_web import _task_info, _variant  # локальный импорт: u2_web тяжёлый и тянет роуты
+    if not seed:
+        return back("/teacher/board/%d?exam=%s&n=%d&seed=%d" % (sid, exam, n, random.randrange(1, 10 ** 6)))
+    v = _variant(exam, n, seed)
+    info = _task_info(em.load(exam), n)
+    # имя v занято в render версией статики — вариант передаём как variant
+    return render(request, "teacher/board.html", conn, user, st=st, exam=exam, n=n, seed=seed,
+                  variant=v, info=info, reveal=bool(reveal))
+
+
+@router.post("/teacher/lesson/assign", response_class=HTMLResponse)
+def teacher_lesson_assign(request: Request, sid: int = Form(...), exam: str = Form(...), n: int = Form(...),
+                          note: str = Form(""), conn=Depends(get_db), user=Depends(auth.check_csrf)):
+    auth.teacher_required(user)
+    _my_student(conn, user, sid)
+    from .u2_web import _variant  # номер существует и генерируется
+    _variant(exam, n, 1)
+    with conn:
+        teacher_lesson.assign(conn, user["id"], sid, exam, n, note)
+    return back("/teacher/lesson")
+
 
 @router.get("/teacher/students", response_class=HTMLResponse)
 def teacher_students(request: Request, archived: int = 0, conn=Depends(get_db), user=Depends(auth.teacher_required)):

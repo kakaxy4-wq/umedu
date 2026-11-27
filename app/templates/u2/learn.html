@@ -1,0 +1,48 @@
+{% extends "u2/base.html" %}
+{% block title %}Разобраться · {{ t.label }} · {{ c.title }}{% endblock %}
+{% block content %}
+<a class="u2-back" href="/u2/train/{{ c.id }}/{{ t.key }}">← {{ t.label }} · {{ c.title }}</a>
+<header class="th-hero">
+  <p class="th-kicker">Разобраться · {{ t.label }}</p>
+  <h1 class="th-title">{{ th.topic }}</h1>
+  <div class="th-meta">
+    <span class="th-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>≈{{ th.minutes }} мин</span>
+    <span class="th-pill th-pill-ok" title="Пример сверен с ответом тренажёра, текст проверен{% if th.checked %} {{ th.checked }}{% endif %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg>Проверено</span>
+  </div>
+  {% if again %}
+  <p class="th-again" role="status">Две ошибки подряд — так бывает. Перечитай правило и пример: это пара минут, потом вернёмся к заданию.</p>
+  {% endif %}
+</header>
+
+<nav class="th-toc" aria-label="Разделы теории">
+  <a href="#rule"><b>1</b>Правило</a><a href="#example"><b>2</b>Пример</a><a href="#mistakes"><b>3</b>Ошибки</a>
+</nav>
+
+<section class="u2-card th-sec" id="rule" aria-labelledby="th-rule">
+  <h2 class="th-h" id="th-rule"><span class="th-badge" aria-hidden="true">1</span>Правило</h2>
+  <div class="th-body">{{ th.rule }}</div>
+</section>
+<section class="u2-card th-sec th-example" id="example" aria-labelledby="th-example">
+  <h2 class="th-h" id="th-example"><span class="th-badge" aria-hidden="true">2</span>Разобранный пример</h2>
+  <div class="th-body">{{ th.example }}</div>
+</section>
+<section class="u2-card th-sec th-mistakes" id="mistakes" aria-labelledby="th-mistakes">
+  <h2 class="th-h" id="th-mistakes"><span class="th-badge" aria-hidden="true">3</span>Типичные ошибки</h2>
+  <div class="th-body">{{ th.mistakes }}</div>
+</section>
+{% if th.deep %}
+<details class="u2-card th-deep" id="deep">
+  <summary><span class="th-deep-t">Углубиться <small>по желанию</small></span><span class="th-deep-s">{{ th.deep_summary }}</span></summary>
+  <div class="th-body">{{ th.deep }}</div>
+</details>
+{% endif %}
+
+<div class="th-cta">
+  {% if solvable %}
+  <a class="u2-btn th-go" href="/u2/train/{{ c.id }}/{{ t.key }}">Понятно — к заданию <span aria-hidden="true">→</span></a>
+  {% else %}
+  <a class="u2-btn th-go" href="/u2/subject/{{ c.id }}">К номерам предмета <span aria-hidden="true">→</span></a>
+  {% endif %}
+</div>
+{% if th.source %}<p class="u2-hint th-src">Основа: {{ th.source }}</p>{% endif %}
+{% endblock %}

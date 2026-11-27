@@ -20,6 +20,7 @@
       } catch (err) { return; }
       if (!r.ok) return;
       var data = await r.json();
+      if (window.u2Theory) window.u2Theory(data);
       var old = box.querySelector(".u2-verdict");
       if (old) old.remove();
       var note = document.createElement("p");

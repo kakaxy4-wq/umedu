@@ -17,9 +17,9 @@
   <form method="post" action="/teacher/lesson/meet" class="stack">
     {{ csrf_field(user) }}
     <label>Ссылка на Meet, Телемост, Zoom или Teams — целиком, начиная с https
-      <input name="url" value="{{ '' if valid_meet else meet_url }}" placeholder="https://meet.google.com/abc-defg-hij" required></label>
+      <input name="url" value="{{ '' if valid_meet else meet_url }}" placeholder="meet.google.com/abc-defg-hij" required></label>
     <button class="btn">Сохранить</button>
-    {% if request.query_params.get('bad') %}<p class="pill bad">Нужна ссылка на комнату Google Meet, Яндекс Телемоста, Zoom или Teams, начиная с https://. Скопируй её из приглашения целиком.</p>{% endif %}
+    {% if request.query_params.get('bad') %}<p class="pill bad">Нужна ссылка на комнату Google Meet, Яндекс Телемоста, Zoom или Teams, начиная с https. Скопируй её из приглашения целиком.</p>{% endif %}
   </form>
 </section>
 

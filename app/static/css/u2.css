@@ -444,3 +444,13 @@ html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
 .th-offer .u2-btn { margin-top: 0; }
 @keyframes th-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .u2-why small.th-plan { color: var(--link); font-weight: 600; }
+/* отметка теории на клетке номера: кольцо — есть теория, заливка лаймом — разобрана */
+.u2-cell.th-cell { position: relative; }
+.th-mark { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--ultra); background: var(--card); }
+.u2-cell .th-mark { position: absolute; top: 4px; right: 4px; }
+.th-cell-seen .th-mark, .th-mark-seen { background: var(--lime); border-color: var(--ink); }
+:root[data-theme="dark"] .th-mark { border-color: #A9A2FF; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .th-mark { border-color: #A9A2FF; } }
+.th-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 4px 2px 12px; color: var(--muted); font-size: 13px; }
+.th-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.th-legend b { margin-left: auto; color: var(--text); font: 600 13px var(--mono); }

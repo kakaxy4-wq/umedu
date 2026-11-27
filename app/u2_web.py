@@ -199,9 +199,12 @@ def u2_subject(exam_id: str, request: Request, conn=Depends(get_db), user=Depend
     if not enr:
         raise HTTPException(404)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)
+    with_theory, seen = theory.keys_for(exam_id), theory.seen_keys(conn, sid, exam_id)
     tasks = [{**t, "p": kn.decay(c["states"].get(t["n"]), today)["p"], "n_try": c["states"].get(t["n"], {}).get("n", 0),
-              "mode": u2_onsite.mode_of(exam_id, t["n"])}
+              "mode": u2_onsite.mode_of(exam_id, t["n"]),
+              "theory": ("seen" if str(t["n"]) in seen else "new") if t["n"] in with_theory else None}
              for t in em.tasks(c["exam"])]
+    theory_count = {"all": len(with_theory), "seen": len({k for k in with_theory if str(k) in seen})}
     path = None
     scoring = u2_onsite.scoring_keys(exam_id)
     practice = [{"n": n, **_task_info(c["exam"], n)}
@@ -214,7 +217,7 @@ def u2_subject(exam_id: str, request: Request, conn=Depends(get_db), user=Depend
             s.update(_task_info(c["exam"], s["n"]))
         path["practice"] = practice
     return _page(request, conn, user, "subjects", "u2/subject.html", c=c, tasks=tasks, proj=_projection(conn, sid, c, today),
-                 path=path)
+                 path=path, theory_count=theory_count)
 
 
 PACE_DAYS = 14

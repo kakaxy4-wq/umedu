@@ -38,6 +38,10 @@
 </section>
 {% endif %}
 {% if c.mock %}<p class="u2-actions"><a class="u2-btn ghost" href="/u2/mock/{{ c.id }}">Мини-пробник · 25 минут</a></p>{% endif %}
+{% if theory_count.all %}
+<p class="th-legend"><span><i class="th-mark th-mark-new"></i>есть теория «Разобраться»</span><span><i class="th-mark th-mark-seen"></i>разобрана</span>
+  <b>{{ theory_count.seen }} из {{ theory_count.all }}</b></p>
+{% endif %}
 {% for g in c.groups %}
 <section class="u2-card">
   <div class="u2-card-head"><h2>{{ g.name }}</h2><span class="u2-chip">{{ (g.p * 100)|round|int }}%</span></div>
@@ -46,8 +50,8 @@
     {% if t.mode == 'soon' %}
     <span class="u2-cell" title="№{{ t.n }} скоро появится на сайте"><b>{{ t.n }}</b><small>скоро</small></span>
     {% else %}
-    <a class="u2-cell" href="/u2/train/{{ c.id }}/{{ t.n }}" style="--p: {{ t.p }}" title="№{{ t.n }}: решишь с вероятностью {{ (t.p * 100)|round|int }}%, попыток {{ t.n_try }}">
-      <b>{{ t.n }}</b><small>{{ t.points }} б.</small></a>
+    <a class="u2-cell{% if t.theory %} th-cell th-cell-{{ t.theory }}{% endif %}" href="/u2/train/{{ c.id }}/{{ t.n }}" style="--p: {{ t.p }}" title="№{{ t.n }}: решишь с вероятностью {{ (t.p * 100)|round|int }}%, попыток {{ t.n_try }}{% if t.theory == 'seen' %} · теория разобрана{% elif t.theory %} · есть теория{% endif %}">
+      <b>{{ t.n }}</b><small>{{ t.points }} б.</small>{% if t.theory %}<i class="th-mark" aria-label="{{ 'теория разобрана' if t.theory == 'seen' else 'есть теория' }}"></i>{% endif %}</a>
     {% endif %}
     {% endfor %}
   </div>

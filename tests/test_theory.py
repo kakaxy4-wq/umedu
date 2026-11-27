@@ -236,3 +236,15 @@ def test_today_plan_fits_15_minutes_with_theory(client, monkeypatch):  # noqa: F
     page = client.get("/u2/today").text
     assert "сначала теория" not in page and first
     assert 0 < int(re.search(r"Сегодня · (\d+) минут", page).group(1)) <= 15
+
+
+def test_subject_page_marks_theory(client, monkeypatch):  # noqa: F811
+    monkeypatch.setattr(config, "UMEDU2", True)
+    _enroll(client, "oge-math-2026")
+    total = len(theory.keys_for("oge-math-2026"))
+    page = client.get("/u2/subject/oge-math-2026").text
+    assert f"<b>0 из {total}</b>" in page and page.count("th-cell-new") == total and "th-cell-seen" not in page
+    client.get("/u2/learn/oge-math-2026/9")
+    page = client.get("/u2/subject/oge-math-2026").text
+    assert f"<b>1 из {total}</b>" in page and page.count("th-cell-seen") == 1 and "теория разобрана" in page
+    assert page.count("th-cell-new") == total - 1

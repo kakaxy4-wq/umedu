@@ -199,3 +199,40 @@ def test_learn_page_escapes_file_content(client, monkeypatch, tmp_path):  # noqa
         assert "&lt;script&gt;" in html
     finally:
         theory._all.cache_clear()
+
+
+# ---------------------------------------------------------------- теория в плане дня
+
+def test_fit_plan_counts_unread_theory():
+    items = [{"n": 9, "minutes": 6, "times": 2}, {"n": 10, "minutes": 3, "times": 1}, {"n": 20, "minutes": 4, "times": 1},
+             {"n": 11, "minutes": 3, "times": 1}]
+    th9, th10 = theory.get("oge-math-2026", 9)["minutes"], theory.get("oge-math-2026", 10)["minutes"]
+    fresh = theory.fit_plan("oge-math-2026", items, 15, set())
+    assert sum(i["minutes"] for i in fresh) <= 15
+    assert fresh[0]["theory"] == th9 and fresh[0]["minutes"] == 6 + th9
+    assert all(i["theory"] == 0 for i in fresh if i["n"] == 20)           # №20 без теории — без надбавки
+    seen = theory.fit_plan("oge-math-2026", items, 15, {"9", "10", "11"})
+    assert all(i["theory"] == 0 for i in seen)
+    assert [i["n"] for i in seen] == [9, 10, 20] and sum(i["minutes"] for i in seen) == 13   # №11 уже не влез
+    tight = theory.fit_plan("oge-math-2026", items, 3 + th9, set())       # «× 2» теряет повтор, но номер остаётся
+    assert tight[0]["n"] == 9 and tight[0]["times"] == 1 and tight[0]["minutes"] == 3 + th9
+    assert theory.fit_plan("oge-math-2026", items, 2, set()) == []
+    assert th10 >= 2
+
+
+def test_today_plan_fits_15_minutes_with_theory(client, monkeypatch):  # noqa: F811
+    import re
+    monkeypatch.setattr(config, "UMEDU2", True)
+    csrf = _enroll(client, "oge-math-2026")
+    client.post("/u2/me/minutes", data={"csrf": csrf, "minutes": 90})
+    page = client.get("/u2/today").text
+    total = int(re.search(r"Сегодня · (\d+) минут", page).group(1))
+    assert 0 < total <= 15
+    assert "сначала теория" in page                                       # непрочитанная теория в бюджете дня
+    first = re.search(r'href="/u2/train/oge-math-2026/(\d+)"', page).group(1)
+    for n in range(1, 26):                                                 # прочитал всю теорию — надбавки нет
+        if theory.has("oge-math-2026", n):
+            client.get(f"/u2/learn/oge-math-2026/{n}")
+    page = client.get("/u2/today").text
+    assert "сначала теория" not in page and first
+    assert 0 < int(re.search(r"Сегодня · (\d+) минут", page).group(1)) <= 15

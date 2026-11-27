@@ -443,3 +443,4 @@ html.u2.junior .u2-seg button { font-size: 16px; padding: 12px 14px; }
 .th-offer p { margin: 0; flex: 1 1 260px; }
 .th-offer .u2-btn { margin-top: 0; }
 @keyframes th-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.u2-why small.th-plan { color: var(--link); font-weight: 600; }

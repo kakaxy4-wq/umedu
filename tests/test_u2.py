@@ -119,11 +119,13 @@ def test_daily_minutes_setting(client, monkeypatch):  # noqa: F811
     monkeypatch.setattr(config, "UMEDU2", True)
     csrf = login(client, "student")
     client.post("/u2/start", data={"csrf": csrf, "exam_id": "oge-math-2026", "goal": 4})
-    assert "Сегодня · 30 минут" in client.get("/u2/today").text
-    client.post("/u2/me/minutes", data={"csrf": csrf, "minutes": 60})
     import re
-    total = int(re.search(r"Сегодня · (\d+) минут", client.get("/u2/today").text).group(1))
-    assert 50 < total <= 60                                                  # план заполняет новое время, не больше
+    total = lambda: int(re.search(r"Сегодня · (\d+) минут", client.get("/u2/today").text).group(1))
+    assert 10 <= total() <= 15                       # один предмет — не больше 15 минут в день, «как семечки»
+    client.post("/u2/me/minutes", data={"csrf": csrf, "minutes": 60})
+    assert 10 <= total() <= 15
+    client.post("/u2/start", data={"csrf": csrf, "exam_id": "ege-math-profile-2026", "goal": 70})
+    assert 15 < total() <= 30                        # минуты дня делятся между предметами, каждому до 15
     assert 'value="60" aria-pressed="true"' in client.get("/u2/me").text
     assert client.post("/u2/me/minutes", data={"csrf": csrf, "minutes": 7}).status_code == 400
 

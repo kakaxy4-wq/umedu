@@ -336,5 +336,32 @@ def note_answer(conn, sid, exam_id, key, ok):
     return state(conn, sid, exam_id, key)["streak"] >= WRONG_IN_A_ROW
 
 
+def seen_keys(conn, sid, exam_id):
+    """Номера экзамена, теорию которых ученик уже открывал (ключи — строки, как в таблице)."""
+    return {r[0] for r in conn.execute(
+        "SELECT task_key FROM u2_theory WHERE student_id = ? AND exam_id = ? AND seen_at IS NOT NULL", (sid, exam_id))}
+
+
+def fit_plan(exam_id, items, budget, seen):
+    """План дня с теорией: непрочитанная теория номера входит в минуты дня, и план не выходит за budget.
+
+    Номер, который «не влезает» вместе с теорией, сначала теряет повторы (× 2 → × 1), потом выпадает целиком.
+    Каждому пункту добавляет theory — минуты теории (0, если теории нет или она уже прочитана)."""
+    out, used = [], 0
+    for it in items:
+        th = get(exam_id, it["n"])
+        extra = th["minutes"] if th and str(it["n"]) not in seen else 0
+        times = it.get("times", 1) or 1
+        per = max(1, it["minutes"] // times)
+        while times and used + per * times + extra > budget:
+            times -= 1
+        if not times:
+            continue
+        it = {**it, "times": times, "minutes": per * times + extra, "theory": extra}
+        used += it["minutes"]
+        out.append(it)
+    return out
+
+
 def offer(conn, sid, exam_id, key):
     return has(exam_id, key) and state(conn, sid, exam_id, key)["streak"] >= WRONG_IN_A_ROW

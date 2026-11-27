@@ -34,6 +34,7 @@ def _enabled():
 router = APIRouter(prefix="/u2", dependencies=[Depends(_enabled)])
 
 DAILY_MINUTES = 30            # по умолчанию; ученик меняет во вкладке «Я»
+SUBJECT_DAY_MINUTES = 15      # «как семечки»: на один предмет в день не больше 15 минут, теория — внутри этих минут
 MINUTE_CHOICES = (15, 30, 45, 60, 90)
 REVIEW_AFTER_DAYS = 14        # номер, к которому не возвращались столько дней, попадает в план как повторение
 REVIEW_MIN_P = 0.6
@@ -150,9 +151,11 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     minutes = _split(cards, _minutes(conn, sid))
     plans = []
     for c in cards:
-        if minutes.get(c["id"]):
-            due = _due(c["exam"], c["states"], today, minutes[c["id"]])
-            items = _plan(c["exam"], c["states"], minutes[c["id"]], today, due)
+        budget = min(minutes.get(c["id"]) or 0, SUBJECT_DAY_MINUTES)
+        if budget:
+            due = _due(c["exam"], c["states"], today, budget)
+            items = theory.fit_plan(c["id"], _plan(c["exam"], c["states"], budget, today, due), budget,
+                                    theory.seen_keys(conn, sid, c["id"]))
             for it in items:
                 it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})

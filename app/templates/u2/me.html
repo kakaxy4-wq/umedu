@@ -27,7 +27,7 @@
 </section>
 <section class="u2-card">
   <h2>Время на подготовку</h2>
-  <p class="u2-hint">Сколько минут в день — план «Сегодня» уложится в это время.</p>
+  <p class="u2-hint">Сколько минут в день — план «Сегодня» уложится в это время. На один предмет — не больше 15 минут, вместе с теорией: понемногу каждый день.</p>
   <form method="post" action="/u2/me/minutes" class="u2-seg">
     <input type="hidden" name="csrf" value="{{ user.csrf }}">
     {% for m in choices %}<button name="minutes" value="{{ m }}" aria-pressed="{{ 'true' if m == minutes else 'false' }}"{% if user.role != 'student' %} disabled{% endif %}>{{ m }} мин</button>{% endfor %}

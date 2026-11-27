@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from . import teacher_lesson
+from . import theory
 from . import account, auth, config, labs, oge_drill, primary, russian
 from . import exam_model as em
 from . import knowledge as kn
@@ -33,6 +34,7 @@ def _enabled():
 router = APIRouter(prefix="/u2", dependencies=[Depends(_enabled)])
 
 DAILY_MINUTES = 30            # по умолчанию; ученик меняет во вкладке «Я»
+SUBJECT_DAY_MINUTES = 15      # «как семечки»: на один предмет в день не больше 15 минут, теория — внутри этих минут
 MINUTE_CHOICES = (15, 30, 45, 60, 90)
 REVIEW_AFTER_DAYS = 14        # номер, к которому не возвращались столько дней, попадает в план как повторение
 REVIEW_MIN_P = 0.6
@@ -149,9 +151,11 @@ def u2_today(request: Request, conn=Depends(get_db), user=Depends(auth.current_u
     minutes = _split(cards, _minutes(conn, sid))
     plans = []
     for c in cards:
-        if minutes.get(c["id"]):
-            due = _due(c["exam"], c["states"], today, minutes[c["id"]])
-            items = _plan(c["exam"], c["states"], minutes[c["id"]], today, due)
+        budget = min(minutes.get(c["id"]) or 0, SUBJECT_DAY_MINUTES)
+        if budget:
+            due = _due(c["exam"], c["states"], today, budget)
+            items = theory.fit_plan(c["id"], _plan(c["exam"], c["states"], budget, today, due), budget,
+                                    theory.seen_keys(conn, sid, c["id"]))
             for it in items:
                 it["title"] = _task_info(c["exam"], it["n"])["title"]
             plans.append({"card": c, "minutes": sum(i["minutes"] for i in items), "steps": items})
@@ -195,9 +199,12 @@ def u2_subject(exam_id: str, request: Request, conn=Depends(get_db), user=Depend
     if not enr:
         raise HTTPException(404)
     c = _card(enr, kn.load_states(conn, sid, exam_id), today)
+    with_theory, seen = theory.keys_for(exam_id), theory.seen_keys(conn, sid, exam_id)
     tasks = [{**t, "p": kn.decay(c["states"].get(t["n"]), today)["p"], "n_try": c["states"].get(t["n"], {}).get("n", 0),
-              "mode": u2_onsite.mode_of(exam_id, t["n"])}
+              "mode": u2_onsite.mode_of(exam_id, t["n"]),
+              "theory": ("seen" if str(t["n"]) in seen else "new") if t["n"] in with_theory else None}
              for t in em.tasks(c["exam"])]
+    theory_count = {"all": len(with_theory), "seen": len({k for k in with_theory if str(k) in seen})}
     path = None
     scoring = u2_onsite.scoring_keys(exam_id)
     practice = [{"n": n, **_task_info(c["exam"], n)}
@@ -210,7 +217,7 @@ def u2_subject(exam_id: str, request: Request, conn=Depends(get_db), user=Depend
             s.update(_task_info(c["exam"], s["n"]))
         path["practice"] = practice
     return _page(request, conn, user, "subjects", "u2/subject.html", c=c, tasks=tasks, proj=_projection(conn, sid, c, today),
-                 path=path)
+                 path=path, theory_count=theory_count)
 
 
 PACE_DAYS = 14
@@ -560,9 +567,12 @@ def _train_ctx(conn, sid, enr, key, today):
     states = kn.load_states(conn, sid, exam["id"])
     st = kn.decay(states.get(key), today)
     mode = u2_onsite.mode_of(exam["id"], key)
+    th = theory.get(exam["id"], key)
     return {"c": _card(enr, states, today), "t": _task_info(exam, key), "p": st["p"], "tries": st.get("n", 0),
             "generated": mode == "gen", "mode": mode,
-            "practice": onsite_extra.is_practice(exam["id"], key)}
+            "practice": onsite_extra.is_practice(exam["id"], key),
+            "theory": th and {"minutes": th["minutes"], "topic": th["topic"],
+                              "url": f"/u2/learn/{exam['id']}/{key}", **theory.state(conn, sid, exam["id"], key)}}
 
 
 @router.get("/train/{exam_id}/{raw}", response_class=HTMLResponse)
@@ -641,9 +651,10 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         v = _variant(exam_id, key, seed)
         ok = _check(exam_id, v, answer[:100])
         if not ok and hint != 1:
+            th_offer = theory.note_answer(conn, sid, exam_id, key, False)
             ctx = _train_ctx(conn, sid, enr, key, today)
             ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
-            return _page(request, conn, user, "today", "u2/train.html",
+            return _page(request, conn, user, "today", "u2/train.html", theory_offer=th_offer,
                          res={"ok": False, "pending": True, "hint": oge_drill.rich(v["steps"][0])}, **ctx)
         _budget(conn, sid, today)
         if exam_id not in BANKS and key in oge_gen.GENERATORS:
@@ -662,6 +673,7 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
         kn.record(conn, sid, exam_id, key, got, today, seed=seed, given=given,
                   update_state=not onsite_extra.is_practice(exam_id, key))
         kn.log_forecast(conn, sid, exam_id, today)
+    th_offer = theory.note_answer(conn, sid, exam_id, key, res["ok"])
     ctx = _train_ctx(conn, sid, enr, key, today)
     if ctx["generated"]:
         ctx.update(_play_ctx(exam_id, key, seed), given=answer[:100])
@@ -670,7 +682,31 @@ def u2_train_submit(exam_id: str, raw: str, request: Request, seed: int = Form(0
     delta = {"from": before["fc"][k], "to": after["fc"][k], "primary": round(after["fc"]["primary"] - before["fc"]["primary"], 1)}
     nxt = _next_step(exam, after["states"], today, key, _minutes(conn, sid))
     u2_badges.sync(conn, sid, today)
-    return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt, **ctx)
+    return _page(request, conn, user, "today", "u2/train.html", res=res, delta=delta, next_key=nxt,
+                 theory_offer=th_offer, **ctx)
+
+
+def _theory_link(exam_id, key, offer):
+    return {"theory": f"/u2/learn/{exam_id}/{key}"} if offer else {}
+
+
+@router.get("/learn/{exam_id}/{raw}", response_class=HTMLResponse)
+def u2_learn(exam_id: str, raw: str, request: Request, conn=Depends(get_db), user=Depends(auth.current_user)):
+    """«Разобраться»: правило, разобранный пример, типичные ошибки и «Углубиться» перед номером.
+    Ученику открытие засчитывается как пройденный шаг и обнуляет счётчик ошибок подряд."""
+    sid, today = need_sid(conn, user), config.today()
+    enr = _enrolled(conn, sid, exam_id)
+    exam = em.load(exam_id)
+    key = _task_key(exam, raw)
+    item = theory.get(exam_id, key)
+    if not item:
+        raise HTTPException(404)
+    again = theory.state(conn, sid, exam_id, key)["streak"] >= theory.WRONG_IN_A_ROW
+    if user["role"] == "student":
+        theory.mark_seen(conn, sid, exam_id, key, today)
+    return _page(request, conn, user, "today", "u2/learn.html", c=_card(enr, kn.load_states(conn, sid, exam_id), today),
+                 t=_task_info(exam, key), th=item, again=again,
+                 solvable=u2_onsite.mode_of(exam_id, key) != "soon")
 
 
 @router.post("/api/ru/{exam_id}/{raw}")
@@ -695,15 +731,17 @@ async def u2_ru_answer(exam_id: str, raw: str, request: Request, conn=Depends(ge
         raise HTTPException(400)
     ok, detail = u2_onsite.check_ru(item, data.get("answer"))
     title, rule = RU_RULES[item["rule"]]
-    if not ok and int(data.get("hint") or 0) != 1:
-        return {"ok": False, "pending": True, "hint": u2_onsite.rule_hint(item), "rule_title": title}
+    pending = not ok and int(data.get("hint") or 0) != 1
+    th = _theory_link(exam_id, key, theory.note_answer(conn, sid, exam_id, key, ok))
+    if pending:
+        return {"ok": False, "pending": True, "hint": u2_onsite.rule_hint(item), "rule_title": title, **th}
     _budget(conn, sid, today)
     given = json.dumps(data.get("answer"), ensure_ascii=False)[:100]
     with conn:
         kn.record(conn, sid, exam_id, key, 1.0 if ok else 0.0, today, seed=seed, given=given)
         kn.log_forecast(conn, sid, exam_id, today)
     u2_badges.sync(conn, sid, today)
-    return {"ok": ok, "pending": False, "rule_title": title, "rule_text": rule, **detail}
+    return {"ok": ok, "pending": False, "rule_title": title, "rule_text": rule, **detail, **th}
 
 
 @router.post("/api/play/{exam_id}/{raw}")
@@ -735,14 +773,15 @@ async def u2_play(exam_id: str, raw: str, request: Request, conn=Depends(get_db)
         hint, steps, solution = v["steps"][0], v["steps"], {"py": v["solution"]}
         code = str(data.get("code", ""))[:100_000]
     passed = bool(data.get("passed")) and bool(code.strip())
+    th = _theory_link(exam_id, key, theory.note_answer(conn, sid, exam_id, key, passed))
     if not passed and int(data.get("hint") or 0) != 1:
-        return {"ok": False, "pending": True, "hint": hint}
+        return {"ok": False, "pending": True, "hint": hint, **th}
     _budget(conn, sid, today)
     with conn:
         kn.record(conn, sid, exam_id, key, 1.0 if passed else 0.0, today, seed=seed, given=str(data.get("code", ""))[:100])
         kn.log_forecast(conn, sid, exam_id, today)
     u2_badges.sync(conn, sid, today)
-    return {"ok": passed, "pending": False, "steps": steps, "solution": solution}
+    return {"ok": passed, "pending": False, "steps": steps, "solution": solution, **th}
 
 
 def _lab_offer(conn, sid, cards, today):

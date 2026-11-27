@@ -9,18 +9,17 @@
 <section class="card">
   <div class="eyebrow">🎥 Созвон</div>
   {% if valid_meet %}
-  <p><a class="btn btn-big" href="{{ meet_url }}" target="_blank" rel="noopener">Начать урок в Google Meet →</a></p>
+  <p><a class="btn btn-big" href="{{ meet_url }}" target="_blank" rel="noopener">Начать урок в {{ meet_service }} →</a></p>
   <p class="muted small">{{ meet_url }}</p>
   {% else %}
-  <p class="muted small">Вставь постоянную ссылку из Google Calendar (Meet) один раз — дальше здесь будет большая кнопка.</p>
+  <p class="muted small">Вставь постоянную ссылку на созвон один раз — дальше здесь будет большая кнопка. Подходят Google Meet, Яндекс Телемост, Zoom и Microsoft Teams.</p>
   {% endif %}
-  {% if bad is defined and request.url.path.endswith('bad') %}{% endif %}
   <form method="post" action="/teacher/lesson/meet" class="stack">
     {{ csrf_field(user) }}
-    <label>Ссылка на Meet — целиком, начиная с https
+    <label>Ссылка на Meet, Телемост, Zoom или Teams — целиком, начиная с https
       <input name="url" value="{{ '' if valid_meet else meet_url }}" placeholder="meet.google.com/abc-defg-hij" required></label>
     <button class="btn">Сохранить</button>
-    {% if request.query_params.get('bad') %}<p class="pill bad">Ссылка не похожа на https-адрес. Скопируй её из Google Calendar целиком.</p>{% endif %}
+    {% if request.query_params.get('bad') %}<p class="pill bad">Нужна ссылка на комнату Google Meet, Яндекс Телемоста, Zoom или Teams, начиная с https. Скопируй её из приглашения целиком.</p>{% endif %}
   </form>
 </section>
 

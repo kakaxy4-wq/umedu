@@ -115,7 +115,9 @@
       body: JSON.stringify({ id: item.id, seed: seed, answer: answer(), hint: hinted ? 1 : 0 }),
     });
     if (!r.ok) { show({ ok: false, pending: true, hint: "Не получилось отправить. Обнови страницу." }); return; }
-    show(await r.json());
+    var data = await r.json();
+    show(data);
+    if (window.u2Theory) window.u2Theory(data);
   }
 
   if (item.kind === "comma") renderComma();

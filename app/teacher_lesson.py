@@ -8,6 +8,7 @@
 ученика и живёт до первой верной попытки, максимум неделю.
 """
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 from . import config
 from .db import connect
@@ -28,9 +29,47 @@ def set_pref(conn, teacher_id, key, value):
                  (teacher_id, key, value))
 
 
+# Сервисы видеосвязи, на которые ведёт большая кнопка «Начать урок». Только https, без логина и порта в адресе:
+# кнопка открывается из кабинета в один клик, поэтому чужой сайт под видом созвона туда попасть не должен.
+MEET_HOSTS = {
+    "meet.google.com": "Google Meet",
+    "telemost.yandex.ru": "Яндекс Телемосте", "telemost.360.yandex.ru": "Яндекс Телемосте",
+    "zoom.us": "Zoom",                                  # и поддомены us02web.zoom.us и т. п.
+    "teams.microsoft.com": "Microsoft Teams", "teams.live.com": "Microsoft Teams",
+}
+
+
+def _meet_host(host):
+    host = (host or "").lower().rstrip(".")
+    if host in MEET_HOSTS:
+        return host
+    if host.endswith(".zoom.us") and host.count(".") <= 3:
+        return "zoom.us"
+    return None
+
+
 def valid_meet_url(url):
+    """Ссылка на созвон из MEET_HOSTS или None."""
     u = (url or "").strip()
-    return u if u.startswith("https://") and len(u) <= 300 and " " not in u else None
+    if not u.startswith("https://") or len(u) > 300 or any(ch.isspace() for ch in u):
+        return None
+    try:
+        parts = urlsplit(u)
+        port = parts.port
+    except ValueError:
+        return None
+    if parts.username or parts.password or port is not None or not _meet_host(parts.hostname):
+        return None
+    if parts.path in ("", "/"):            # голая главная страница — не ссылка на комнату
+        return None
+    return u
+
+
+def meet_service(url):
+    """Название сервиса для кнопки: «Начать урок в Zoom»."""
+    if not valid_meet_url(url):
+        return None
+    return MEET_HOSTS[_meet_host(urlsplit(url.strip()).hostname)]
 
 
 # ------------------------------------------------------------------ слабые номера
@@ -46,10 +85,27 @@ def weak_spots(conn, sid, exam_id, top=3):
 
 # ------------------------------------------------------------------ задания от преподавателя
 def assign(conn, teacher_id, student_id, exam_id, task_key, note=""):
-    conn.execute(
+    """Задать номер домой. Повторное нажатие, пока прежнее задание живо (или задано сегодня), ничего не добавляет
+    и возвращает False.
+    Дубли отсекаем одним INSERT … WHERE NOT EXISTS (двойной клик не проскочит между проверкой и записью),
+    а не UNIQUE-индексом: на проде уже могут лежать одинаковые строки, индекс на них не создастся."""
+    today = config.today()
+    cur = conn.execute(
         "INSERT INTO teacher_task (teacher_id, student_id, exam_id, task_key, note, day) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (teacher_id, student_id, exam_id, int(task_key), note[:200] or "", config.today().isoformat()))
+        "SELECT ?, ?, ?, ?, ?, ? WHERE NOT EXISTS ("
+        "  SELECT 1 FROM teacher_task t WHERE t.student_id = ? AND t.exam_id = ? AND t.task_key = ? "
+        "  AND t.day <= ? AND t.day >= ? AND (t.day = ? OR NOT EXISTS ("
+        "    SELECT 1 FROM skill_attempt a WHERE a.student_id = t.student_id AND a.exam_id = t.exam_id "
+        "    AND a.task_key = t.task_key AND a.day >= t.day AND a.score >= 0.5)))",
+        (teacher_id, student_id, exam_id, int(task_key), note[:200] or "", today.isoformat(),
+         student_id, exam_id, int(task_key), today.isoformat(), (today - timedelta(days=TASK_TTL_DAYS)).isoformat(),
+         today.isoformat()))
+    return cur.rowcount == 1
+
+
+def open_count(conn, sid, exam_id, today=None):
+    """Сколько живых заданий по этому экзамену (одинаковые номера, заданные дважды до исправления, — один раз)."""
+    return len({t["task_key"] for t in open_for_student(conn, sid, today) if t["exam_id"] == exam_id})
 
 
 def open_for_student(conn, sid, today=None):

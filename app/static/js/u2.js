@@ -24,3 +24,9 @@
     mark();
   });
 })();
+
+// «Разобраться»: после двух ошибок подряд сервер присылает theory — показываем карточку возврата к теории.
+window.u2Theory = function (data) {
+  var el = document.querySelector("[data-th-offer]");
+  if (el && data && data.theory) el.hidden = false;
+};

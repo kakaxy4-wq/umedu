@@ -444,6 +444,14 @@ CREATE TABLE IF NOT EXISTS skill_attempt (     -- каждая попытка: �
 );
 CREATE INDEX IF NOT EXISTS idx_skill_attempt ON skill_attempt(student_id, exam_id, id);
 CREATE INDEX IF NOT EXISTS idx_skill_attempt_day ON skill_attempt(student_id, day);
+CREATE TABLE IF NOT EXISTS u2_theory (          -- «Разобраться»: открыл ли теорию номера и сколько ошибок подряд
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_id TEXT NOT NULL,
+    task_key TEXT NOT NULL,
+    seen_at TEXT,                      -- день, когда ученик открыл теорию, NULL — ещё не открывал
+    wrong_streak INTEGER NOT NULL DEFAULT 0,   -- ошибок подряд, с двух тренажёр предлагает вернуться к теории
+    PRIMARY KEY (student_id, exam_id, task_key)
+);
 CREATE TABLE IF NOT EXISTS lab_offer (          -- когда «Сегодня» уже предлагало опыт: не чаще раза в 3 дня
     student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     lab_id TEXT NOT NULL,

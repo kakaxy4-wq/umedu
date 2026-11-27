@@ -74,7 +74,9 @@
       body: JSON.stringify({ seed: +root.dataset.seed, passed: passed, hint: hinted ? 1 : 0, code: code }),
     });
     if (!r.ok) return null;
-    return r.json();
+    var data = await r.json();
+    if (window.u2Theory) window.u2Theory(data);
+    return data;
   }
 
   function say(ok, text) {
